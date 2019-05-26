@@ -11,7 +11,7 @@ from Utils import is_sub_interval_from_optional_ranges
 is_num = Python_Types.is_num
 is_str = Python_Types.is_str
 
-class StringSubTypeChecler(SubTypeChecker):
+class StringSubTypeChecker(SubTypeChecker):
 
     def is_subtype(self):
         s1 = self.s1

@@ -49,6 +49,7 @@ def get_interval_from_optional_min_max(min=None, max=None):
             i = I.closed(-I.inf, max)
         else:
             i = I.closed(-I.inf, I.inf)
+    
     return i
 
 def is_sub_interval_from_optional_ranges(min1=None, max1=None, min2=None, max2=None):
