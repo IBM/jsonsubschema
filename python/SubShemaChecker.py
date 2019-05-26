@@ -10,6 +10,7 @@ import sys
 from NumberSubTypeChecker import NumberSubTypeChecker
 from StringSubTypeChecker import StringSubTypeChecler
 
+
 class SubSchemaChecker(object):
     # Change here which validator to use.
     VALIDATOR = jsonschema.Draft3Validator
@@ -17,11 +18,12 @@ class SubSchemaChecker(object):
     '''
     The checker class constructor accepts two 'valid' json files.
     '''
+
     def __init__(self, s1, s2):
         self.s1 = s1
         self.s2 = s2
         self.validate_schemas()
-    
+
     def validate_schemas(self):
         '''
         Validate given schemas against the pre-defined VALIDATOR schema.
@@ -36,7 +38,7 @@ class SubSchemaChecker(object):
             self.VALIDATOR.check_schema(self.s1)
         except jsonschema.exceptions.SchemaError as e:
             err(s1, e)
-        
+
         try:
             self.VALIDATOR.check_schema(self.s2)
         except jsonschema.exceptions.SchemaError as e:
@@ -58,11 +60,11 @@ class SubSchemaChecker(object):
             return True
         if self.s2 is False or ("not" in self.s2.keys() and not self.s2["not"]):
             return False
-        
+
         # Real stuff
         t1 = self.s1.get("type")
         t2 = self.s2.get("type")
-        
+
         ret = False
         if (t1 == t2 == "integer") or (t1 == t2 == "number") or (t1 == "integer" and t2 == "number"):
             ret = NumberSubTypeChecker(self.s1, self.s2).is_subtype()
@@ -88,6 +90,6 @@ if __name__ == "__main__":
         s1 = json.load(f1)
     with open(s2_file, 'r') as f2:
         s2 = json.load(f2)
-    
+
     checker = SubSchemaChecker(s1, s2)
     print(checker.is_sub_schema())

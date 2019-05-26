@@ -8,6 +8,7 @@ import greenery.lego as RegLib
 
 from abc import ABC, abstractmethod
 
+
 class SubTypeChecker(ABC):
     '''
     Goal: check if s1 <: s2
@@ -22,6 +23,7 @@ class SubTypeChecker(ABC):
     @abstractmethod
     def is_subtype(self):
         pass
+
 
 class Python_Types:
     @staticmethod

@@ -9,6 +9,7 @@ from Utils import get_interval_from_json_number_draf4
 
 is_num = Python_Types.is_num
 
+
 class NumberSubTypeChecker(SubTypeChecker):
 
     def is_subtype(self):
