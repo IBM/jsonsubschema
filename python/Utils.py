@@ -21,6 +21,14 @@ class Python_Types:
     def is_dict_or_none(i):
         return isinstance(dict) or i == None
 
+    @staticmethod
+    def is_dict_or_true(i):
+        return isinstance(dict) or i == True
+
+    @staticmethod
+    def is_list(i):
+        return isinstance(i, list)
+
 
 is_num = Python_Types.is_num
 

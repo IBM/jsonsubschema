@@ -9,7 +9,7 @@ import sys
 
 from NumberSubTypeChecker import NumberSubTypeChecker
 from StringSubTypeChecker import StringSubTypeChecker
-
+from ArraySubTypeChecker import ArraySubTypeChecker
 
 class SubSchemaChecker(object):
     # Change here which validator to use.
@@ -70,6 +70,8 @@ class SubSchemaChecker(object):
             ret = NumberSubTypeChecker(self.s1, self.s2).is_subtype()
         if (t1 == t2 == "string"):
             ret = StringSubTypeChecker(self.s1, self.s2).is_subtype()
+        if (t1 == t2 == "array"):
+            ret = ArraySubTypeChecker(self.s1, self.s2).is_subtype()
         return ret
 
 
