@@ -5,10 +5,8 @@ Created on May 24, 2019
 
 import intervals as I
 from greenery.lego import parse
-from SubTypeChecker import SubTypeChecker, Python_Types
+from SubTypeChecker import SubTypeChecker
 from Utils import is_sub_interval_from_optional_ranges
-
-is_num = Python_Types.is_num
 
 
 class StringSubTypeChecker(SubTypeChecker):

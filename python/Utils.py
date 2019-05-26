@@ -4,7 +4,23 @@ Created on May 24, 2019
 '''
 
 import intervals as I
-from SubTypeChecker import SubTypeChecker, Python_Types
+import numbers
+from SubTypeChecker import SubTypeChecker
+
+
+class Python_Types:
+    @staticmethod
+    def is_num(i):
+        return isinstance(i, int) or isinstance(i, numbers.Number)
+
+    @staticmethod
+    def is_str(i):
+        return isinstance(i, str)
+
+    @staticmethod
+    def is_dict_or_none(i):
+        return isinstance(dict) or i == None
+
 
 is_num = Python_Types.is_num
 

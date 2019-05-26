@@ -4,8 +4,8 @@ Created on May 20, 2019
 '''
 
 import intervals as I
-from SubTypeChecker import SubTypeChecker, Python_Types
-from Utils import get_interval_from_json_number_draf4
+from SubTypeChecker import SubTypeChecker
+from Utils import Python_Types, get_interval_from_json_number_draf4
 
 is_num = Python_Types.is_num
 
@@ -26,8 +26,8 @@ class NumberSubTypeChecker(SubTypeChecker):
         if is_sub_interval and \
                 (
                     (not is_num(s1_mulOf) and not is_num(s2_mulOf))
-                    or (is_num(s1_mulOf) and not is_num(s2_mulOf))
-                    or (is_num(s1_mulOf) and is_num(s2_mulOf) and s1_mulOf % s2_mulOf == 0)
+                or (is_num(s1_mulOf) and not is_num(s2_mulOf))
+                or (is_num(s1_mulOf) and is_num(s2_mulOf) and s1_mulOf % s2_mulOf == 0)
                 ):
             return True
         return False

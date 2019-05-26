@@ -8,7 +8,7 @@ import jsonschema
 import sys
 
 from NumberSubTypeChecker import NumberSubTypeChecker
-from StringSubTypeChecker import StringSubTypeChecler
+from StringSubTypeChecker import StringSubTypeChecker
 
 
 class SubSchemaChecker(object):
@@ -69,7 +69,7 @@ class SubSchemaChecker(object):
         if (t1 == t2 == "integer") or (t1 == t2 == "number") or (t1 == "integer" and t2 == "number"):
             ret = NumberSubTypeChecker(self.s1, self.s2).is_subtype()
         if (t1 == t2 == "string"):
-            ret = StringSubTypeChecler(self.s1, self.s2).is_subtype()
+            ret = StringSubTypeChecker(self.s1, self.s2).is_subtype()
         return ret
 
 
