@@ -19,11 +19,11 @@ class Python_Types:
 
     @staticmethod
     def is_dict_or_none(i):
-        return isinstance(dict) or i == None
+        return isinstance(i, dict) or i == None
 
     @staticmethod
     def is_dict_or_true(i):
-        return isinstance(dict) or i == True
+        return isinstance(i, dict) or i == True
 
     @staticmethod
     def is_list(i):
