@@ -9,34 +9,36 @@ from SubTypeChecker import SubTypeChecker
 from Utils import is_sub_interval_from_optional_ranges
 
 
-class StringSubTypeChecker(SubTypeChecker):
+class JsonString:
 
-    def is_subtype(self):
-        s1 = self.s1
-        s2 = self.s2
+    def __init__(self, s):
         #
-        min1 = s1.get("minLength")
-        max1 = s1.get("maxLength")
-        pattern1 = s1.get("pattern")
-        #
-        min2 = s2.get("minLength")
-        max2 = s2.get("maxLength")
-        pattern2 = s2.get("pattern")
-        #
-        is_sub_interval = is_sub_interval_from_optional_ranges(
-            min1, max1, min2, max2)
-        if not is_sub_interval:
-            return False
-        # at this point, length is compatible, so we should now worry about pattern only.
-        if pattern2 == None or pattern2 == "":
+        self.min = s.get("minLength")
+        self.max = s.get("maxLength")
+        self.pattern = s.get("pattern")
+
+
+def is_subtype(s1, s2):
+    #
+    s1 = JsonString(s1)
+    s2 = JsonString(s2)
+    #
+    is_sub_interval = is_sub_interval_from_optional_ranges(
+        s1.min, s1.max, s2.min, s2.max)
+    if not is_sub_interval:
+        return False
+    #
+    # at this point, length is compatible,
+    # so we should now worry about pattern only.
+    if s1.pattern == None or s2.pattern == "":
+        return True
+    elif s1.pattern == None or s1.pattern == "":
+        return False
+    else:
+        regex1 = parse(s1.pattern)
+        regex2 = parse(s2.pattern)
+        result = regex1 & regex2.everythingbut()
+        if result.empty():
             return True
-        elif pattern1 == None or pattern1 == "":
-            return False
         else:
-            regex1 = parse(pattern1)
-            regex2 = parse(pattern2)
-            result = regex1 & regex2.everythingbut()
-            if result.empty():
-                return True
-            else:
-                return False
+            return False

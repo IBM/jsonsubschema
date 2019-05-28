@@ -7,9 +7,13 @@ import json
 import jsonschema
 import sys
 
-from NumberSubTypeChecker import NumberSubTypeChecker
-from StringSubTypeChecker import StringSubTypeChecker
-from ArraySubTypeChecker import ArraySubTypeChecker
+# from NumberSubTypeChecker import NumberSubTypeChecker
+# from StringSubTypeChecker import StringSubTypeChecker
+# from ArraySubTypeChecker import ArraySubTypeChecker
+import NumberSubTypeChecker
+import StringSubTypeChecker
+import ArraySubTypeChecker
+
 
 class SubSchemaChecker(object):
     # Change here which validator to use.
@@ -19,10 +23,11 @@ class SubSchemaChecker(object):
     The checker class constructor accepts two 'valid' json files.
     '''
 
-    def __init__(self, s1, s2):
+    def __init__(self, s1=None, s2=None):
         self.s1 = s1
         self.s2 = s2
-        self.validate_schemas()
+        if self.s1 and self.s2:
+            self.validate_schemas()
 
     def validate_schemas(self):
         '''
@@ -44,36 +49,37 @@ class SubSchemaChecker(object):
         except jsonschema.exceptions.SchemaError as e:
             err(s2, e)
 
-    def is_sub_schema(self):
+    @staticmethod
+    def is_sub_schema(s1, s2):
         '''
         Is s1 <: s2 ?
         '''
-        print("Is")
-        print(s1)
-        print("subschema of")
-        print(s2)
-        print()
+        # print("Is")
+        # print(s1)
+        # print("subschema of")
+        # print(s2)
+        # print()
 
         # Trivial cases:
         # should have more general procedures for these?
-        if self.s2 is True or not self.s2:
+        if s2 is True or not s2:
             return True
-        if self.s2 is False or ("not" in self.s2.keys() and not self.s2["not"]):
+        if s2 is False or ("not" in s2.keys() and not s2["not"]):
             return False
 
         # Real stuff
-        t1 = self.s1.get("type")
-        t2 = self.s2.get("type")
+        t1 = s1.get("type")
+        t2 = s2.get("type")
         if s1 == s2:
             return True
 
         ret = False
         if (t1 == t2 == "integer") or (t1 == t2 == "number") or (t1 == "integer" and t2 == "number"):
-            ret = NumberSubTypeChecker(self.s1, self.s2).is_subtype()
+            ret = NumberSubTypeChecker.is_subtype(s1, s2)
         if (t1 == t2 == "string"):
-            ret = StringSubTypeChecker(self.s1, self.s2).is_subtype()
+            ret = StringSubTypeChecker.is_subtype(s1, s2)
         if (t1 == t2 == "array"):
-            ret = ArraySubTypeChecker(self.s1, self.s2).is_subtype()
+            ret = ArraySubTypeChecker.is_subtype(s1, s2)
         return ret
 
 
@@ -96,4 +102,4 @@ if __name__ == "__main__":
         s2 = json.load(f2)
 
     checker = SubSchemaChecker(s1, s2)
-    print(checker.is_sub_schema())
+    print(checker.is_sub_schema(s1, s2))
