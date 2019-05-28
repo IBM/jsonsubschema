@@ -64,6 +64,8 @@ class SubSchemaChecker(object):
         # Real stuff
         t1 = self.s1.get("type")
         t2 = self.s2.get("type")
+        if s1 == s2:
+            return True
 
         ret = False
         if (t1 == t2 == "integer") or (t1 == t2 == "number") or (t1 == "integer" and t2 == "number"):
