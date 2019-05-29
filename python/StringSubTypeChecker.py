@@ -4,24 +4,37 @@ Created on May 24, 2019
 '''
 
 import intervals as I
+
 from greenery.lego import parse
-from SubTypeChecker import SubTypeChecker
-from Utils import is_sub_interval_from_optional_ranges
+from JsonType import JsonType
+from Utils import is_sub_interval_from_optional_ranges, handle_inhibited_types
 
 
-class JsonString:
+class JsonString(JsonType):
 
     def __init__(self, s):
-        #
         self.min = s.get("minLength")
         self.max = s.get("maxLength")
         self.pattern = s.get("pattern")
+        #
+        super().__init__()
+
+    def check_inhibited(self):
+        if self.min > self.max:
+            self.isInhibited = True
+        # TODO
+        # missing cases where min/max length might be
+        # not compatible with pattern?
 
 
 def is_subtype(s1, s2):
     #
     s1 = JsonString(s1)
     s2 = JsonString(s2)
+    #
+    inhibited = handle_inhibited_types(s1, s2)
+    if inhibited != None:
+        return inhibited
     #
     is_sub_interval = is_sub_interval_from_optional_ranges(
         s1.min, s1.max, s2.min, s2.max)
@@ -30,10 +43,12 @@ def is_subtype(s1, s2):
     #
     # at this point, length is compatible,
     # so we should now worry about pattern only.
-    if s1.pattern == None or s2.pattern == "":
+    if s2.pattern == None or s2.pattern == "":
         return True
     elif s1.pattern == None or s1.pattern == "":
         return False
+    elif s1.pattern == s2.pattern:
+        return True
     else:
         regex1 = parse(s1.pattern)
         regex2 = parse(s2.pattern)

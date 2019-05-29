@@ -5,7 +5,6 @@ Created on May 24, 2019
 
 import intervals as I
 import numbers
-from SubTypeChecker import SubTypeChecker
 
 
 PRINT_DB = True
@@ -62,3 +61,22 @@ def is_sub_interval_from_optional_ranges(min1=None, max1=None, min2=None, max2=N
         return i1 in i2
     else:
         return True
+
+
+def handle_inhibited_types(s1, s2):
+    if s2.isInhibited:
+        if s1.isInhibited:
+            # False <: False
+            print_db("are_inhibited_types: __11__")
+            return True
+        else:
+            # !False <: False
+            print_db("are_inhibited_types: __01__")
+            return False
+    else:
+        if s1.isInhibited:
+            # False <: !False
+            print_db("are_inhibited_types: __10__")
+            return True
+    # !False <: !False
+    print_db("are_inhibited_types: __00__")

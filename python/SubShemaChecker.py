@@ -7,9 +7,6 @@ import json
 import jsonschema
 import sys
 
-# from NumberSubTypeChecker import NumberSubTypeChecker
-# from StringSubTypeChecker import StringSubTypeChecker
-# from ArraySubTypeChecker import ArraySubTypeChecker
 import NumberSubTypeChecker
 import StringSubTypeChecker
 import ArraySubTypeChecker
@@ -71,6 +68,9 @@ class SubSchemaChecker(object):
         t1 = s1.get("type")
         t2 = s2.get("type")
         if s1 == s2:
+            print(
+                "Warning: any schema is sub-schema of itself. This will always be true.")
+            print("Caution: Inhibited types are NOT checked.")
             return True
 
         ret = False

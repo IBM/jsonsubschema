@@ -4,24 +4,27 @@ Created on May 20, 2019
 '''
 
 import intervals as I
-from SubTypeChecker import SubTypeChecker
-from Utils import PythonTypes
+
+from JsonType import JsonType
+from Utils import PythonTypes, print_db, handle_inhibited_types
 
 is_num = PythonTypes.is_num
 
 
-class JsonNumber:
+class JsonNumber(JsonType):
 
     def __init__(self, s):
-        #
         self.min = s.get("minimum")
         self.xmin = s.get("exclusiveMinimum")
         self.max = s.get("maximum")
         self.xmax = s.get("exclusiveMaximum")
         self.mulOf = s.get("multipleOf")
-
-    def get_interval_draf4(self):
         #
+        self.interval = self.build_interval_draf4()
+        #
+        super().__init__()
+
+    def build_interval_draf4(self):
         _min = self.min
         _xmin = self.xmin
         _max = self.max
@@ -51,12 +54,21 @@ class JsonNumber:
         #
         return i
 
+    def check_inhibited(self):
+        if self.interval.is_empty() or \
+                (is_num(self.mulOf) and self.mulOf not in self.interval):
+            self.isInhibited = True
+
 
 def is_subtype(s1, s2):
     s1 = JsonNumber(s1)
     s2 = JsonNumber(s2)
     #
-    is_sub_interval = s1.get_interval_draf4() in s2.get_interval_draf4()
+    inhibited = handle_inhibited_types(s1, s2)
+    if inhibited != None:
+        return inhibited
+    #
+    is_sub_interval = s1.interval in s2.interval
     if is_sub_interval and \
             (
                 (not is_num(s1.mulOf) and not is_num(s2.mulOf))

@@ -4,9 +4,9 @@ Created on May 25, 2019
 '''
 
 import intervals as I
-# from SubShemaChecker import SubSchemaChecker
-from SubTypeChecker import SubTypeChecker
-from Utils import PythonTypes, is_sub_interval_from_optional_ranges, print_db
+
+from JsonType import JsonType
+from Utils import PythonTypes, is_sub_interval_from_optional_ranges, print_db, handle_inhibited_types
 
 is_dict_or_none = PythonTypes.is_dict_or_none
 is_dict_or_true = PythonTypes.is_dict_or_true
@@ -14,7 +14,7 @@ is_list = PythonTypes.is_list
 is_num = PythonTypes.is_num
 
 
-class JsonArray(object):
+class JsonArray(JsonType):
 
     def __init__(self, s):
         #
@@ -26,33 +26,28 @@ class JsonArray(object):
         #
         self.compute_actual_min()
         self.compute_actual_max()
-        if self.min > self.max:
-            # This is equivalence to False schema! Nothing validates against this.
-            # How to replace this schema with False, and continue the checking
-            # so that this is subtype of anything,
-            # and nothing is subtype of it.
-            print("WARNING: Array minItems = {} is greater than maxItems = {}.".format(
-                self.min, self.max))
-            print("This schema will accept no array at all.")
-            print("Should terminate sub-schema checking here!?")
+        #
+        super().__init__()
 
     def compute_actual_min(self):
         #
         if not is_num(self._min):
             self.min = 0
-        elif is_list(self.items) and self.addItems == False:
-            length = len(self.items)
-            if self._min > length:
-                # This is equivalence to False schema! Nothing validates against this.
-                # How to replace this schema with False, and continue the checking
-                # so that this is subtype of anything,
-                # and nothing is subtype of it.
-                print("WARNING: Array minItems = {} while it can't accept more than {} items.".format(
-                    self._min, length))
-                print("This schema will accept no array at all.")
-                print("Should terminate sub-schema checking here!?")
-            else:  # aka, self._min <= length
-                self.min = self._min
+        # elif is_list(self.items) and self.addItems == False:
+        #     length = len(self.items)
+        #     if self._min > length:
+        #         # This is equivalence to False schema! Nothing validates against this.
+        #         # How to replace this schema with False, and continue the checking
+        #         # so that this is subtype of anything,
+        #         # and nothing is subtype of it.
+        #         print("WARNING: Array minItems = {} while it can't accept more than {} items.".format(
+        #             self._min, length))
+        #         print("This schema will accept no array at all.")
+        #         print("Should terminate sub-schema checking here!?")
+        #     else:  # aka, self._min <= length
+        #         self.min = self._min
+        # else:
+        #     self.min = self._min
         else:
             self.min = self._min
 
@@ -71,11 +66,21 @@ class JsonArray(object):
             else:
                 self.max = I.inf
 
+    def check_inhibited(self):
+        if (is_list(self.items) and self.addItems == False
+            and is_num(self._min) and self._min > len(self.items)) \
+           or (self.min > self.max):
+            self.isInhibited = True
+
 
 def is_subtype(s1, s2):
     #
     s1 = JsonArray(s1)
     s2 = JsonArray(s2)
+    #
+    inhibited = handle_inhibited_types(s1, s2)
+    if inhibited != None:
+        return inhibited
     #
     is_sub_interval = is_sub_interval_from_optional_ranges(
         s1.min, s1.max, s2.min, s2.max)
@@ -107,10 +112,10 @@ def is_subtype(s1, s2):
     if is_list(s2.items) and is_list(s1.items):
         if not is_dict_or_true(s2.addItems) \
                 and not is_sub_interval:
-                # and (len(s1.items) > len(s2.items)
-                #      or (is_num(s2.max) and len(s1.items) > s2.max)
-                #      ):
-                # and (not is_num(s1.max) or ):
+            # and (len(s1.items) > len(s2.items)
+            #      or (is_num(s2.max) and len(s1.items) > s2.max)
+            #      ):
+            # and (not is_num(s1.max) or ):
             print_db("__05__")
             return False
         elif len(s1.items) <= len(s2.items):
