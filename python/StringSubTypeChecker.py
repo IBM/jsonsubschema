@@ -7,7 +7,7 @@ import intervals as I
 
 from greenery.lego import parse
 from JsonType import JsonType
-from Utils import is_sub_interval_from_optional_ranges, handle_inhibited_types
+from Utils import is_sub_interval_from_optional_ranges, handle_uninhabited_types
 
 
 class JsonString(JsonType):
@@ -19,7 +19,7 @@ class JsonString(JsonType):
         #
         super().__init__()
 
-    def check_inhibited(self):
+    def check_uninhabited(self):
         if self.min > self.max:
             self.isInhibited = True
         # TODO
@@ -32,9 +32,9 @@ def is_subtype(s1, s2):
     s1 = JsonString(s1)
     s2 = JsonString(s2)
     #
-    inhibited = handle_inhibited_types(s1, s2)
-    if inhibited != None:
-        return inhibited
+    uninhabited = handle_uninhabited_types(s1, s2)
+    if uninhabited != None:
+        return uninhabited
     #
     is_sub_interval = is_sub_interval_from_optional_ranges(
         s1.min, s1.max, s2.min, s2.max)

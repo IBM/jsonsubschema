@@ -6,7 +6,7 @@ Created on May 25, 2019
 import intervals as I
 
 from JsonType import JsonType
-from Utils import PythonTypes, is_sub_interval_from_optional_ranges, print_db, handle_inhibited_types
+from Utils import PythonTypes, is_sub_interval_from_optional_ranges, print_db, handle_uninhabited_types
 
 is_dict_or_none = PythonTypes.is_dict_or_none
 is_dict_or_true = PythonTypes.is_dict_or_true
@@ -66,7 +66,7 @@ class JsonArray(JsonType):
             else:
                 self.max = I.inf
 
-    def check_inhibited(self):
+    def check_uninhabited(self):
         if (is_list(self.items) and self.addItems == False
             and is_num(self._min) and self._min > len(self.items)) \
            or (self.min > self.max):
@@ -78,9 +78,9 @@ def is_subtype(s1, s2):
     s1 = JsonArray(s1)
     s2 = JsonArray(s2)
     #
-    inhibited = handle_inhibited_types(s1, s2)
-    if inhibited != None:
-        return inhibited
+    uninhabited = handle_uninhabited_types(s1, s2)
+    if uninhabited != None:
+        return uninhabited
     #
     is_sub_interval = is_sub_interval_from_optional_ranges(
         s1.min, s1.max, s2.min, s2.max)

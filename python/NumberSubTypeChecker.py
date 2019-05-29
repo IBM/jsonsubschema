@@ -3,10 +3,12 @@ Created on May 20, 2019
 @author: Andrew Habib
 '''
 
+import sys
+
 import intervals as I
 
 from JsonType import JsonType
-from Utils import PythonTypes, print_db, handle_inhibited_types
+from Utils import PythonTypes, print_db, handle_uninhabited_types
 
 is_num = PythonTypes.is_num
 
@@ -54,19 +56,19 @@ class JsonNumber(JsonType):
         #
         return i
 
-    def check_inhibited(self):
+    def check_uninhabited(self):
         if self.interval.is_empty() or \
                 (is_num(self.mulOf) and self.mulOf not in self.interval):
-            self.isInhibited = True
+            self.isUninhabited = True
 
 
 def is_subtype(s1, s2):
     s1 = JsonNumber(s1)
     s2 = JsonNumber(s2)
     #
-    inhibited = handle_inhibited_types(s1, s2)
-    if inhibited != None:
-        return inhibited
+    unInhabited = handle_uninhabited_types(s1, s2)
+    if unInhabited != None:
+        return unInhabited
     #
     is_sub_interval = s1.interval in s2.interval
     if is_sub_interval and \

@@ -4,8 +4,9 @@ Created on May 17, 2019
 '''
 
 import json
-import jsonschema
 import sys
+
+import jsonschema
 
 import NumberSubTypeChecker
 import StringSubTypeChecker

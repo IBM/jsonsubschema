@@ -3,8 +3,9 @@ Created on May 24, 2019
 @author: Andrew Habib
 '''
 
-import intervals as I
 import numbers
+
+import intervals as I
 
 
 PRINT_DB = True
@@ -63,7 +64,7 @@ def is_sub_interval_from_optional_ranges(min1=None, max1=None, min2=None, max2=N
         return True
 
 
-def handle_inhibited_types(s1, s2):
+def handle_uninhabited_types(s1, s2):
     if s2.isInhibited:
         if s1.isInhibited:
             # False <: False
