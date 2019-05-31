@@ -7,6 +7,7 @@ import json
 import sys
 
 import jsonschema
+import warnings
 
 import checkers
 
@@ -68,18 +69,21 @@ class Checker(object):
         t1 = s1.get("type")
         t2 = s2.get("type")
         if s1 == s2:
-            print(
-                "Warning: any schema is sub-schema of itself. This will always be true.")
+            warnings.warn(message="Warning: any schema is sub-schema of itself. This will always be true.", stacklevel=1)
             return True
 
         ret = False
-        if (t1 == t2 == "integer") or (t1 == t2 == "number") or (t1 == "integer" and t2 == "number"):
-            # TODO case {num, mulfof int} <: {int}
+
+        numeric = ["number", "integer"]
+        if t1 in numeric and t2 in numeric:
             ret = checkers.is_numeric_subtype(s1, s2)
+        
         if (t1 == t2 == "string"):
             ret = checkers.is_string_subtype(s1, s2)
+        
         if (t1 == t2 == "array"):
             ret = checkers.is_array_subtype(s1, s2)
+        
         return ret
 
 

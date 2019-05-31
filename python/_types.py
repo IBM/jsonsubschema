@@ -9,11 +9,12 @@ import intervals as I
 
 from abc import ABC
 
-from _utils import PythonTypes
-
-is_num = PythonTypes.is_num
-is_list = PythonTypes.is_list
-is_dict = PythonTypes.is_dict
+from _utils import(
+    print_db,
+    is_num,
+    is_list,
+    is_dict
+)
 
 
 class JsonType(ABC):
@@ -36,21 +37,30 @@ class JsonType(ABC):
         pass
 
 
-class JsonNumber(JsonType):
+class JsonNumeric(JsonType):
 
     key_words = ["minimum", "exclusiveMinimum",
                  "maximum", "exclusiveMaximum", "multipleOf"]
 
     def __init__(self, s):
+        self.num_or_int = s.get("type") # what default to use?
         self.min = s.get("minimum", -I.inf)
         self.xmin = s.get("exclusiveMinimum", False)
         self.max = s.get("maximum", I.inf)
         self.xmax = s.get("exclusiveMaximum", False)
         self.mulOf = s.get("multipleOf")
         #
-        self.interval = self.build_interval_draf4()
-        #
         super().__init__()
+        #
+        print_db(self.interval)
+
+    def normalize(self):
+        self.build_interval_draf4()
+        #
+        # if multipleOf is integer value, the schema can't accept numbers.
+        # can't use isinstance(i, integer) because 5.0 is indeed integer!
+        if self.mulOf != None and float.is_integer(float(self.mulOf)):
+            self.num_or_int = "integer"
 
     def build_interval_draf4(self):
         _min = self.min
@@ -58,33 +68,43 @@ class JsonNumber(JsonType):
         _max = self.max
         _xmax = self.xmax
         #
-        if is_num(_min) and is_num(_max):
-            if _xmin and _xmax:
-                i = I.open(_min, _max)
-            elif _xmin and not _xmax:
-                i = I.openclosed(_min, _max)
-            elif not _xmin and _xmax:
-                i = I.closedopen(_min, _max)
-            else:
-                i = I.closed(_min, _max)
-        elif is_num(_min) and not is_num(_max):
-            if _xmin:
-                i = I.open(_min, I.inf)
-            else:
-                i = I.closed(_min, I.inf)
-        elif not is_num(_min) and is_num(_max):
-            if _xmax:
-                i = I.open(-I.inf, _max)
-            else:
-                i = I.closed(-I.inf, _max)
-        elif not is_num(_min) and not is_num(_max):
-            i = I.closed(-I.inf, I.inf)
+        if _xmin and _xmax:
+            i = I.open(_min, _max)
+        elif _xmin:
+            i = I.openclosed(_min, _max)
+        elif _xmax:
+            i = I.closedopen(_min, _max)
+        else:
+            i = I.closed(_min, _max)
+        self.interval = i
         #
-        return i
+        # if is_num(_min) and is_num(_max):
+        #     if _xmin and _xmax:
+        #         i = I.open(_min, _max)
+        #     elif _xmin and not _xmax:
+        #         i = I.openclosed(_min, _max)
+        #     elif not _xmin and _xmax:
+        #         i = I.closedopen(_min, _max)
+        #     else:
+        #         i = I.closed(_min, _max)
+        # elif is_num(_min) and not is_num(_max):
+        #     if _xmin:
+        #         i = I.open(_min, I.inf)
+        #     else:
+        #         i = I.closed(_min, I.inf)
+        # elif not is_num(_min) and is_num(_max):
+        #     if _xmax:
+        #         i = I.open(-I.inf, _max)
+        #     else:
+        #         i = I.closed(-I.inf, _max)
+        # elif not is_num(_min) and not is_num(_max):
+        #     i = I.closed(-I.inf, I.inf)
+        #
+        # return i
 
     def check_uninhabited(self):
         if self.interval.is_empty() or \
-                (is_num(self.mulOf) and self.mulOf not in self.interval):
+                (self.mulOf != None and self.mulOf not in self.interval):
             self.isUninhabited = True
 
 

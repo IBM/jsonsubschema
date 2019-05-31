@@ -11,7 +11,7 @@ from greenery.lego import parse
 import subschemachecker
 
 from _types import (
-    JsonNumber,
+    JsonNumeric,
     JsonString,
     JsonArray
 )
@@ -27,21 +27,29 @@ from _utils import (
 
 
 def is_numeric_subtype(s1, s2):
-    s1 = JsonNumber(s1)
-    s2 = JsonNumber(s2)
+    s1 = JsonNumeric(s1)
+    s2 = JsonNumeric(s2)
     #
     # unInhabited = handle_uninhabited_types(s1, s2)
     # if unInhabited != None:
     #     return unInhabited
     #
     is_sub_interval = s1.interval in s2.interval
-    if is_sub_interval and \
-            (
-                (not is_num(s1.mulOf) and not is_num(s2.mulOf))
-            or (is_num(s1.mulOf) and not is_num(s2.mulOf))
-            or (is_num(s1.mulOf) and is_num(s2.mulOf) and s1.mulOf % s2.mulOf == 0)
-            ):
+    if not is_sub_interval:
+        print_db("num__00")
+        return False
+    #
+    if s1.num_or_int == "number" and s2.num_or_int == "integer":
+        print_db("num__01")
+        return False
+    #
+    if (s1.mulOf == None and s2.mulOf == None) or \
+        (s1.mulOf != None and s2.mulOf == None) or \
+            (s1.mulOf != None and s2.mulOf != None and s1.mulOf % s2.mulOf == 0):
+        print_db("num__02")
         return True
+    #
+    print_db("num__0")
     return False
 
 

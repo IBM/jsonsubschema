@@ -8,7 +8,7 @@ import numbers
 import intervals as I
 
 
-PRINT_DB = True
+PRINT_DB = False
 
 
 def print_db(s=None):
