@@ -17,6 +17,7 @@ def print_db(s=None):
 
 
 class PythonTypes:
+
     @staticmethod
     def is_num(i):
         return isinstance(i, int) or isinstance(i, numbers.Number)
@@ -26,19 +27,27 @@ class PythonTypes:
         return isinstance(i, str)
 
     @staticmethod
-    def is_dict_or_none(i):
-        return isinstance(i, dict) or i == None
+    def is_list(i):
+        return isinstance(i, list)
+
+    @staticmethod
+    def is_dict(i):
+        return isinstance(i, dict)
+
+    @staticmethod
+    def is_empty_dict_or_none(i):
+        return i == {} or i == None
 
     @staticmethod
     def is_dict_or_true(i):
         return isinstance(i, dict) or i == True
 
-    @staticmethod
-    def is_list(i):
-        return isinstance(i, list)
-
 
 is_num = PythonTypes.is_num
+is_list = PythonTypes.is_list
+is_dict = PythonTypes.is_dict
+is_empty_dict_or_none = PythonTypes.is_empty_dict_or_none
+is_dict_or_true = PythonTypes.is_dict_or_true
 
 
 def get_interval_from_optional_min_max(min=None, max=None):
@@ -65,19 +74,19 @@ def is_sub_interval_from_optional_ranges(min1=None, max1=None, min2=None, max2=N
 
 
 def handle_uninhabited_types(s1, s2):
-    if s2.isInhibited:
-        if s1.isInhibited:
+    if s2.isUninhabited:
+        if s1.isUninhabited:
             # False <: False
-            print_db("are_inhibited_types: __11__")
+            print_db("Uninhabited type: __11__")
             return True
         else:
             # !False <: False
-            print_db("are_inhibited_types: __01__")
+            print_db("Uninhabited type: __01__")
             return False
     else:
-        if s1.isInhibited:
+        if s1.isUninhabited:
             # False <: !False
-            print_db("are_inhibited_types: __10__")
+            print_db("Uninhabited type: __10__")
             return True
     # !False <: !False
-    print_db("are_inhibited_types: __00__")
+    # print_db("are_inhibited_types: __00__")

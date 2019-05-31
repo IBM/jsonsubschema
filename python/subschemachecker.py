@@ -8,12 +8,10 @@ import sys
 
 import jsonschema
 
-import NumberSubTypeChecker
-import StringSubTypeChecker
-import ArraySubTypeChecker
+import checkers
 
 
-class SubSchemaChecker(object):
+class Checker(object):
     # Change here which validator to use.
     VALIDATOR = jsonschema.Draft3Validator
 
@@ -21,34 +19,32 @@ class SubSchemaChecker(object):
     The checker class constructor accepts two 'valid' json files.
     '''
 
-    def __init__(self, s1=None, s2=None):
+    def __init__(self, s1, s2):
         self.s1 = s1
         self.s2 = s2
         if self.s1 and self.s2:
-            self.validate_schemas()
+            self.validate_schema(s1)
+            self.validate_schema(s2)
 
-    def validate_schemas(self):
+    @staticmethod
+    def validate_schema(s):
         '''
         Validate given schemas against the pre-defined VALIDATOR schema.
         '''
-        def err(s, e):
-            print("Error while validating input schema:\n{}".format(s))
-            print("Json path:: {}".format(e.path))
-            print("Msg: {}".format(e.message))
-            sys.exit(1)
-
         try:
-            self.VALIDATOR.check_schema(self.s1)
+            Checker.VALIDATOR.check_schema(s)
         except jsonschema.exceptions.SchemaError as e:
-            err(s1, e)
+            sys.exit(
+                "Error while validating input schema:\n{}".format(s)
+                + "Json path:: {}".format(e.path)
+                + "Msg: {}".format(e.message)
+            )
 
-        try:
-            self.VALIDATOR.check_schema(self.s2)
-        except jsonschema.exceptions.SchemaError as e:
-            err(s2, e)
+    def is_subschema(self):
+        return self.is_subtype(self.s1, self.s2)
 
     @staticmethod
-    def is_sub_schema(s1, s2):
+    def is_subtype(s1, s2):
         '''
         Is s1 <: s2 ?
         '''
@@ -66,21 +62,24 @@ class SubSchemaChecker(object):
             return False
 
         # Real stuff
+        # TODO
+        # This is quite naive. Should we do more general like
+        # {'type': [...]} or {...} without 'type' at all.
         t1 = s1.get("type")
         t2 = s2.get("type")
         if s1 == s2:
             print(
                 "Warning: any schema is sub-schema of itself. This will always be true.")
-            print("Caution: Inhibited types are NOT checked.")
             return True
 
         ret = False
         if (t1 == t2 == "integer") or (t1 == t2 == "number") or (t1 == "integer" and t2 == "number"):
-            ret = NumberSubTypeChecker.is_subtype(s1, s2)
+            # TODO case {num, mulfof int} <: {int}
+            ret = checkers.is_numeric_subtype(s1, s2)
         if (t1 == t2 == "string"):
-            ret = StringSubTypeChecker.is_subtype(s1, s2)
+            ret = checkers.is_string_subtype(s1, s2)
         if (t1 == t2 == "array"):
-            ret = ArraySubTypeChecker.is_subtype(s1, s2)
+            ret = checkers.is_array_subtype(s1, s2)
         return ret
 
 
@@ -102,5 +101,5 @@ if __name__ == "__main__":
     with open(s2_file, 'r') as f2:
         s2 = json.load(f2)
 
-    checker = SubSchemaChecker(s1, s2)
-    print(checker.is_sub_schema(s1, s2))
+    checker = Checker(s1, s2)
+    print(checker.is_subschema())
