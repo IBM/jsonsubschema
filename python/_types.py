@@ -55,12 +55,13 @@ class JsonNumeric(JsonType):
         print_db(self.interval)
 
     def normalize(self):
-        self.build_interval_draf4()
-        #
         # if multipleOf is integer value, the schema can't accept numbers.
         # can't use isinstance(i, integer) because 5.0 is indeed integer!
         if self.mulOf != None and float.is_integer(float(self.mulOf)):
             self.num_or_int = "integer"
+        #
+        self.build_interval_draf4()
+
 
     def build_interval_draf4(self):
         _min = self.min
@@ -68,14 +69,24 @@ class JsonNumeric(JsonType):
         _max = self.max
         _xmax = self.xmax
         #
-        if _xmin and _xmax:
-            i = I.open(_min, _max)
-        elif _xmin:
-            i = I.openclosed(_min, _max)
-        elif _xmax:
-            i = I.closedopen(_min, _max)
+        if self.num_or_int == "number":
+            if _xmin and _xmax:
+                i = I.open(_min, _max)
+            elif _xmin:
+                i = I.openclosed(_min, _max)
+            elif _xmax:
+                i = I.closedopen(_min, _max)
+            else:
+                i = I.closed(_min, _max)
         else:
-            i = I.closed(_min, _max)
+            if _xmin and _xmax:
+                i = I.closed(_min+1, _max-1)
+            elif _xmin:
+                i = I.closed(_min+1, _max)
+            elif _xmax:
+                i = I.closed(_min, _max-1)
+            else:
+                i = I.closed(_min, _max)
         self.interval = i
         #
         # if is_num(_min) and is_num(_max):

@@ -43,7 +43,7 @@ def is_numeric_subtype(s1, s2):
         print_db("num__01")
         return False
     #
-    if (s1.mulOf == None and s2.mulOf == None) or \
+    if (s1.mulOf == s2.mulOf == None) or \
         (s1.mulOf != None and s2.mulOf == None) or \
             (s1.mulOf != None and s2.mulOf != None and s1.mulOf % s2.mulOf == 0):
         print_db("num__02")
