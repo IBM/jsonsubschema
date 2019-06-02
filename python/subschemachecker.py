@@ -14,7 +14,7 @@ import checkers
 
 class Checker(object):
     # Change here which validator to use.
-    VALIDATOR = jsonschema.Draft3Validator
+    VALIDATOR = jsonschema.Draft4Validator
 
     '''
     The checker class constructor accepts two 'valid' json files.
@@ -23,26 +23,21 @@ class Checker(object):
     def __init__(self, s1, s2):
         self.s1 = s1
         self.s2 = s2
-        if self.s1 and self.s2:
-            self.validate_schema(s1)
-            self.validate_schema(s2)
+        #
+        self.validate_schemas()
 
-    @staticmethod
-    def validate_schema(s):
+    def validate_schemas(self):
         '''
         Validate given schemas against the pre-defined VALIDATOR schema.
         '''
-        try:
-            Checker.VALIDATOR.check_schema(s)
-        except jsonschema.exceptions.SchemaError as e:
-            sys.exit(
-                "Error while validating input schema:\n{}".format(s)
-                + "Json path:: {}".format(e.path)
-                + "Msg: {}".format(e.message)
-            )
+        print("Validating lhs schema ...")
+        Checker.VALIDATOR.check_schema(self.s1)
+        #
+        print("Validating rhs schema ...")
+        Checker.VALIDATOR.check_schema(self.s2)
 
     def is_subschema(self):
-        return self.is_subtype(self.s1, self.s2)
+        return Checker.is_subtype(self.s1, self.s2)
 
     @staticmethod
     def is_subtype(s1, s2):
@@ -69,7 +64,8 @@ class Checker(object):
         t1 = s1.get("type")
         t2 = s2.get("type")
         if s1 == s2:
-            warnings.warn(message="Warning: any schema is sub-schema of itself. This will always be true.", stacklevel=1)
+            warnings.warn(
+                message="Warning: any schema is sub-schema of itself. This will always be true.", stacklevel=1)
             return True
 
         ret = False
@@ -77,13 +73,13 @@ class Checker(object):
         numeric = ["number", "integer"]
         if t1 in numeric and t2 in numeric:
             ret = checkers.is_numeric_subtype(s1, s2)
-        
+
         if (t1 == t2 == "string"):
             ret = checkers.is_string_subtype(s1, s2)
-        
+
         if (t1 == t2 == "array"):
             ret = checkers.is_array_subtype(s1, s2)
-        
+
         return ret
 
 
