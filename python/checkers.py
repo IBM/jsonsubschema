@@ -109,9 +109,9 @@ def is_array_subtype(s1, s2):
         return False
     #
     # -- items = {}
-    # or iteems = [{}, {}, ..] and addiitonalItems = True
+    # or
+    # -- items = [{}, {}, ..] and addiitonalItems = True
     #
-
     def is_unrestricted(s):
         return s.items == {} or \
             (is_list(s.items) and not any(s.items) and s.addItems == True)
@@ -125,39 +125,84 @@ def is_array_subtype(s1, s2):
         return False
     #
     # -- items = {not empty}
-    if is_dict(s1.items) and is_dict(s2.items):
-        # c = SubSchemaChecker()
-        if subschemachecker.Checker.is_subtype(s1.items, s2.items):
-            print_db("__05__")
-            return True
-        else:
-            return False
-
-        # (
-        #     is_empty_dict_or_none(s2.items)
-        #         or (SubSchemaChecker().is_sub_schema(s1.items, s2.items))
-        # ):
-        # print_db("__01__")
-        # return True
-    #
-    # case super- has restrictions and sub- does not
-    if is_list(s2.items) and is_list(s1.items):
-        if not is_dict_or_true(s2.addItems) \
-                and not is_sub_interval:
-            # and (len(s1.items) > len(s2.items)
-            #      or (is_num(s2.max) and len(s1.items) > s2.max)
-            #      ):
-            # and (not is_num(s1.max) or ):
-            print_db("__05__")
-            return False
-        elif len(s1.items) <= len(s2.items):
-            # from SubShemaChecker import SubSchemaChecker
-            for t1, t2 in zip(s1.items, s2.items):
-                # c = SubSchemaChecker()
-                if not subschemachecker.Checker.is_subtype(t1, t2):
-                    print_db("__06__")
+    # no need to check addItems
+    if is_dict(s1.items):
+        if is_dict(s2.items):
+            if subschemachecker.Checker.is_subtype(s1.items, s2.items):
+                print_db("__05__")
+                return True
+            else:
+                print_db("__06__")
+                return False
+        elif is_list(s2.items):
+            if s2.addItems == False:
+                print_db("__07__")
+                return False
+            elif s2.addItems == True:
+                for i in s2.items:
+                    if not subschemachecker.Checker.is_subtype(s1.items, i):
+                        print_db("__08__")
+                        return False
+                print_db("__09__")
+                return True
+            elif is_dict(s2.addItems):
+                for i in s2.items:
+                    if not subschemachecker.Checker.is_subtype(s1.items, i):
+                        print_db("__10__")
+                        return False
+                if subschemachecker.Checker.is_subtype(s1.items, s2.addItems):
+                    print_db("__11__")
+                    return True
+                else:
+                    print_db("__12__")
                     return False
-            # All cases, that I can think of, have been checked.
-            # So if we reach here, then probably we should return True!
-            print_db("__07__")
-            return True
+    #
+    elif is_list(s1.items):
+        if is_dict(s2.items):
+            if s1.addItems == False:
+                print_db("__13__")
+                return False
+            elif s1.addItems == True:
+                for i in s1.items:
+                    if not subschemachecker.Checker.is_subtype(i, s2.items):
+                        return False
+                return True
+            elif is_dict(s1.addItems):
+                for i in s1.items:
+                    if not subschemachecker.Checker.is_subtype(i, s2.items):
+                        return False
+                if subschemachecker.Checker.is_subtype(s1.addItems, s2.items):
+                    return True
+                else:
+                    return False
+        # now lhs and rhs are lists
+        elif is_list(s2.items):
+            len1 = len(s1.items)
+            len2 = len(s2.items)
+            for i,j in zip(s1.items, s2.items):
+                if not subschemachecker.Checker.is_subtype(i,j):
+                    return False
+            if len1 == len2:
+                if s1.addItems == s2.addItems:
+                    return True
+                elif s1.addItems == True and s2.addItems == False:
+                    return False
+                elif s1.addItems == False and s2.addItems == True:
+                    return True
+                else:
+                    return subschemachecker.Checker.is_subtype(s1.addItems, s2.addItems)
+            elif len1 > len2:
+                diff = len1 - len2
+                for i in range(len1-diff, len1):
+                    if not subschemachecker.Checker.is_subtype(s1.items[i], s2.addItems):
+                        return False
+                return True
+            else: # len2 > len 1
+                if s1.addItems:
+                    diff = len2 - len1
+                    for i in range(len2 - diff, len2):
+                        if not subschemachecker.Checker.is_subtype(s1.addItems, s2.items[i]):
+                            return False
+                    return subschemachecker.Checker.is_subtype(s1.addItems, s2.addItems)
+                else:
+                    return True

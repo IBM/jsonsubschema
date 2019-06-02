@@ -11,6 +11,8 @@ import warnings
 
 import checkers
 
+from _utils import print_db, PRINT_DB
+
 
 class Checker(object):
     # Change here which validator to use.
@@ -30,10 +32,10 @@ class Checker(object):
         '''
         Validate given schemas against the pre-defined VALIDATOR schema.
         '''
-        print("Validating lhs schema ...")
+        print_db("Validating lhs schema ...")
         Checker.VALIDATOR.check_schema(self.s1)
         #
-        print("Validating rhs schema ...")
+        print_db("Validating rhs schema ...")
         Checker.VALIDATOR.check_schema(self.s2)
 
     def is_subschema(self):
@@ -56,6 +58,10 @@ class Checker(object):
             return True
         if s2 is False or ("not" in s2.keys() and not s2["not"]):
             return False
+
+        # normalization?
+        if s1 == True:
+            s1 = {}
 
         # Real stuff
         # TODO
