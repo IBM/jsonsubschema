@@ -43,7 +43,7 @@ class JsonNumeric(JsonType):
                  "maximum", "exclusiveMaximum", "multipleOf"]
 
     def __init__(self, s):
-        self.num_or_int = s.get("type") # what default to use?
+        self.num_or_int = s.get("type")  # what default to use?
         self.min = s.get("minimum", -I.inf)
         self.xmin = s.get("exclusiveMinimum", False)
         self.max = s.get("maximum", I.inf)
@@ -61,7 +61,6 @@ class JsonNumeric(JsonType):
             self.num_or_int = "integer"
         #
         self.build_interval_draf4()
-
 
     def build_interval_draf4(self):
         _min = self.min
@@ -88,30 +87,6 @@ class JsonNumeric(JsonType):
             else:
                 i = I.closed(_min, _max)
         self.interval = i
-        #
-        # if is_num(_min) and is_num(_max):
-        #     if _xmin and _xmax:
-        #         i = I.open(_min, _max)
-        #     elif _xmin and not _xmax:
-        #         i = I.openclosed(_min, _max)
-        #     elif not _xmin and _xmax:
-        #         i = I.closedopen(_min, _max)
-        #     else:
-        #         i = I.closed(_min, _max)
-        # elif is_num(_min) and not is_num(_max):
-        #     if _xmin:
-        #         i = I.open(_min, I.inf)
-        #     else:
-        #         i = I.closed(_min, I.inf)
-        # elif not is_num(_min) and is_num(_max):
-        #     if _xmax:
-        #         i = I.open(-I.inf, _max)
-        #     else:
-        #         i = I.closed(-I.inf, _max)
-        # elif not is_num(_min) and not is_num(_max):
-        #     i = I.closed(-I.inf, I.inf)
-        #
-        # return i
 
     def check_uninhabited(self):
         if self.interval.is_empty() or \
