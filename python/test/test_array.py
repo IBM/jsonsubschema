@@ -39,7 +39,7 @@ class TestArraySubtype(unittest.TestCase):
         with self.subTest():
             self.assertFalse(Checker(s2, s1).is_subschema())
 
-    def test_empty_items(self):
+    def test_empty_items1(self):
         s1 = {"$schema": "http://json-schema.org/draft-04/schema",
               "type": "array"}
         s2 = {"$schema": "http://json-schema.org/draft-04/schema",
@@ -76,6 +76,16 @@ class TestArraySubtype(unittest.TestCase):
               "type": "array", "items": {}}
         with self.subTest():
             self.assertTrue(Checker(s1, s2).is_subschema())
+        with self.subTest():
+            self.assertTrue(Checker(s2, s1).is_subschema())
+
+    def test_empty_items5(self):
+        s1 = {"$schema": "http://json-schema.org/draft-04/schema",
+              "type": "array", "items": [{}, {}], "additionalItems": False}
+        s2 = {"$schema": "http://json-schema.org/draft-04/schema", 
+              "type": "array", "items": [{}], "additionalItems": False}
+        with self.subTest():
+            self.assertFalse(Checker(s1, s2).is_subschema())
         with self.subTest():
             self.assertTrue(Checker(s2, s1).is_subschema())
 
