@@ -39,16 +39,19 @@ class JsonType(ABC):
 
 class JsonNumeric(JsonType):
 
-    key_words = ["minimum", "exclusiveMinimum",
+    NAME = "number"
+    NAMES = set(["number", "integer"])
+    KEY_WORDS = ["minimum", "exclusiveMinimum",
                  "maximum", "exclusiveMaximum", "multipleOf"]
 
     def __init__(self, s):
-        self.num_or_int = s.get("type")  # what default to use?
         self.min = s.get("minimum", -I.inf)
         self.xmin = s.get("exclusiveMinimum", False)
         self.max = s.get("maximum", I.inf)
         self.xmax = s.get("exclusiveMaximum", False)
         self.mulOf = s.get("multipleOf")
+        #
+        self.num_or_int = "integer" if "integer" in s.get("type") else "number" # what default to use?
         #
         super().__init__()
         #
@@ -96,7 +99,8 @@ class JsonNumeric(JsonType):
 
 class JsonString(JsonType):
 
-    key_words = ["minLength", "maxLength", "pattern"]
+    NAME = "string"
+    KEY_WORDS = ["minLength", "maxLength", "pattern"]
 
     def __init__(self, s):
         self.min = s.get("minLength", 0)
@@ -115,7 +119,8 @@ class JsonString(JsonType):
 
 class JsonArray(JsonType):
 
-    key_words = ["items", "minItems", "maxItems",
+    NAME = "array"
+    KEY_WORDS = ["items", "minItems", "maxItems",
                  "uniqueItems", "additionalItems"]
 
     def __init__(self, s):
@@ -149,5 +154,13 @@ class JsonArray(JsonType):
 
 class JsonObject(JsonType):
 
+    NAME = "object"
+    KEY_WORDS = ["maxProperties", "minProperties", "required",
+                 "properties", "additionalProperties", "patternProperties"]
+
     def __init__(self, s):
         pass
+
+JSON_TYPES = [JsonNumeric, JsonString, JsonArray, JsonObject]
+# def JSON_TYPES():
+#     return [JsonNumeric, JsonString, JsonArray, JsonObject]

@@ -13,7 +13,8 @@ import subschemachecker
 from _types import (
     JsonNumeric,
     JsonString,
-    JsonArray
+    JsonArray,
+    JsonObject
 )
 from _utils import (
     print_db,
@@ -112,17 +113,17 @@ def is_array_subtype(s1, s2):
     # or
     # -- items = [{}, {}, ..] and addiitonalItems = True
     #
-    def is_unrestricted(s):
-        return s.items == {} or \
-            (is_list(s.items) and not any(s.items) and s.addItems == True)
-    # case s2 allows anything, return true
-    if is_unrestricted(s2):
-        print_db("__03__")
-        return True
-    # case s2 has specific schema, and s1 allows anything
-    elif is_unrestricted(s1):
-        print_db("__04__")
-        return False
+    # def is_unrestricted(s):
+    #     return s.items == {} or \
+    #         (is_list(s.items) and not any(s.items) and s.addItems == True)
+    # # case s2 allows anything, return true
+    # if is_unrestricted(s2):
+    #     print_db("__03__")
+    #     return True
+    # # case s2 has specific schema, and s1 allows anything
+    # elif is_unrestricted(s1):
+    #     print_db("__04__")
+    #     return False
     #
     # -- items = {not empty}
     # no need to check addItems
@@ -160,8 +161,12 @@ def is_array_subtype(s1, s2):
     elif is_list(s1.items):
         if is_dict(s2.items):
             if s1.addItems == False:
-                print_db("__13__")
-                return False
+                for i in s1.items:
+                    if not subschemachecker.Checker.is_subtype(i, s2.items):
+                        print_db("__13__")
+                        return False
+                print_db("__14__")
+                return True
             elif s1.addItems == True:
                 for i in s1.items:
                     if not subschemachecker.Checker.is_subtype(i, s2.items):
@@ -201,8 +206,24 @@ def is_array_subtype(s1, s2):
                 if s1.addItems:
                     diff = len2 - len1
                     for i in range(len2 - diff, len2):
+                        print_db("s1.addItems", s1.addItems)
+                        print(i, s2.items[i])
                         if not subschemachecker.Checker.is_subtype(s1.addItems, s2.items[i]):
+                            print_db("!!!")
                             return False
                     return subschemachecker.Checker.is_subtype(s1.addItems, s2.addItems)
                 else:
                     return True
+
+
+def is_object_subtype(s1, s2):
+    pass
+
+
+JSON_SUBTYPE_CHECKERS = {
+    "number": is_numeric_subtype,
+    "integer": is_numeric_subtype,
+    "string": is_string_subtype,
+    "array": is_array_subtype,
+    "object": is_object_subtype
+}

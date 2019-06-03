@@ -9,9 +9,11 @@ import sys
 import jsonschema
 import warnings
 
-import checkers
-
-from _utils import print_db, PRINT_DB
+from _types import JSON_TYPES, JsonNumeric
+from _utils import(
+     print_db,
+     build_explicit_type_list
+)
 
 
 class Checker(object):
@@ -52,41 +54,75 @@ class Checker(object):
         # print(s2)
         # print()
 
-        # Trivial cases:
-        # should have more general procedures for these?
-        if s2 is True or not s2:
+        # Trivial cases + normalization
+        # -- case rhs allows anything
+        if s2 is True or s2 == {}:
+            warnings.warn(
+                message="Warning: any schema is sub-schema of True or the empty schema {}. This will always be true.", stacklevel=1)
             return True
-        if s2 is False or ("not" in s2.keys() and not s2["not"]):
+        # -- case rhs does not allow anything
+        if s2 is False or s2.get("not") == {}:
+            warnings.warn(
+                message="Warning: No schema is sub-schema of False or the ~ empty schema 'not': {}. This will always be false.", stacklevel=1)
             return False
-
-        # normalization?
-        if s1 == True:
-            s1 = {}
-
-        # Real stuff
-        # TODO
-        # This is quite naive. Should we do more general like
-        # {'type': [...]} or {...} without 'type' at all.
-        t1 = s1.get("type")
-        t2 = s2.get("type")
+        # -- case lhs == rhs
         if s1 == s2:
             warnings.warn(
                 message="Warning: any schema is sub-schema of itself. This will always be true.", stacklevel=1)
             return True
+        # -- case lhs allowsanthing and rhs is non-empty schema
+        if s1 is True or s1 == {} and not s2:
+            return False
+        # -- case TODO False <: False ?
 
-        ret = False
+        # normalization
+        
+        # True \equiv {}
+        if s1 == True:
+            s1 = {}
+    
+        # build explicit types based on type-related key words
+        s1["type"] = build_explicit_type_list(s1)
+        s2["type"] = build_explicit_type_list(s2)
 
-        numeric = ["number", "integer"]
-        if t1 in numeric and t2 in numeric:
-            ret = checkers.is_numeric_subtype(s1, s2)
+        # Real stuff
+        from _types import JSON_TYPES, JSON_TYPES
+        t1 = set(s1.get("type"))
+        t2 = set(s2.get("type"))
+        
+        overlap = t1 & t2
+        print(t1)
+        print(t2)
+        if (JsonNumeric.NAMES & t1) and (JsonNumeric.NAMES & t2) and (not t1 & t2):
+            overlap.add(JsonNumeric.NAME)
 
-        if (t1 == t2 == "string"):
-            ret = checkers.is_string_subtype(s1, s2)
+        print("lhs: ", s1)
+        print("rhs: ", s2)
+        print("overlap: ", overlap)
+        if not overlap:
+            return True
+        else:
+            from checkers import JSON_SUBTYPE_CHECKERS
+            results = []
+            for t in overlap:
+                results.append(JSON_SUBTYPE_CHECKERS.get(t)(s1, s2))
+            if all(results):
+                return True
+            else: 
+                return False
 
-        if (t1 == t2 == "array"):
-            ret = checkers.is_array_subtype(s1, s2)
+                
+        # numeric = ["number", "integer"]
+        # if t1 in numeric and t2 in numeric:
+        #     ret = checkers.is_numeric_subtype(s1, s2)
 
-        return ret
+        # if (t1 == t2 == "string"):
+        #     ret = checkers.is_string_subtype(s1, s2)
+
+        # if (t1 == t2 == "array"):
+        #     ret = checkers.is_array_subtype(s1, s2)
+
+        # return ret
 
 
 if __name__ == "__main__":

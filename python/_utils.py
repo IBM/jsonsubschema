@@ -7,13 +7,12 @@ import numbers
 
 import intervals as I
 
+PRINT_DB = True
 
-PRINT_DB = False
 
-
-def print_db(s=None):
+def print_db(*args, **kwargs):
     if PRINT_DB:
-        print(s)
+        print("".join(str(arg) + " " for arg in args))
 
 
 class PythonTypes:
@@ -90,3 +89,32 @@ def handle_uninhabited_types(s1, s2):
             return True
     # !False <: !False
     # print_db("are_inhibited_types: __00__")
+
+def build_explicit_type_list(s):
+    types = set(type_to_list(s))
+    kw_to_type = json_keywords_to_types()
+    for k in s.keys():
+        # special case for numerics
+        from _types import JsonNumeric
+        if k in JsonNumeric.KEY_WORDS and "integer" in types:
+            continue
+        #
+        t = kw_to_type.get(k)
+        if t:
+            types.add(t)
+    return list(types)
+
+def type_to_list(s):
+    t = s.get("type", [])
+    if isinstance(t, str):
+        return [t]
+    else:
+        return t
+
+def json_keywords_to_types():
+    kw_to_type = {}
+    from _types import JSON_TYPES
+    for json_type in JSON_TYPES:
+        for kw in json_type.KEY_WORDS:
+            kw_to_type[kw] = json_type.NAME
+    return kw_to_type
