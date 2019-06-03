@@ -12,7 +12,7 @@ import warnings
 from _types import JSON_TYPES, JsonNumeric
 from _utils import(
      print_db,
-     build_explicit_type_list
+     get_types_or_implicit_types
 )
 
 
@@ -48,11 +48,6 @@ class Checker(object):
         '''
         Is s1 <: s2 ?
         '''
-        # print("Is")
-        # print(s1)
-        # print("subschema of")
-        # print(s2)
-        # print()
 
         # Trivial cases + normalization
         # -- case rhs allows anything
@@ -70,7 +65,7 @@ class Checker(object):
             warnings.warn(
                 message="Warning: any schema is sub-schema of itself. This will always be true.", stacklevel=1)
             return True
-        # -- case lhs allowsanthing and rhs is non-empty schema
+        # -- case lhs allows anything and rhs is non-empty schema
         if s1 is True or s1 == {} and not s2:
             return False
         # -- case TODO False <: False ?
@@ -80,36 +75,49 @@ class Checker(object):
         # True \equiv {}
         if s1 == True:
             s1 = {}
-    
-        # build explicit types based on type-related key words
-        s1["type"] = build_explicit_type_list(s1)
-        s2["type"] = build_explicit_type_list(s2)
 
-        # Real stuff
-        from _types import JSON_TYPES, JSON_TYPES
-        t1 = set(s1.get("type"))
-        t2 = set(s2.get("type"))
+        #
+        # t1_orig = set(s1.get("type"))
+        # t2_orig = set(s2.get("type"))
+        t1_isExplicit = True if s1.get("type") else False
+        t2_isExplicit = True if s2.get("type") else False
         
-        overlap = t1 & t2
-        print(t1)
-        print(t2)
-        if (JsonNumeric.NAMES & t1) and (JsonNumeric.NAMES & t2) and (not t1 & t2):
-            overlap.add(JsonNumeric.NAME)
+        t1 = get_types_or_implicit_types(s1)
+        t2 = get_types_or_implicit_types(s2)
+        t1_overlap_t2 = set(t1) & set(t2)
 
-        print("lhs: ", s1)
-        print("rhs: ", s2)
-        print("overlap: ", overlap)
-        if not overlap:
-            return True
-        else:
-            from checkers import JSON_SUBTYPE_CHECKERS
-            results = []
-            for t in overlap:
-                results.append(JSON_SUBTYPE_CHECKERS.get(t)(s1, s2))
-            if all(results):
-                return True
-            else: 
+        if (JsonNumeric.NAMES & set(t1)) and (JsonNumeric.NAMES & set(t2)) and (not t1_overlap_t2):
+            t1_overlap_t2.add(JsonNumeric.NAME)
+        
+        if t1_isExplicit and t2_isExplicit:
+            if not t1_overlap_t2 or \
+                t1_overlap_t2 and len(t1_overlap_t2) < len(t1):
                 return False
+        
+        elif not t1_isExplicit and not t2_isExplicit:    
+            if not t1_overlap_t2:
+                return True
+        
+        elif t1_isExplicit and not t2_isExplicit:
+            if not t1_overlap_t2:
+                return True
+
+        elif not t1_isExplicit and t2_isExplicit:
+            if not t1_overlap_t2:
+                return False
+            
+        # build explicit types based on type-related key words
+        s1["type"] = t1
+        s2["type"] = t2
+
+        from checkers import JSON_SUBTYPE_CHECKERS
+        results = []
+        for t in t1_overlap_t2:
+            results.append(JSON_SUBTYPE_CHECKERS.get(t)(s1, s2))
+        if all(results):
+            return True
+        else: 
+            return False
 
                 
         # numeric = ["number", "integer"]

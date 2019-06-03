@@ -7,7 +7,7 @@ import numbers
 
 import intervals as I
 
-PRINT_DB = True
+PRINT_DB = False
 
 
 def print_db(*args, **kwargs):
@@ -90,11 +90,16 @@ def handle_uninhabited_types(s1, s2):
     # !False <: !False
     # print_db("are_inhibited_types: __00__")
 
-def build_explicit_type_list(s):
-    types = set(type_to_list(s))
+def get_types_or_implicit_types(s):
+    types = type_to_list(s)
+    # type has higher precedence over keywords
+    if types:
+        return types
     kw_to_type = json_keywords_to_types()
+    types = set(types)
     for k in s.keys():
-        # special case for numerics
+        # skip adding 'number' to types 
+        # if 'integer' is already in.
         from _types import JsonNumeric
         if k in JsonNumeric.KEY_WORDS and "integer" in types:
             continue
@@ -102,7 +107,8 @@ def build_explicit_type_list(s):
         t = kw_to_type.get(k)
         if t:
             types.add(t)
-    return list(types)
+    types = list(types)
+    return types
 
 def type_to_list(s):
     t = s.get("type", [])
