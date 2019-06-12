@@ -8,7 +8,7 @@ import json
 import jsonschema
 import sys
 
-from constants import(
+from _constants import(
     Jtypes,
     JtypesToKeywords,
     JkeywordsToDefaults,
@@ -53,7 +53,10 @@ def lazy_normalize(s):
         for kw in JtypesToKeywords.get(t):
             if kw not in s.keys():
                 s[kw] = JkeywordsToDefaults.get(kw)
-
+ 
+    # Singleton enums
+    # TODO
+    
     return s
 
 
