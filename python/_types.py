@@ -4,6 +4,7 @@ Created on May 20, 2019
 '''
 
 import sys
+import math
 
 import intervals as I
 
@@ -37,74 +38,17 @@ class JsonType(ABC):
         pass
 
 
-class JsonNumeric(JsonType):
-
-    NAME = "number"
-    NAMES = set(["number", "integer"])
-    KEY_WORDS = ["minimum", "exclusiveMinimum",
-                 "maximum", "exclusiveMaximum", "multipleOf"]
-
-    def __init__(self, s):
-        self.min = s.get("minimum", -I.inf)
-        self.xmin = s.get("exclusiveMinimum", False)
-        self.max = s.get("maximum", I.inf)
-        self.xmax = s.get("exclusiveMaximum", False)
-        self.mulOf = s.get("multipleOf")
-        #
-        self.num_or_int = "integer" if "integer" in s.get("type") else "number" # what default to use?
-        #
-        super().__init__()
-        #
-        print_db(self.interval)
-
-    def normalize(self):
-        # if multipleOf is integer value, the schema can't accept numbers.
-        # can't use isinstance(i, integer) because 5.0 is indeed integer!
-        if self.mulOf != None and float.is_integer(float(self.mulOf)):
-            self.num_or_int = "integer"
-        #
-        self.build_interval_draf4()
-
-    def build_interval_draf4(self):
-        _min = self.min
-        _xmin = self.xmin
-        _max = self.max
-        _xmax = self.xmax
-        #
-        if self.num_or_int == "number":
-            if _xmin and _xmax:
-                i = I.open(_min, _max)
-            elif _xmin:
-                i = I.openclosed(_min, _max)
-            elif _xmax:
-                i = I.closedopen(_min, _max)
-            else:
-                i = I.closed(_min, _max)
-        else:
-            if _xmin and _xmax:
-                i = I.closed(_min+1, _max-1)
-            elif _xmin:
-                i = I.closed(_min+1, _max)
-            elif _xmax:
-                i = I.closed(_min, _max-1)
-            else:
-                i = I.closed(_min, _max)
-        self.interval = i
-
-    def check_uninhabited(self):
-        if self.interval.is_empty() or \
-                (self.mulOf != None and self.mulOf not in self.interval):
-            self.isUninhabited = True
-
-
 class JsonString(JsonType):
 
-    NAME = "string"
-    KEY_WORDS = ["minLength", "maxLength", "pattern"]
+    # NAME = "string"
+    # KEY_WORDS = ["minLength", "maxLength", "pattern"]
 
     def __init__(self, s):
-        self.min = s.get("minLength", 0)
-        self.max = s.get("maxLength", I.inf)
+        # self.min = s.get("minLength", 0)
+        # self.max = s.get("maxLength", I.inf)
+        # self.pattern = s.get("pattern")
+        self.min = s.get("minLength")
+        self.max = s.get("maxLength")
         self.pattern = s.get("pattern")
         #
         super().__init__()
@@ -115,6 +59,84 @@ class JsonString(JsonType):
         # TODO
         # missing cases where min/max length might be
         # not compatible with pattern?
+
+
+class JsonNumeric(JsonType):
+
+    def __init__(self, s):
+        # self.min = s.get("minimum", -I.inf)
+        # self.xmin = s.get("exclusiveMinimum", False)
+        # self.max = s.get("maximum", I.inf)
+        # self.xmax = s.get("exclusiveMaximum", False)
+        # self.mulOf = s.get("multipleOf")
+        self.type = s.get("type")
+        self.min = s.get("minimum")
+        self.xmin = s.get("exclusiveMinimum")
+        self.max = s.get("maximum")
+        self.xmax = s.get("exclusiveMaximum")
+        self.mulOf = s.get("multipleOf")
+        #
+        self.interval = None
+        self.build_interval_draf4()
+        print_db(self.interval)
+        #
+        super().__init__()
+        #
+
+    def build_interval_draf4(self):
+        pass
+
+    def check_uninhabited(self):
+        if self.interval:
+            if self.interval.is_empty() or (self.mulOf != None and self.mulOf not in self.interval):
+                self.isUninhabited = True
+
+    @staticmethod
+    def get_proper_JsonNumeric(s):
+        if s.get("type") == "number":
+            s_ = JsonNumeric(s)
+            if s_.mulOf and float(s_.mulOf).is_integer():
+                s["type"] = "intger"
+                if s.get("minimum") != -I.inf:
+                    s["minimum"] = math.floor(s_.min) if s_.xmin else math.ceil(s_.min)
+                if s.get("maximum") != I.inf:
+                    s["maximum"] = math.ceil(s_.max) if s_.xmax else math.floor(s_.max)
+                return JsonInteger(s)
+            else:
+                return JsonNumber(s)
+        else:
+            return JsonInteger(s)
+
+class JsonNumber(JsonNumeric):
+
+    def __init__(self, s):
+        super().__init__(s)
+
+    def build_interval_draf4(self):
+        if self.xmin and self.xmax:
+            self.interval = I.open(self.min, self.max)
+        elif self.xmin:
+            self.interval = I.openclosed(self.min, self.max)
+        elif self.xmax:
+            self.interval = I.closedopen(self.min, self.max)
+        else:
+            self.interval = I.closed(self.min, self.max)
+
+
+class JsonInteger(JsonNumeric):
+
+    def __init__(self, s):
+        super().__init__(s)
+
+    def build_interval_draf4(self):
+        if self.xmin and self.xmax:
+            self.interval = I.closed(self.min+1, self.max-1)
+        elif self.xmin:
+            self.interval = I.closed(self.min+1, self.max)
+        elif self.xmax:
+            self.interval = I.closed(self.min, self.max-1)
+        else:
+            self.interval = I.closed(self.min, self.max)
 
 
 class JsonArray(JsonType):
@@ -160,6 +182,7 @@ class JsonObject(JsonType):
 
     def __init__(self, s):
         pass
+
 
 JSON_TYPES = [JsonNumeric, JsonString, JsonArray, JsonObject]
 # def JSON_TYPES():

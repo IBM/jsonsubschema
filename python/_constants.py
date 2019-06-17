@@ -25,9 +25,11 @@ JkeywordsToDefaults = {
     "minLength": 0, "maxLength": infinity, "pattern": ".*",
 
     "minimum": -infinity, "maximum": infinity, "exclusiveMinimum": False, 
-    "exclusiveMaximum": False, "multipleOf": 1,
+    "exclusiveMaximum": False, "multipleOf": None,
     
     "minItems": 0, "maxItems": infinity, "items": {}, "additionalItems": {},"uniqueItems": False,
     
     "properties": {}, "additionalProperties": {}, "required": [], "minProperties": 0, "maxProperties": infinity, "dependencies": {}, "patternProperties": {}
 }
+
+Jmeta = ["$schema", "$id", "$ref"]

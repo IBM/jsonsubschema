@@ -4,15 +4,17 @@ Created on May 20, 2019
 '''
 
 import sys
+import math
 
 import intervals as I
+
 from greenery.lego import parse
 
 import subschemachecker
 
 from _types import (
-    JsonNumeric,
     JsonString,
+    JsonNumeric,
     JsonArray,
     JsonObject
 )
@@ -27,34 +29,9 @@ from _utils import (
 )
 
 
-def is_numeric_subtype(s1, s2):
-    s1 = JsonNumeric(s1)
-    s2 = JsonNumeric(s2)
-    #
-    # unInhabited = handle_uninhabited_types(s1, s2)
-    # if unInhabited != None:
-    #     return unInhabited
-    #
-    is_sub_interval = s1.interval in s2.interval
-    if not is_sub_interval:
-        print_db("num__00")
-        return False
-    #
-    if s1.num_or_int == "number" and s2.num_or_int == "integer":
-        print_db("num__01")
-        return False
-    #
-    if (s1.mulOf == s2.mulOf == None) or \
-        (s1.mulOf != None and s2.mulOf == None) or \
-            (s1.mulOf != None and s2.mulOf != None and s1.mulOf % s2.mulOf == 0):
-        print_db("num__02")
-        return True
-    #
-    print_db("num__0")
-    return False
-
-
 def is_string_subtype(s1, s2):
+    if s2.get("type") != "string":
+        return False
     #
     s1 = JsonString(s1)
     s2 = JsonString(s2)
@@ -86,7 +63,73 @@ def is_string_subtype(s1, s2):
             return False
 
 
+def is_numeric_subtype(s1, s2):
+    if s2.get("type") not in ["integer", "number"]:
+        return False
+
+    s1 = JsonNumeric.get_proper_JsonNumeric(s1)
+    s2 = JsonNumeric.get_proper_JsonNumeric(s2)
+    print_db(s1)
+    print_db(s2)
+    #
+    # unInhabited = handle_uninhabited_types(s1, s2)
+    # if unInhabited != None:
+    #     return unInhabited
+    #
+    is_sub_interval = s1.interval in s2.interval
+    if not is_sub_interval:
+        print_db("num__00")
+        return False
+    #
+    if s1.type == "number" and s2.type == "integer":
+        print_db("num__01")
+        return False
+    #
+    if (s1.mulOf == s2.mulOf) \
+        or (s1.mulOf != None and s2.mulOf == None) \
+        or (s1.mulOf != None and s2.mulOf != None and s1.mulOf % s2.mulOf == 0) \
+        or (s1.mulOf == None and s2.mulOf == 1):
+            print_db("num__02")
+            return True
+    #
+    print_db("num__0")
+    return False
+
+
+def is_integer_subtype(s1, s2):
+    if s2.get("type") not in ["integer", "number"]:
+        return False
+    #
+    s1 = JsonNumeric(s1)
+    s2 = JsonNumeric(s2)
+    #
+    # unInhabited = handle_uninhabited_types(s1, s2)
+    # if unInhabited != None:
+    #     return unInhabited
+    #
+    is_sub_interval = s1.interval in s2.interval
+    if not is_sub_interval:
+        print_db("num__00")
+        return False
+    #
+    if s1.num_or_int == "number" and s2.num_or_int == "integer":
+        print_db("num__01")
+        return False
+    #
+    if (s1.mulOf == s2.mulOf == None) or \
+        (s1.mulOf != None and s2.mulOf == None) or \
+            (s1.mulOf != None and s2.mulOf != None and s1.mulOf % s2.mulOf == 0):
+        print_db("num__02")
+        return True
+    #
+    print_db("num__0")
+    return False
+
+
 def is_array_subtype(s1, s2):
+    if s2.get("type") != "array":
+        return False
+    #
     #
     s1 = JsonArray(s1)
     s2 = JsonArray(s2)
@@ -220,10 +263,62 @@ def is_object_subtype(s1, s2):
     pass
 
 
+def is_anyof_subtype(s1, s2):
+    #
+    # t1 = s1.get("type")
+    # t2 = s2.get("type")
+    # if t2 and t2 != t1:
+    #     return False
+    #
+    s1 = s1.get("anyOf")
+
+    import subschemachecker
+    for s in s1:
+        if not subschemachecker.Checker.is_subtype(s, s2):
+            return False
+    return True
+
+
+def is_anyof_rhs_subtype(s1, s2):
+    #
+    # t1 = s1.get("type")
+    # t2 = s2.get("type")
+    # if t2 and t2 != t1:
+    #     return False
+    #
+    s2 = s2.get("anyOf")
+    
+    import subschemachecker
+    for s in s2:
+        if subschemachecker.Checker.is_subtype(s1, s):
+            return True
+    return False
+
+
+def is_allof_subtype(s1, s2):
+
+    s1_list = s1.get("allOf") or [s1]
+    s2_list = s2.get("allOf") or [s2]
+
+    for s in s1_list:
+        if not has_supertype_in_list(s,s2_list):
+            return False
+    return True
+
+
+def has_supertype_in_list(s, s_list):
+    for s_ in s_list:
+        if subschemachecker.Checker.is_subtype(s, s_):
+            return True
+    return False
+
+
 JSON_SUBTYPE_CHECKERS = {
+    "string": is_string_subtype,
     "number": is_numeric_subtype,
     "integer": is_numeric_subtype,
-    "string": is_string_subtype,
     "array": is_array_subtype,
-    "object": is_object_subtype
+    "object": is_object_subtype,
+    "anyOf": is_anyof_subtype,
+    "anyOf_rhs": is_anyof_rhs_subtype
 }

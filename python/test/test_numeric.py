@@ -414,29 +414,47 @@ class TestNumericSubtype(unittest.TestCase):
               "type": "integer"}
         s2 = {"$schema": "http://json-schema.org/draft-04/schema",
               "type": "number"}
-        self.assertTrue(Checker(s1, s2).is_subschema())
-        self.assertFalse(Checker(s2, s1).is_subschema())
+        with self.subTest():
+            self.assertTrue(Checker(s1, s2).is_subschema())
+        with self.subTest():
+            self.assertFalse(Checker(s2, s1).is_subschema())
 
     def test_min_num_int(self):
         s1 = {"$schema": "http://json-schema.org/draft-04/schema",
               "type": "number", "minimum": 1.5}
         s2 = {"$schema": "http://json-schema.org/draft-04/schema",
               "type": "integer", "minimum": 1}
-        self.assertFalse(Checker(s1, s2).is_subschema())
-        self.assertFalse(Checker(s2, s1).is_subschema())
+        with self.subTest():
+            self.assertFalse(Checker(s1, s2).is_subschema())
+        with self.subTest():
+            self.assertFalse(Checker(s2, s1).is_subschema())
 
     def test_mulOf_num_min_int(self):
         s1 = {"$schema": "http://json-schema.org/draft-04/schema",
               "type": "number", "multipleOf": 10}
         s2 = {"$schema": "http://json-schema.org/draft-04/schema",
               "type": "integer", "minimum": 5}
-        self.assertFalse(Checker(s1, s2).is_subschema())
-        self.assertFalse(Checker(s2, s1).is_subschema())
+        with self.subTest():
+            self.assertFalse(Checker(s1, s2).is_subschema())
+        with self.subTest():
+            self.assertFalse(Checker(s2, s1).is_subschema())
 
     def test_mulOf_num_int(self):
         s1 = {"$schema": "http://json-schema.org/draft-04/schema",
               "type": "number", "multipleOf": 10}
         s2 = {"$schema": "http://json-schema.org/draft-04/schema",
               "type": "integer"}
-        self.assertTrue(Checker(s1, s2).is_subschema())
-        self.assertFalse(Checker(s2, s1).is_subschema())
+        with self.subTest():
+            self.assertTrue(Checker(s1, s2).is_subschema())
+        with self.subTest():
+            self.assertFalse(Checker(s2, s1).is_subschema())
+
+    def test_mulOf_num_int2(self):
+        s1 = {"$schema": "http://json-schema.org/draft-04/schema",
+              "type": "number", "multipleOf": 1}
+        s2 = {"$schema": "http://json-schema.org/draft-04/schema",
+              "type": "integer"}
+        with self.subTest():
+            self.assertTrue(Checker(s1, s2).is_subschema())
+        with self.subTest():
+            self.assertTrue(Checker(s2, s1).is_subschema())
