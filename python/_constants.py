@@ -17,7 +17,7 @@ JtypesToKeywords = {
     "integer": ["minimum", "maximum", "exclusiveMinimum", "exclusiveMaximum", "multipleOf"],
     "boolean": [],
     "null": [],
-    "array": ["minItems", "maxItems", "items", "uniqueItems"],
+    "array": ["minItems", "maxItems", "items", "additionalItems", "uniqueItems"],
     "object": ["properties", "additionalProperties", "required", "minProperties", "maxProperties", "dependencies", "patternProperties"]
 }
 
