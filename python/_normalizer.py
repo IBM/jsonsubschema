@@ -13,7 +13,8 @@ from _constants import(
     JtypesToKeywords,
     JkeywordsToDefaults,
     Jconnectors,
-    Jcommonkw
+    Jcommonkw,
+    Jmeta
 )
 
 
@@ -27,7 +28,8 @@ def lazy_normalize(s):
 
     # Boolean connectors
     has_bool_connectors = set(s.keys()) & set(Jconnectors)
-    if has_bool_connectors and len(has_bool_connectors) < len(s.keys()):
+    meta_kw = set(s.keys()) & set(Jmeta)
+    if has_bool_connectors and len(has_bool_connectors) < len(s.keys()) - len(meta_kw or []):
         s = rw_bool_connector(s)
 
     # Missing type
@@ -53,10 +55,10 @@ def lazy_normalize(s):
         for kw in JtypesToKeywords.get(t):
             if kw not in s.keys():
                 s[kw] = JkeywordsToDefaults.get(kw)
- 
+
     # Singleton enums
     # TODO
-    
+
     return s
 
 
@@ -95,7 +97,19 @@ if __name__ == "__main__":
         s = json.load(f)
 
     jsonschema.Draft4Validator.check_schema(s)
-    print(s)
+    print_db(s)
+    print()
 
-    s = lazy_normalize(s)
-    print(s)
+    s1 = lazy_normalize(s)
+    print_db(s1)
+    print()
+
+    s2 = lazy_normalize(s1)
+    print_db(s2)
+    print()
+
+    s3 = lazy_normalize(s2)
+    print_db(s3)
+    print()
+
+    assert s1 == s2 == s3

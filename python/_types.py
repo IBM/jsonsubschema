@@ -40,13 +40,7 @@ class JsonType(ABC):
 
 class JsonString(JsonType):
 
-    # NAME = "string"
-    # KEY_WORDS = ["minLength", "maxLength", "pattern"]
-
     def __init__(self, s):
-        # self.min = s.get("minLength", 0)
-        # self.max = s.get("maxLength", I.inf)
-        # self.pattern = s.get("pattern")
         self.min = s.get("minLength")
         self.max = s.get("maxLength")
         self.pattern = s.get("pattern")
@@ -64,11 +58,6 @@ class JsonString(JsonType):
 class JsonNumeric(JsonType):
 
     def __init__(self, s):
-        # self.min = s.get("minimum", -I.inf)
-        # self.xmin = s.get("exclusiveMinimum", False)
-        # self.max = s.get("maximum", I.inf)
-        # self.xmax = s.get("exclusiveMaximum", False)
-        # self.mulOf = s.get("multipleOf")
         self.type = s.get("type")
         self.min = s.get("minimum")
         self.xmin = s.get("exclusiveMinimum")
@@ -77,13 +66,13 @@ class JsonNumeric(JsonType):
         self.mulOf = s.get("multipleOf")
         #
         self.interval = None
-        self.build_interval_draf4()
+        self.build_interval_draft4()
         print_db(self.interval)
         #
         super().__init__()
         #
 
-    def build_interval_draf4(self):
+    def build_interval_draft4(self):
         pass
 
     def check_uninhabited(self):
@@ -94,25 +83,28 @@ class JsonNumeric(JsonType):
     @staticmethod
     def get_proper_JsonNumeric(s):
         if s.get("type") == "number":
-            s_ = JsonNumeric(s)
-            if s_.mulOf and float(s_.mulOf).is_integer():
-                s["type"] = "intger"
-                if s.get("minimum") != -I.inf:
-                    s["minimum"] = math.floor(s_.min) if s_.xmin else math.ceil(s_.min)
-                if s.get("maximum") != I.inf:
-                    s["maximum"] = math.ceil(s_.max) if s_.xmax else math.floor(s_.max)
+            _s = JsonNumeric(s)
+            if _s.mulOf and float(_s.mulOf).is_integer():
+                s["type"] = "integer"
+                if _s.min != -I.inf:
+                    s["minimum"] = math.floor(
+                        _s.min) if _s.xmin else math.ceil(_s.min)
+                if _s.max != I.inf:
+                    s["maximum"] = math.ceil(
+                        _s.max) if _s.xmax else math.floor(_s.max)
                 return JsonInteger(s)
             else:
                 return JsonNumber(s)
         else:
             return JsonInteger(s)
 
+
 class JsonNumber(JsonNumeric):
 
     def __init__(self, s):
         super().__init__(s)
 
-    def build_interval_draf4(self):
+    def build_interval_draft4(self):
         if self.xmin and self.xmax:
             self.interval = I.open(self.min, self.max)
         elif self.xmin:
@@ -128,7 +120,7 @@ class JsonInteger(JsonNumeric):
     def __init__(self, s):
         super().__init__(s)
 
-    def build_interval_draf4(self):
+    def build_interval_draft4(self):
         if self.xmin and self.xmax:
             self.interval = I.closed(self.min+1, self.max-1)
         elif self.xmin:
@@ -141,27 +133,17 @@ class JsonInteger(JsonNumeric):
 
 class JsonArray(JsonType):
 
-    NAME = "array"
-    KEY_WORDS = ["items", "minItems", "maxItems",
-                 "uniqueItems", "additionalItems"]
-
     def __init__(self, s):
-        # using default values eliminates extra checks for None!
-        self.items = s.get("items", {})
-        self.min = s.get("minItems", 0)
-        self.max = s.get("maxItems", I.inf)
-        self.uniq = s.get("uniqueItems", False)
-        self.addItems = s.get("additionalItems", True)
+        self.items = s.get("items")
+        self.min = s.get("minItems")
+        self.max = s.get("maxItems")
+        self.uniq = s.get("uniqueItems")
+        self.addItems = s.get("additionalItems")
         #
         super().__init__()
 
     def normalize(self):
         self.compute_actual_max()
-        self.normalize_additionalItems()
-
-    def normalize_additionalItems(self):
-        if is_dict(self.items) or self.addItems == {}:
-            self.addItems = True
 
     def compute_actual_max(self):
         if is_list(self.items) and self.addItems == False:
@@ -176,14 +158,5 @@ class JsonArray(JsonType):
 
 class JsonObject(JsonType):
 
-    NAME = "object"
-    KEY_WORDS = ["maxProperties", "minProperties", "required",
-                 "properties", "additionalProperties", "patternProperties"]
-
     def __init__(self, s):
         pass
-
-
-JSON_TYPES = [JsonNumeric, JsonString, JsonArray, JsonObject]
-# def JSON_TYPES():
-#     return [JsonNumeric, JsonString, JsonArray, JsonObject]

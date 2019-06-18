@@ -375,6 +375,15 @@ class TestNumberSubtype(unittest.TestCase):
               "type": "number", "multipleOf": -.5}
         self.assertRaises(SchemaError, Checker, s1, s2)
 
+    def test_mulOf4(self):
+        s1 = {"$schema": "http://json-schema.org/draft-04/schema",
+              "type": "number", "multipleOf": 1}
+        s2 = {"$schema": "http://json-schema.org/draft-04/schema",
+              "type": "number"}
+        with self.subTest():
+            self.assertTrue(Checker(s1, s2).is_subschema())
+        with self.subTest():
+            self.assertFalse(Checker(s2, s1).is_subschema())
 
     def test_mulOf_min(self):
         s1 = {"$schema": "http://json-schema.org/draft-04/schema",

@@ -90,6 +90,7 @@ def handle_uninhabited_types(s1, s2):
     # !False <: !False
     # print_db("are_inhibited_types: __00__")
 
+
 def get_types_or_implicit_types(s):
     types = type_to_list(s)
     # type has higher precedence over keywords
@@ -98,7 +99,7 @@ def get_types_or_implicit_types(s):
     kw_to_type = json_keywords_to_types()
     types = set(types)
     for k in s.keys():
-        # skip adding 'number' to types 
+        # skip adding 'number' to types
         # if 'integer' is already in.
         from _types import JsonNumeric
         if k in JsonNumeric.KEY_WORDS and "integer" in types:
@@ -110,12 +111,14 @@ def get_types_or_implicit_types(s):
     types = list(types)
     return types
 
+
 def type_to_list(s):
     t = s.get("type", [])
     if isinstance(t, str):
         return [t]
     else:
         return t
+
 
 def json_keywords_to_types():
     kw_to_type = {}

@@ -66,11 +66,13 @@ def is_string_subtype(s1, s2):
 def is_numeric_subtype(s1, s2):
     if s2.get("type") not in ["integer", "number"]:
         return False
-
+    #
     s1 = JsonNumeric.get_proper_JsonNumeric(s1)
     s2 = JsonNumeric.get_proper_JsonNumeric(s2)
     print_db(s1)
+    print_db(s1.type)
     print_db(s2)
+    print_db(s2.type)
     #
     # unInhabited = handle_uninhabited_types(s1, s2)
     # if unInhabited != None:
@@ -86,44 +88,11 @@ def is_numeric_subtype(s1, s2):
         return False
     #
     if (s1.mulOf == s2.mulOf) \
-        or (s1.mulOf != None and s2.mulOf == None) \
-        or (s1.mulOf != None and s2.mulOf != None and s1.mulOf % s2.mulOf == 0) \
-        or (s1.mulOf == None and s2.mulOf == 1):
-            print_db("num__02")
-            return True
-    #
-    print_db("num__0")
-    return False
-
-
-def is_integer_subtype(s1, s2):
-    if s2.get("type") not in ["integer", "number"]:
-        return False
-    #
-    s1 = JsonNumeric(s1)
-    s2 = JsonNumeric(s2)
-    #
-    # unInhabited = handle_uninhabited_types(s1, s2)
-    # if unInhabited != None:
-    #     return unInhabited
-    #
-    is_sub_interval = s1.interval in s2.interval
-    if not is_sub_interval:
-        print_db("num__00")
-        return False
-    #
-    if s1.num_or_int == "number" and s2.num_or_int == "integer":
-        print_db("num__01")
-        return False
-    #
-    if (s1.mulOf == s2.mulOf == None) or \
-        (s1.mulOf != None and s2.mulOf == None) or \
-            (s1.mulOf != None and s2.mulOf != None and s1.mulOf % s2.mulOf == 0):
+            or (s1.mulOf != None and s2.mulOf == None) \
+            or (s1.mulOf != None and s2.mulOf != None and s1.mulOf % s2.mulOf == 0) \
+            or (s1.mulOf == None and s2.mulOf == 1):
         print_db("num__02")
         return True
-    #
-    print_db("num__0")
-    return False
 
 
 def is_array_subtype(s1, s2):
@@ -151,22 +120,6 @@ def is_array_subtype(s1, s2):
     if not s1.uniq and s2.uniq:
         print_db("__02__")
         return False
-    #
-    # -- items = {}
-    # or
-    # -- items = [{}, {}, ..] and addiitonalItems = True
-    #
-    # def is_unrestricted(s):
-    #     return s.items == {} or \
-    #         (is_list(s.items) and not any(s.items) and s.addItems == True)
-    # # case s2 allows anything, return true
-    # if is_unrestricted(s2):
-    #     print_db("__03__")
-    #     return True
-    # # case s2 has specific schema, and s1 allows anything
-    # elif is_unrestricted(s1):
-    #     print_db("__04__")
-    #     return False
     #
     # -- items = {not empty}
     # no need to check addItems
@@ -227,8 +180,8 @@ def is_array_subtype(s1, s2):
         elif is_list(s2.items):
             len1 = len(s1.items)
             len2 = len(s2.items)
-            for i,j in zip(s1.items, s2.items):
-                if not subschemachecker.Checker.is_subtype(i,j):
+            for i, j in zip(s1.items, s2.items):
+                if not subschemachecker.Checker.is_subtype(i, j):
                     return False
             if len1 == len2:
                 if s1.addItems == s2.addItems:
@@ -243,33 +196,29 @@ def is_array_subtype(s1, s2):
                 diff = len1 - len2
                 for i in range(len1-diff, len1):
                     if not subschemachecker.Checker.is_subtype(s1.items[i], s2.addItems):
+                        print_db("9999")
                         return False
+                print_db("8888")
                 return True
-            else: # len2 > len 1
-                if s1.addItems:
-                    diff = len2 - len1
-                    for i in range(len2 - diff, len2):
-                        print_db("s1.addItems", s1.addItems)
-                        print(i, s2.items[i])
-                        if not subschemachecker.Checker.is_subtype(s1.addItems, s2.items[i]):
-                            print_db("!!!")
-                            return False
-                    return subschemachecker.Checker.is_subtype(s1.addItems, s2.addItems)
-                else:
-                    return True
+            else:  # len2 > len 1
+                # if s1.addItems:
+                diff = len2 - len1
+                for i in range(len2 - diff, len2):
+                    print_db("s1.addItems", s1.addItems)
+                    print_db(i, s2.items[i])
+                    if not subschemachecker.Checker.is_subtype(s1.addItems, s2.items[i]):
+                        print_db("!!!")
+                        return False
+                return subschemachecker.Checker.is_subtype(s1.addItems, s2.addItems)
 
 
 def is_object_subtype(s1, s2):
-    pass
+    if s2.get("type") != "object":
+        return False
 
 
 def is_anyof_subtype(s1, s2):
-    #
-    # t1 = s1.get("type")
-    # t2 = s2.get("type")
-    # if t2 and t2 != t1:
-    #     return False
-    #
+
     s1 = s1.get("anyOf")
 
     import subschemachecker
@@ -279,15 +228,10 @@ def is_anyof_subtype(s1, s2):
     return True
 
 
-def is_anyof_rhs_subtype(s1, s2):
-    #
-    # t1 = s1.get("type")
-    # t2 = s2.get("type")
-    # if t2 and t2 != t1:
-    #     return False
-    #
+def is_anyof_subtype_rhs(s1, s2):
+
     s2 = s2.get("anyOf")
-    
+
     import subschemachecker
     for s in s2:
         if subschemachecker.Checker.is_subtype(s1, s):
@@ -301,7 +245,7 @@ def is_allof_subtype(s1, s2):
     s2_list = s2.get("allOf") or [s2]
 
     for s in s1_list:
-        if not has_supertype_in_list(s,s2_list):
+        if not has_supertype_in_list(s, s2_list):
             return False
     return True
 
@@ -320,5 +264,5 @@ JSON_SUBTYPE_CHECKERS = {
     "array": is_array_subtype,
     "object": is_object_subtype,
     "anyOf": is_anyof_subtype,
-    "anyOf_rhs": is_anyof_rhs_subtype
+    "anyOf_rhs": is_anyof_subtype_rhs
 }
