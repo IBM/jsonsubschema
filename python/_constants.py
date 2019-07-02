@@ -29,3 +29,6 @@ JkeywordsToDefaults = {
 }
 
 Jmeta = ["$schema", "$id", "$ref"]
+
+Jkeywords = Jtypes + Jcommonkw
+Jkeywords.extend(JkeywordsToDefaults.keys())
