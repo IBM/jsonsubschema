@@ -21,6 +21,14 @@ def print_db(*args, **kwargs):
         print("".join(str(arg) + " " for arg in args))
 
 
+def one(iterable):
+    for i in range(len(iterable)):
+        if iterable[i]:
+            print(i, iterable[i])
+            return not (any(iterable[:i]) or any(iterable[i+1:]))
+    return False
+
+
 class PythonTypes:
 
     @staticmethod
@@ -133,11 +141,3 @@ def json_keywords_to_types():
         for kw in json_type.KEY_WORDS:
             kw_to_type[kw] = json_type.NAME
     return kw_to_type
-
-
-def one(iterable):
-    for i in range(len(iterable)):
-        if iterable[i]:
-            print(i, iterable[i])
-            return not (any(iterable[:i]) or any(iterable[i+1:]))
-    return False
