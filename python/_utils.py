@@ -5,13 +5,19 @@ Created on May 24, 2019
 
 import numbers
 
+import config
+
 import intervals as I
 
-PRINT_DB = False
+schema_validator = config.VALIDATOR
+
+
+def validate_schema(s):
+    return schema_validator.check_schema(s)
 
 
 def print_db(*args, **kwargs):
-    if PRINT_DB:
+    if config.PRINT_DB:
         print("".join(str(arg) + " " for arg in args))
 
 
@@ -127,3 +133,11 @@ def json_keywords_to_types():
         for kw in json_type.KEY_WORDS:
             kw_to_type[kw] = json_type.NAME
     return kw_to_type
+
+
+def one(iterable):
+    for i in range(len(iterable)):
+        if iterable[i]:
+            print(i, iterable[i])
+            return not (any(iterable[:i]) or any(iterable[i+1:]))
+    return False
