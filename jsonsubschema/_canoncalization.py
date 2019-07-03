@@ -8,20 +8,24 @@ import numbers
 import _constants
 from _checkers import (
     typeToConstructor,
-    boolToConstructor
+    boolToConstructor,
+    JSONEmptySchema
 )
 
 
 def canoncalize_json(obj):
-    if isinstance(obj, str) or isinstance(obj, numbers.Number) or isinstance(obj, bool) or isinstance(obj, type(None)) or isinstance(obj, list):
-        return obj
-    elif isinstance(obj, dict):
+    if isinstance(obj, dict):
         return canoncalize_dict(obj)
+    else:
+        # This can never happen as the schema validator, run prior to here,
+        # does not accept anything but dictionaries.
+        return
 
 
 def canoncalize_dict(d):
     if d == {}:
-        return d
+        return JSONEmptySchema()
+
     t = d.get("type")
     if isinstance(t, list):
         return canoncalize_list_of_types(d)
@@ -61,10 +65,14 @@ def canoncalize_single_type(d):
     if t in typeToConstructor.keys():
         # remove irrelevant keywords
         tmp = copy.deepcopy(d)
-        for k in tmp.keys():
+        for k, v in d.items():
             if k not in _constants.Jcommonkw and k not in _constants.JtypesToKeywords.get(t):
-                d.pop(k)
-        return typeToConstructor[t](d)
+                tmp.pop(k)
+            if isinstance(v, dict):
+                tmp[k] = canoncalize_dict(v)
+            if isinstance(v, list):
+                tmp[k] = [canoncalize_dict(i) for i in v]
+        return typeToConstructor[t](tmp)
     else:
         # TODO: or just return?
         print("Unknown schema type {} at:".format(t))

@@ -38,11 +38,14 @@ class JSONschema(dict):
         self.updateKeys()
         # self.canoncalize()
         if self.isUninhabited():
-            sys.exit("Found an uninhabited type at: " + str(self))
+            print("Found an uninhabited type at: " + str(self))
 
     def __getattr__(self, name):
         if name in self:
+            # if name == "items":
+            #     return  super().__getitem__("items")
             return self[name]
+            # return super().__getitem__(name)
         else:
             raise AttributeError("No such attribute: ", name)
 
@@ -55,15 +58,17 @@ class JSONschema(dict):
         else:
             raise AttributeError("No such attribute: ", name)
 
-    def validate(self):
-        validate_schema(self)
-
     def updateKeys(self):
         for k, v in self.kw_defaults.items():
-            if k == "items":
-                k = "items_"
             if k not in self.keys():
                 self[k] = v
+        # dirty hack to becuase self.items is already an attribute of dict
+        if "items" in self.keys():
+            self["items_"] = self["items"]
+            del self["items"]
+
+    def validate(self):
+        validate_schema(self)
 
     def isBoolean(self):
         return self.keys() & _constants.Jconnectors
@@ -72,7 +77,7 @@ class JSONschema(dict):
         return self._isUninhabited()
 
     def _isUninhabited(self):
-        pass
+        return False
 
     def meet(self, s2):
         pass
@@ -81,8 +86,13 @@ class JSONschema(dict):
         pass
 
     def isSubtype(self, s2):
-        if s2 == {} or s2 == True or self == s2:
+        print_db("in subtype:")
+        print_db("")
+        if s2 == {} or self == s2:
             return True
+
+        if self == {} and not s2.isUninhabited():
+            return False
 
         return self._isSubtype(s2)
 
@@ -97,7 +107,7 @@ class JSONschema(dict):
                 return one(self.isSubtype(s) for s in s2["oneOf"])
             elif "not" in s2:
                 # TODO
-                print("No handling of not yet.")
+                print("No handling of 'not' on rhs yet.")
                 return None
         else:
             print_db("cb on rhs")
@@ -312,16 +322,27 @@ class JSONTypeObject(JSONschema):
 
     def _isSubtype(self, s2):
 
-        def _isObjectSubtype(self, s2):
-            pass
+        def _isObjectSubtype(s1, s2):
+            return
 
         return super().isSubtype_handle_rhs(s2, _isObjectSubtype)
+
+class JSONEmptySchema(JSONschema):
+    
+    def _isSubtype(self, s2):
+
+        def _isEmptySchemaSubtype_handle_rhs(s1, s2):
+            if not s2.items():
+                return True
+            return False
+
+        super().isSubtype_handle_rhs(s2, _isEmptySchemaSubtype_handle_rhs)
 
 
 class JSONTypeArray(JSONschema):
 
     kw_defaults = {"minItems": 0, "maxItems": infinity,
-                   "items": JSONTypeObject({}), "additionalItems": JSONTypeObject({}), "uniqueItems": False}
+                   "items": JSONEmptySchema(), "additionalItems": JSONEmptySchema(), "uniqueItems": False}
 
     def __init__(self, s):
         super().__init__(s)
@@ -336,22 +357,28 @@ class JSONTypeArray(JSONschema):
 
     def _isSubtype(self, s2):
 
-        def _isArraySubtype(self, s2):
+        def _isArraySubtype(s1, s2):
             print_db("in array subtype")
+            
             if s2.type != "array":
                 return False
+            
+            print_db(s1)
+            print_db(s1.items_)
+            print_db(s2)
+            print_db(s2.items_)
             #
             #
-            # self = JsonArray(self)
+            # s1 = JsonArray(s1)
             # s2 = JsonArray(s2)
             #
-            # uninhabited = handle_uninhabited_types(self, s2)
+            # uninhabited = handle_uninhabited_types(s1, s2)
             # if uninhabited != None:
             #     return uninhabited
             #
             # -- minItems and maxItems
             is_sub_interval = is_sub_interval_from_optional_ranges(
-                self.minItems, self.maxItems, s2.minItems, s2.maxItems)
+                s1.minItems, s1.maxItems, s2.minItems, s2.maxItems)
             # also takes care of {'items' = [..], 'additionalItems' = False}
             if not is_sub_interval:
                 print_db("__01__")
@@ -359,18 +386,17 @@ class JSONTypeArray(JSONschema):
             #
             # -- uniqueItemsue
             # TODO Double-check. Could be more subtle?
-            if not self.uniqueItems and s2.uniqueItems:
+            if not s1.uniqueItems and s2.uniqueItems:
                 print_db("__02__")
                 return False
             #
             # -- items = {not empty}
             # no need to check additionalItems
-            if is_dict(self.items_):
+            if is_dict(s1.items_):
                 if is_dict(s2.items_):
-                    print_db(self.items_)
+                    print_db(s1.items_)
                     print_db(s2.items_)
-                    # if subschemachecker.Checker.is_subtype(self.items_, s2.items_):
-                    if self.items_.isSubtype(s2.items_):
+                    if s1.items_.isSubtype(s2.items_):
                         print_db("__05__")
                         return True
                     else:
@@ -382,95 +408,87 @@ class JSONTypeArray(JSONschema):
                         return False
                     elif s2.additionalItems == True:
                         for i in s2.items_:
-                            # if not subschemachecker.Checker.is_subtype(self.items_, i):
-                            if not self.items_.isSubtype(i):
+                            if not s1.items_.isSubtype(i):
                                 print_db("__08__")
                                 return False
                         print_db("__09__")
                         return True
                     elif is_dict(s2.additionalItems):
                         for i in s2.items_:
-                            # if not subschemachecker.Checker.is_subtype(self.items_, i):
-                            if not self.items_.isSubtype(i):
+                            if not s1.items_.isSubtype(i):
                                 print_db("__10__")
                                 return False
-                        # if subschemachecker.Checker.is_subtype(self.items_, s2.additionalItems):
-                        if self.items_.isSubtype(s2.additionalItems):
+                        if s1.items_.isSubtype(s2.additionalItems):
                             print_db("__11__")
                             return True
                         else:
                             print_db("__12__")
                             return False
             #
-            elif is_list(self.items_):
+            elif is_list(s1.items_):
                 print_db("lhs is list")
                 if is_dict(s2.items_):
-                    if self.additionalItems == False:
-                        for i in self.items_:
-                            # if not subschemachecker.Checker.is_subtype(i, s2.items_):
+                    if s1.additionalItems == False:
+                        for i in s1.items_:
                             if not i.isSubtype(s2.items_):
                                 print_db("__13__")
                                 return False
                         print_db("__14__")
                         return True
-                    elif self.additionalItems == True:
-                        for i in self.items_:
-                            # if not subschemachecker.Checker.is_subtype(i, s2.items_):
+                    elif s1.additionalItems == True:
+                        for i in s1.items_:
                             if not i.isSubtype(s2.items_):
                                 return False
                         return True
-                    elif is_dict(self.additionalItems):
-                        for i in self.items_:
-                            # if not subschemachecker.Checker.is_subtype(i, s2.items_):
+                    elif is_dict(s1.additionalItems):
+                        for i in s1.items_:
                             if not i.isSubtype(s2.items_):
                                 return False
-                        # if subschemachecker.Checker.is_subtype(self.additionalItems, s2.items_):
-                        if self.additionalItems.isSubtype(s2.items_):
+                        if s1.additionalItems.isSubtype(s2.items_):
                             return True
                         else:
                             return False
                 # now lhs and rhs are lists
                 elif is_list(s2.items_):
                     print_db("lhs & rhs are lists")
-                    len1 = len(self.items_)
+                    len1 = len(s1.items_)
                     len2 = len(s2.items_)
-                    for i, j in zip(self.items_, s2.items_):
-                        # if not subschemachecker.Checker.is_subtype(i, j):
+                    for i, j in zip(s1.items_, s2.items_):
                         if not i.isSubtype(j):
                             return False
                     if len1 == len2:
                         print_db("len1 == len2")
-                        if self.additionalItems == s2.additionalItems:
+                        if s1.additionalItems == s2.additionalItems:
                             return True
-                        elif self.additionalItems == True and s2.additionalItems == False:
+                        elif s1.additionalItems == True and s2.additionalItems == False:
                             return False
-                        elif self.additionalItems == False and s2.additionalItems == True:
+                        elif s1.additionalItems == False and s2.additionalItems == True:
                             return True
                         else:
-                            # return subschemachecker.Checker.is_subtype(self.additionalItems, s2.additionalItems)
-                            return self.additionalItems.isSubtype(s2.additionalItems)
+                            return s1.additionalItems.isSubtype(s2.additionalItems)
                     elif len1 > len2:
                         diff = len1 - len2
                         for i in range(len1-diff, len1):
-                            # if not subschemachecker.Checker.is_subtype(self.items_[i], s2.additionalItems):
-                            if not self.items_[i].isSubtype(s2.additionalItems):
+                            if s2.additionalItems == False:
+                                return False
+                            elif s2.additionalItems == True:
+                                return True
+                            elif not s1.items_[i].isSubtype(s2.additionalItems):
                                 print_db("9999")
                                 return False
                         print_db("8888")
                         return True
                     else:  # len2 > len 1
-                        # if self.additionalItems:
+                        # if s1.additionalItems:
                         diff = len2 - len1
                         for i in range(len2 - diff, len2):
-                            print_db("self.additionalItems",
-                                     self.additionalItems)
-                            print_db(i, s2.items_[i])
-                            # if not subschemachecker.Checker.is_subtype(self.additionalItems, s2.items_[i]):
-                            if not self.additionalItems.isSubtype(s2.items_[i]):
-                                print_db("!!!")
+                            if s1.additionalItems == False:
+                                return True
+                            elif s1.additionalItems == True:
                                 return False
-                        # return subschemachecker.Checker.is_subtype(self.additionalItems, s2.additionalItems)
-                        return self.additionalItems.isSubtype(s2.additionalItems)
+                            elif not s1.additionalItems.isSubtype(s2.items_[i]):
+                                return False
+                        return s1.additionalItems.isSubtype(s2.additionalItems)
 
         return super().isSubtype_handle_rhs(s2, _isArraySubtype)
 
