@@ -5,7 +5,7 @@ Created on June 3, 2019
 
 import unittest
 
-from subschemachecker import Checker
+from checker import isSubschema
 
 class TestMixedTypes(unittest.TestCase):
 
@@ -15,9 +15,9 @@ class TestMixedTypes(unittest.TestCase):
         s2 = {"$schema": "http://json-schema.org/draft-04/schema",
               "type": "array"}
         with self.subTest():
-            self.assertFalse(Checker(s1, s2).is_subschema())
+            self.assertFalse(isSubschema(s1, s2))
         with self.subTest():
-            self.assertFalse(Checker(s2, s1).is_subschema())
+            self.assertFalse(isSubschema(s2, s1))
 
     def test_t_t_2(self):
         s1 = {"$schema": "http://json-schema.org/draft-04/schema",
@@ -25,9 +25,9 @@ class TestMixedTypes(unittest.TestCase):
         s2 = {"$schema": "http://json-schema.org/draft-04/schema",
               "type": ["number"]}
         with self.subTest():
-            self.assertTrue(Checker(s1, s2).is_subschema())
+            self.assertTrue(isSubschema(s1, s2))
         with self.subTest():
-            self.assertTrue(Checker(s2, s1).is_subschema())
+            self.assertTrue(isSubschema(s2, s1))
 
     def test_t_t_3(self):
         s1 = {"$schema": "http://json-schema.org/draft-04/schema",
@@ -35,9 +35,9 @@ class TestMixedTypes(unittest.TestCase):
         s2 = {"$schema": "http://json-schema.org/draft-04/schema",
               "type": ["number"]}
         with self.subTest():
-            self.assertTrue(Checker(s1, s2).is_subschema())
+            self.assertTrue(isSubschema(s1, s2))
         with self.subTest():
-            self.assertFalse(Checker(s2, s1).is_subschema())
+            self.assertFalse(isSubschema(s2, s1))
 
     def test_t_t_4(self):
         s1 = {"$schema": "http://json-schema.org/draft-04/schema",
@@ -45,9 +45,9 @@ class TestMixedTypes(unittest.TestCase):
         s2 = {"$schema": "http://json-schema.org/draft-04/schema",
               "type": ["number", "string"]}
         with self.subTest():
-            self.assertTrue(Checker(s1, s2).is_subschema())
+            self.assertTrue(isSubschema(s1, s2))
         with self.subTest():
-            self.assertFalse(Checker(s2, s1).is_subschema())
+            self.assertFalse(isSubschema(s2, s1))
 
     def test_t_t_5(self):
         s1 = {"$schema": "http://json-schema.org/draft-04/schema",
@@ -55,6 +55,6 @@ class TestMixedTypes(unittest.TestCase):
         s2 = {"$schema": "http://json-schema.org/draft-04/schema",
               "type": ["number", "string"]}
         with self.subTest():
-            self.assertFalse(Checker(s1, s2).is_subschema())
+            self.assertFalse(isSubschema(s1, s2))
         with self.subTest():
-            self.assertFalse(Checker(s2, s1).is_subschema())
+            self.assertFalse(isSubschema(s2, s1))
