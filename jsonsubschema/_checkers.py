@@ -34,18 +34,13 @@ class JSONschema(dict):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        # self.validate()
         self.updateKeys()
-        # self.canoncalize()
         if self.isUninhabited():
             print("Found an uninhabited type at: " + str(self))
 
     def __getattr__(self, name):
         if name in self:
-            # if name == "items":
-            #     return  super().__getitem__("items")
             return self[name]
-            # return super().__getitem__(name)
         else:
             raise AttributeError("No such attribute: ", name)
 
@@ -62,13 +57,10 @@ class JSONschema(dict):
         for k, v in self.kw_defaults.items():
             if k not in self.keys():
                 self[k] = v
-        # dirty hack to becuase self.items is already an attribute of dict
+        # dirty hack becuase self.items is already an attribute of dict
         if "items" in self.keys():
             self["items_"] = self["items"]
             del self["items"]
-
-    def validate(self):
-        validate_schema(self)
 
     def isBoolean(self):
         return self.keys() & _constants.Jconnectors
@@ -86,14 +78,12 @@ class JSONschema(dict):
         pass
 
     def isSubtype(self, s2):
-        print_db("in subtype:")
-        print_db("")
         if s2 == {} or self == s2:
             return True
-
+        #
         if self == {} and not s2.isUninhabited():
             return False
-
+        #
         return self._isSubtype(s2)
 
     def isSubtype_handle_rhs(self, s2, isSubtype_cb):
@@ -110,7 +100,6 @@ class JSONschema(dict):
                 print("No handling of 'not' on rhs yet.")
                 return None
         else:
-            print_db("cb on rhs")
             return isSubtype_cb(self, s2)
 
 
@@ -129,12 +118,12 @@ class JSONTypeString(JSONschema):
 
     def _isSubtype(self, s2):
 
-        def _isStringSubtype(self, s2):
+        def _isStringSubtype(s1, s2):
             if s2.type != "string":
                 return False
 
             is_sub_interval = is_sub_interval_from_optional_ranges(
-                self.minLength, self.maxLength, s2.minLength, s2.maxLength)
+                s1.minLength, s1.maxLength, s2.minLength, s2.maxLength)
             if not is_sub_interval:
                 return False
             #
@@ -142,12 +131,12 @@ class JSONTypeString(JSONschema):
             # so we should now worry about pattern only.
             if s2.pattern == None or s2.pattern == "":
                 return True
-            elif self.pattern == None or self.pattern == "":
+            elif s1.pattern == None or s1.pattern == "":
                 return False
-            elif self.pattern == s2.pattern:
+            elif s1.pattern == s2.pattern:
                 return True
             else:
-                regex = parse(self.pattern)
+                regex = parse(s1.pattern)
                 regex2 = parse(s2.pattern)
                 result = regex & regex2.everythingbut()
                 if result.empty():
@@ -159,6 +148,9 @@ class JSONTypeString(JSONschema):
 
 
 def JSONNumericFactory(s):
+    '''Factory method handle the case of JSON number with multipleOf being integer.
+        In this case, the JSON number becomes a JSON integer.'''
+
     if s.get("type") == "number":
         if s.get("multipleOf") and float(s.get("multipleOf")).is_integer():
             s["type"] = "integer"
@@ -203,23 +195,23 @@ class JSONTypeInteger(JSONschema):
 
     def _isSubtype(self, s2):
 
-        def _isIntegerSubtype(self, s2):
+        def _isIntegerSubtype(s1, s2):
             if s2.type not in ["integer", "number"]:
                 return False
             #
-            is_sub_interval = self.interval in s2.interval
+            is_sub_interval = s1.interval in s2.interval
             if not is_sub_interval:
                 print_db("num__00")
                 return False
             #
-            if (self.multipleOf == s2.multipleOf) \
-                    or (self.multipleOf != None and s2.multipleOf == None) \
-                    or (self.multipleOf != None and s2.multipleOf != None and self.multipleOf % s2.multipleOf == 0) \
-                    or (self.multipleOf == None and s2.multipleOf == 1):
+            if (s1.multipleOf == s2.multipleOf) \
+                    or (s1.multipleOf != None and s2.multipleOf == None) \
+                    or (s1.multipleOf != None and s2.multipleOf != None and s1.multipleOf % s2.multipleOf == 0) \
+                    or (s1.multipleOf == None and s2.multipleOf == 1):
                 print_db("num__02")
                 return True
 
-            if self.multipleOf == None and s2.multipleOf != None:
+            if s1.multipleOf == None and s2.multipleOf != None:
                 return False
 
         return super().isSubtype_handle_rhs(s2, _isIntegerSubtype)
@@ -252,23 +244,19 @@ class JSONTypeNumber(JSONschema):
 
     def _isSubtype(self, s2):
 
-        def _isNumberSubtype(self, s2):
+        def _isNumberSubtype(s1, s2):
             if s2.type != "number":
                 return False
             #
-            is_sub_interval = self.interval in s2.interval
+            is_sub_interval = s1.interval in s2.interval
             if not is_sub_interval:
                 print_db("num__00")
                 return False
             #
-            if self.type == "number" and s2.type == "integer":
-                print_db("num__01")
-                return False
-            #
-            if (self.multipleOf == s2.multipleOf) \
-                    or (self.multipleOf != None and s2.multipleOf == None) \
-                    or (self.multipleOf != None and s2.multipleOf != None and self.multipleOf % s2.multipleOf == 0) \
-                    or (self.multipleOf == None and s2.multipleOf == 1):
+            if (s1.multipleOf == s2.multipleOf) \
+                    or (s1.multipleOf != None and s2.multipleOf == None) \
+                    or (s1.multipleOf != None and s2.multipleOf != None and s1.multipleOf % s2.multipleOf == 0) \
+                    or (s1.multipleOf == None and s2.multipleOf == 1):
                 print_db("num__02")
                 return True
 
@@ -327,16 +315,17 @@ class JSONTypeObject(JSONschema):
 
         return super().isSubtype_handle_rhs(s2, _isObjectSubtype)
 
-class JSONEmptySchema(JSONschema):
-    
-    def _isSubtype(self, s2):
 
-        def _isEmptySchemaSubtype_handle_rhs(s1, s2):
-            if not s2.items():
+class JSONEmptySchema(JSONschema):
+
+    def _isSubtype(self, s2):
+        # TODO revisit this!
+        def _isEmptySchemaSubtype(s1, s2):
+            if isinstance(s2, JSONEmptySchema):
                 return True
             return False
 
-        super().isSubtype_handle_rhs(s2, _isEmptySchemaSubtype_handle_rhs)
+        super().isSubtype_handle_rhs(s2, _isEmptySchemaSubtype)
 
 
 class JSONTypeArray(JSONschema):
@@ -346,6 +335,12 @@ class JSONTypeArray(JSONschema):
 
     def __init__(self, s):
         super().__init__(s)
+        self.compute_actual_maxItems()
+    
+    def compute_actual_maxItems(self):
+        if is_list(self.items_) and \
+            (self.additionalItems == False or (is_dict(self.additionalItems) and self.additionalItems.isUninhabited())):
+            self.maxItems = min(self.maxItems, len(self.items_))
 
     def _isUninhabited(self):
         return (self.minItems > self.maxItems) or \
@@ -358,23 +353,8 @@ class JSONTypeArray(JSONschema):
     def _isSubtype(self, s2):
 
         def _isArraySubtype(s1, s2):
-            print_db("in array subtype")
-            
             if s2.type != "array":
                 return False
-            
-            print_db(s1)
-            print_db(s1.items_)
-            print_db(s2)
-            print_db(s2.items_)
-            #
-            #
-            # s1 = JsonArray(s1)
-            # s2 = JsonArray(s2)
-            #
-            # uninhabited = handle_uninhabited_types(s1, s2)
-            # if uninhabited != None:
-            #     return uninhabited
             #
             # -- minItems and maxItems
             is_sub_interval = is_sub_interval_from_optional_ranges(
@@ -479,7 +459,6 @@ class JSONTypeArray(JSONschema):
                         print_db("8888")
                         return True
                     else:  # len2 > len 1
-                        # if s1.additionalItems:
                         diff = len2 - len1
                         for i in range(len2 - diff, len2):
                             if s1.additionalItems == False:

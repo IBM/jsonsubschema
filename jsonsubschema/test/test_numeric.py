@@ -10,6 +10,7 @@ from jsonschema.exceptions import SchemaError
 
 from checker import isSubschema
 
+
 class TestIntegerSubtype(unittest.TestCase):
 
     def test_identity(self):

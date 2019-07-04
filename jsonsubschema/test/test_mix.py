@@ -7,6 +7,7 @@ import unittest
 
 from checker import isSubschema
 
+
 class TestMixedTypes(unittest.TestCase):
 
     def test_t_t_2(self):
