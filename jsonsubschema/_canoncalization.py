@@ -4,8 +4,10 @@ Created on June 24, 2019
 '''
 import copy
 import numbers
+import jsonschema
 
 import _constants
+from config import VALIDATOR
 from _checkers import (
     typeToConstructor,
     boolToConstructor,
@@ -19,7 +21,7 @@ def canoncalize_json(obj):
     else:
         # This can never happen as the schema validator, run prior to here,
         # does not accept anything but dictionaries.
-        return
+        return obj
 
 
 def canoncalize_dict(d):
@@ -31,6 +33,8 @@ def canoncalize_dict(d):
         return canoncalize_list_of_types(d)
     elif isinstance(t, str):
         return canoncalize_single_type(d)
+    elif "enum" in d.keys():
+        return canoncalize_untyped_enum(d)
     else:
         connectors = set(d.keys()) & set(_constants.Jconnectors)
         if connectors:
@@ -42,6 +46,11 @@ def canoncalize_dict(d):
 
 def canoncalize_list_of_types(d):
     t = d.get("type")
+
+    if len(t) == 1:
+        d["type"] = t[0]
+        return canoncalize_single_type(d)
+
     choices = []
     for t_i in t:
         if t_i in typeToConstructor.keys():
@@ -51,7 +60,7 @@ def canoncalize_list_of_types(d):
             choices.append(s_i)
         else:
             # TODO: or just return?
-            print("Unknown schema type {} at:".format(t))
+            print("Unknown schema type {} at: {}".format(t_i, t))
             print(d)
             print("Exiting...")
             sys.exit(1)
@@ -65,14 +74,23 @@ def canoncalize_single_type(d):
     if t in typeToConstructor.keys():
         # remove irrelevant keywords
         tmp = copy.deepcopy(d)
-        for k, v in d.items():
+        for k, v in tmp.items():
             if k not in _constants.Jcommonkw and k not in _constants.JtypesToKeywords.get(t):
-                tmp.pop(k)
+                d.pop(k)
             if isinstance(v, dict):
-                tmp[k] = canoncalize_dict(v)
+                d[k] = canoncalize_dict(v)
             if isinstance(v, list):
-                tmp[k] = [canoncalize_dict(i) for i in v]
-        return typeToConstructor[t](tmp)
+                # if entry in enum does not validate against outer schema,
+                # remove it.
+                if k == "enum":
+                    for i in v:
+                        try:
+                            jsonschema.validate(instance=i, schema=tmp)
+                        except:
+                            d.get(k).remove(i)
+                else:
+                    d[k] = [canoncalize_dict(i) for i in v]
+        return typeToConstructor[t](d)
     else:
         # TODO: or just return?
         print("Unknown schema type {} at:".format(t))
@@ -90,3 +108,25 @@ def canoncalize_connectors(d):
         return boolToConstructor["allOf"]({"allOf": list({k: v} for k, v in d.items())})
     else:
         print("Something went wrong")
+
+
+def canoncalize_untyped_enum(d):
+    t = set()
+    for i in d.get("enum"):
+        if isinstance(i, str):
+            t.add("string")
+        elif isinstance(i, int):
+            t.add("integer")
+        elif isinstance(i, float):
+            t.add("number")
+        elif isinstance(i, bool):
+            t.add("boolean")
+        elif isinstance(i, type(None)):
+            t.add("null")
+        elif isinstance(i, list):
+            t.add("array")
+        elif isinstance(i, dict):
+            t.add("object")
+
+    d["type"] = list(t)
+    return canoncalize_list_of_types(d)
