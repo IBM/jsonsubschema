@@ -73,7 +73,7 @@ def canoncalize_single_type(d):
         # remove irrelevant keywords
         tmp = copy.deepcopy(d)
         for k, v in tmp.items():
-            if k not in _constants.Jtypescommonkw and k not in _constants.JtypesToKeywords.get(t):
+            if k not in _constants.Jtypecommonkw and k not in _constants.JtypesToKeywords.get(t):
                 d.pop(k)
             elif isinstance(v, dict):
                 d[k] = canoncalize_dict(v)

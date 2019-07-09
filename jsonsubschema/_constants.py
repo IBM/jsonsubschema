@@ -9,7 +9,7 @@ Jtypes = ["string", "number", "integer", "boolean", "null", "array", "object"]
 
 Jconnectors = ["anyOf", "allOf", "oneOf", "not"]
 
-Jtypescommonkw = Jconnectors + ["enum", "type"]
+Jtypecommonkw = Jconnectors + ["enum", "type"]
 
 JtypesToKeywords = {
     "string": ["minLength", "maxLength", "pattern"],
@@ -30,5 +30,5 @@ JkeywordsToDefaults = {
 
 Jmeta = ["$schema", "$id", "$ref"]
 
-Jkeywords = Jtypes + Jtypescommonkw
+Jkeywords = Jtypes + Jtypecommonkw
 Jkeywords.extend(JkeywordsToDefaults.keys())
