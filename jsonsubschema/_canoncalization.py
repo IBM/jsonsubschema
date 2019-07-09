@@ -45,9 +45,10 @@ def canoncalize_dict(d):
 def canoncalize_list_of_types(d):
     t = d.get("type")
 
-    # if len(t) == 1:
-    #     d["type"] = t[0]
-    #     return canoncalize_single_type(d)
+    # to save an unnecessary anyOf with one option only.
+    if len(t) == 1:
+        d["type"] = t[0]
+        return canoncalize_single_type(d)
 
     choices = []
     for t_i in t:
