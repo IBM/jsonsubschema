@@ -35,21 +35,19 @@ def canoncalize_dict(d):
         return canoncalize_single_type(d)
     elif "enum" in d.keys():
         return canoncalize_untyped_enum(d)
+    elif set(d.keys()) & set(_constants.Jconnectors):
+        return canoncalize_connectors(d)
     else:
-        connectors = set(d.keys()) & set(_constants.Jconnectors)
-        if connectors:
-            return canoncalize_connectors(d)
-        else:
-            d["type"] = _constants.Jtypes
-            return canoncalize_list_of_types(d)
+        d["type"] = _constants.Jtypes
+        return canoncalize_list_of_types(d)
 
 
 def canoncalize_list_of_types(d):
     t = d.get("type")
 
-    if len(t) == 1:
-        d["type"] = t[0]
-        return canoncalize_single_type(d)
+    # if len(t) == 1:
+    #     d["type"] = t[0]
+    #     return canoncalize_single_type(d)
 
     choices = []
     for t_i in t:
@@ -75,11 +73,11 @@ def canoncalize_single_type(d):
         # remove irrelevant keywords
         tmp = copy.deepcopy(d)
         for k, v in tmp.items():
-            if k not in _constants.Jcommonkw and k not in _constants.JtypesToKeywords.get(t):
+            if k not in _constants.Jtypescommonkw and k not in _constants.JtypesToKeywords.get(t):
                 d.pop(k)
-            if isinstance(v, dict):
+            elif isinstance(v, dict):
                 d[k] = canoncalize_dict(v)
-            if isinstance(v, list):
+            elif isinstance(v, list):
                 # if entry in enum does not validate against outer schema,
                 # remove it.
                 if k == "enum":
