@@ -130,7 +130,9 @@ def canoncalize_connectors(d):
     lhs_kw_without_connectors = lhs_kw - connectors
 
     if len(connectors) == 1 and not lhs_kw_without_connectors:
-        return boolToConstructor.get(connectors.pop())(d)
+        c = connectors.pop()
+        d[c] = [canoncalize_dict(i) for i in d[c]]
+        return boolToConstructor.get(c)(d)
     else:
         ret = {"allOf": []}
 
