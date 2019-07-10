@@ -29,43 +29,19 @@ def canoncalize_dict(d):
         return JSONEmptySchema()
 
     t = d.get("type")
-    if isinstance(t, list):
-        return canoncalize_list_of_types(d)
+    has_connectors = set(d.keys()) & _constants.Jconnectors
+
+    if has_connectors:
+        return canoncalize_connectors(d)
     elif isinstance(t, str):
         return canoncalize_single_type(d)
+    elif isinstance(t, list):
+        return canoncalize_list_of_types(d)
     elif "enum" in d.keys():
         return canoncalize_untyped_enum(d)
-    elif set(d.keys()) & set(_constants.Jconnectors):
-        return canoncalize_connectors(d)
     else:
         d["type"] = _constants.Jtypes
         return canoncalize_list_of_types(d)
-
-
-def canoncalize_list_of_types(d):
-    t = d.get("type")
-
-    # to save an unnecessary anyOf with one option only.
-    if len(t) == 1:
-        d["type"] = t[0]
-        return canoncalize_single_type(d)
-
-    choices = []
-    for t_i in t:
-        if t_i in typeToConstructor.keys():
-            s_i = copy.deepcopy(d)
-            s_i["type"] = t_i
-            s_i = canoncalize_single_type(s_i)
-            choices.append(s_i)
-        else:
-            # TODO: or just return?
-            print("Unknown schema type {} at: {}".format(t_i, t))
-            print(d)
-            print("Exiting...")
-            sys.exit(1)
-    d = {"anyOf": choices}
-    # TODO do we need to return JSONanyOf ?
-    return boolToConstructor.get("anyOf")(d)
 
 
 def canoncalize_single_type(d):
@@ -89,6 +65,8 @@ def canoncalize_single_type(d):
                             d.get(k).remove(i)
                 else:
                     d[k] = [canoncalize_dict(i) for i in v]
+        # if d.get("enum", None) == []:
+        #     return
         return typeToConstructor[t](d)
     else:
         # TODO: or just return?
@@ -98,15 +76,30 @@ def canoncalize_single_type(d):
         sys.exit(1)
 
 
-def canoncalize_connectors(d):
-    # TODO
-    connectors = set(d.keys()) & set(_constants.Jconnectors)
-    if len(connectors) == 1:
-        return boolToConstructor[connectors.pop()](d)
-    elif len(connectors) > 1:
-        return boolToConstructor["allOf"]({"allOf": list({k: v} for k, v in d.items())})
-    else:
-        print("Something went wrong")
+def canoncalize_list_of_types(d):
+    t = d.get("type")
+
+    # to save an unnecessary anyOf with one option only.
+    if len(t) == 1:
+        d["type"] = t.pop()
+        return canoncalize_single_type(d)
+
+    choices = []
+    for t_i in t:
+        if t_i in typeToConstructor.keys():
+            s_i = copy.deepcopy(d)
+            s_i["type"] = t_i
+            s_i = canoncalize_single_type(s_i)
+            choices.append(s_i)
+        else:
+            # TODO: or just return?
+            print("Unknown schema type {} at: {}".format(t_i, t))
+            print(d)
+            print("Exiting...")
+            sys.exit(1)
+    d = {"anyOf": choices}
+    # TODO do we need to return JSONanyOf ?
+    return boolToConstructor.get("anyOf")(d)
 
 
 def canoncalize_untyped_enum(d):
@@ -129,3 +122,26 @@ def canoncalize_untyped_enum(d):
 
     d["type"] = list(t)
     return canoncalize_list_of_types(d)
+
+
+def canoncalize_connectors(d):
+    connectors = set(d.keys()) & _constants.Jconnectors
+    lhs_kw = set(d.keys()) & _constants.Jkeywords_lhs
+    lhs_kw_without_connectors = lhs_kw - connectors
+
+    if len(connectors) == 1 and not lhs_kw_without_connectors:
+        return boolToConstructor.get(connectors.pop())(d)
+    else:
+        ret = {"allOf": []}
+
+        for c in connectors:
+            if c == "allOf":
+                ret["allOf"].extend([canoncalize_dict(i) for i in d[c]])
+            else:
+                ret["allOf"].append(canoncalize_dict({c: d[c]}))
+            del d[c]
+
+        if lhs_kw_without_connectors:
+            ret["allOf"].append(canoncalize_dict(d))
+
+        return ret

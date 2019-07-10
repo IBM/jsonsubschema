@@ -5,11 +5,12 @@ Created on June 7, 2019
 
 from intervals import inf as infinity
 
-Jtypes = ["string", "number", "integer", "boolean", "null", "array", "object"]
+Jtypes = set(["string", "number", "integer",
+              "boolean", "null", "array", "object"])
 
-Jconnectors = ["anyOf", "allOf", "oneOf", "not"]
+Jconnectors = set(["anyOf", "allOf", "oneOf", "not"])
 
-Jtypecommonkw = Jconnectors + ["enum", "type"]
+Jtypecommonkw = Jconnectors.union(["enum", "type"])
 
 JtypesToKeywords = {
     "string": ["minLength", "maxLength", "pattern"],
@@ -28,7 +29,10 @@ JkeywordsToDefaults = {
     "properties": {}, "additionalProperties": {}, "required": [], "minProperties": 0, "maxProperties": infinity, "dependencies": {}, "patternProperties": {}
 }
 
-Jmeta = ["$schema", "$id", "$ref"]
+Jmeta = set(["$schema", "$id", "$ref"])
 
-Jkeywords = Jtypes + Jtypecommonkw
-Jkeywords.extend(JkeywordsToDefaults.keys())
+Jkeywords_lhs = Jtypecommonkw.union(Jconnectors, JkeywordsToDefaults.keys())
+
+Jkeywords = Jtypes.union(Jtypecommonkw)
+
+Jkeywords = Jkeywords.union(JkeywordsToDefaults.keys())
