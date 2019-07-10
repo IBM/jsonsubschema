@@ -10,7 +10,10 @@ from _canoncalization import (
     canoncalize_dict,
     canoncalize_json
 )
-from _utils import validate_schema
+from _utils import (
+    print_db,
+    validate_schema
+)
 
 
 class JSONSubSchemaFactory(json.JSONDecoder):
@@ -28,16 +31,21 @@ class JSONSubSchemaFactory(json.JSONDecoder):
 
 def isSubschema(s1, s2):
     ''' Entry point for schema subtype checking. '''
-    
-    # copy original json dicts becuase 
-    # we heavily modify the json objects.
+
+    print_db(s1)
+    print_db(s2)
+
+    # copy original json dicts becuase
+    # we heavily modify the json object.
     s1_ = copy.deepcopy(s1)
     s2_ = copy.deepcopy(s2)
-    
+
     validate_schema(s1_)
     validate_schema(s2_)
-    
+
     s1_ = canoncalize_json(s1_)
     s2_ = canoncalize_json(s2_)
-    
+
+    print_db(s1_)
+    print_db(s2_)
     return s1_.isSubtype(s2_)

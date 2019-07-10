@@ -336,10 +336,10 @@ class JSONTypeArray(JSONschema):
     def __init__(self, s):
         super().__init__(s)
         self.compute_actual_maxItems()
-    
+
     def compute_actual_maxItems(self):
         if is_list(self.items_) and \
-            (self.additionalItems == False or (is_dict(self.additionalItems) and self.additionalItems.isUninhabited())):
+                (self.additionalItems == False or (is_dict(self.additionalItems) and self.additionalItems.isUninhabited())):
             self.maxItems = min(self.maxItems, len(self.items_))
 
     def _isUninhabited(self):
