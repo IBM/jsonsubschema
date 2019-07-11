@@ -146,4 +146,5 @@ def canoncalize_connectors(d):
         if lhs_kw_without_connectors:
             ret["allOf"].append(canoncalize_dict(d))
 
-        return ret
+        # return ret
+        return boolToConstructor.get("allOf")(ret)

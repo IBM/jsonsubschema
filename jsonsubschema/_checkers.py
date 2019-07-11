@@ -10,7 +10,6 @@ import math
 import numbers
 import intervals as I
 from abc import ABC, abstractmethod
-from greenery.lego import parse
 from intervals import inf as infinity
 
 import config
@@ -18,6 +17,8 @@ import _constants
 
 from _utils import (
     print_db,
+    regex_meet,
+    regex_isSubset,
     is_sub_interval_from_optional_ranges,
     is_num,
     is_list,
@@ -28,15 +29,21 @@ from _utils import (
 )
 
 
-class JSONschema(dict):
+class UninhabitedMeta(type):
+
+    def __call__(cls, *args, **kwargs):
+        obj = type.__call__(cls, *args, **kwargs)
+        obj.checkUninhabited()
+        return obj
+
+
+class JSONschema(dict, metaclass=UninhabitedMeta):
 
     kw_defaults = {}
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.updateKeys()
-        if self.isUninhabited():
-            print("Found an uninhabited type at: " + str(self))
 
     def __getattr__(self, name):
         if name in self:
@@ -65,11 +72,14 @@ class JSONschema(dict):
     def isBoolean(self):
         return self.keys() & _constants.Jconnectors
 
-    def isUninhabited(self):
-        return self._isUninhabited()
+    def checkUninhabited(self):
+        self.uninhabited = self._isUninhabited()
+
+        if config.WARN_UNINHABITED and self.uninhabited:
+            print("Found an uninhabited type at: " + str(self))
 
     def _isUninhabited(self):
-        return False
+        pass
 
     def meet(self, s2):
         pass
@@ -78,10 +88,11 @@ class JSONschema(dict):
         pass
 
     def isSubtype(self, s2):
-        if s2 == {} or self == s2:
+        #
+        if isinstance(s2, JSONEmptySchema) or self == s2 or self.uninhabited:
             return True
         #
-        if self == {} and not s2.isUninhabited():
+        if isinstance(self, JSONEmptySchema):
             return False
         #
         return self._isSubtype(s2)
@@ -103,6 +114,31 @@ class JSONschema(dict):
             return isSubtype_cb(self, s2)
 
 
+class JSONEmptySchema(JSONschema):
+    kw_defaults = {"type": "EmptySchema"}
+
+    def __init__(self):
+        super().__init__({})
+
+    def _isUninhabited(self):
+        return False
+
+    def meet(self, s):
+        return s
+
+    def _isSubtype(self, s2):
+        # TODO revisit this!
+        def _isEmptySchemaSubtype(s1, s2):
+            if isinstance(s2, JSONEmptySchema):
+                return True
+            return False
+
+        super().isSubtype_handle_rhs(s2, _isEmptySchemaSubtype)
+
+
+JSONTOP = JSONEmptySchema
+
+
 class JSONTypeString(JSONschema):
 
     kw_defaults = {"minLength": 0, "maxLength": infinity, "pattern": ".*"}
@@ -111,10 +147,17 @@ class JSONTypeString(JSONschema):
         super().__init__(s)
 
     def _isUninhabited(self):
-        return self.minLength > self.maxLength
+        return (self.minLength > self.maxLength) or self.pattern == None
 
     def meet(self, s):
-        pass
+        if s.type != "string":
+            return
+
+        ret = copy.deepcopy(self.kw_defaults)
+        ret["minLength"] = max(self.minLength, s.minLength)
+        ret["maxLength"] = min(self.maxLength, s.maxLength)
+        ret["pattern"] = regex_meet(self.pattern, s.pattern)
+        return JSONTypeString(ret)
 
     def _isSubtype(self, s2):
 
@@ -136,10 +179,7 @@ class JSONTypeString(JSONschema):
             elif s1.pattern == s2.pattern:
                 return True
             else:
-                regex = parse(s1.pattern)
-                regex2 = parse(s2.pattern)
-                result = regex & regex2.everythingbut()
-                if result.empty():
+                if regex_isSubset(s1.pattern, s2.pattern):
                     return True
                 else:
                     return False
@@ -297,37 +337,6 @@ class JSONTypeNull(JSONschema):
         return super().isSubtype_handle_rhs(s2, _isNullSubtype)
 
 
-class JSONTypeObject(JSONschema):
-
-    kw_defaults = {"properties": {}, "additionalProperties": {}, "required": [
-    ], "minProperties": 0, "maxProperties": infinity, "dependencies": {}, "patternProperties": {}}
-
-    def __init__(self, s):
-        super().__init__(s)
-
-    def meet(self, s2):
-        pass
-
-    def _isSubtype(self, s2):
-
-        def _isObjectSubtype(s1, s2):
-            return
-
-        return super().isSubtype_handle_rhs(s2, _isObjectSubtype)
-
-
-class JSONEmptySchema(JSONschema):
-
-    def _isSubtype(self, s2):
-        # TODO revisit this!
-        def _isEmptySchemaSubtype(s1, s2):
-            if isinstance(s2, JSONEmptySchema):
-                return True
-            return False
-
-        super().isSubtype_handle_rhs(s2, _isEmptySchemaSubtype)
-
-
 class JSONTypeArray(JSONschema):
 
     kw_defaults = {"minItems": 0, "maxItems": infinity,
@@ -339,7 +348,7 @@ class JSONTypeArray(JSONschema):
 
     def compute_actual_maxItems(self):
         if is_list(self.items_) and \
-                (self.additionalItems == False or (is_dict(self.additionalItems) and self.additionalItems.isUninhabited())):
+                (self.additionalItems == False or (is_dict(self.additionalItems) and self.additionalItems.uninhabited)):
             self.maxItems = min(self.maxItems, len(self.items_))
 
     def _isUninhabited(self):
@@ -398,6 +407,8 @@ class JSONTypeArray(JSONschema):
                             if not s1.items_.isSubtype(i):
                                 print_db("__10__")
                                 return False
+                        print_db(type(s1.items_), s1.items_)
+                        print_db(type(s2.additionalItems), s2.additionalItems)
                         if s1.items_.isSubtype(s2.additionalItems):
                             print_db("__11__")
                             return True
@@ -472,6 +483,25 @@ class JSONTypeArray(JSONschema):
         return super().isSubtype_handle_rhs(s2, _isArraySubtype)
 
 
+class JSONTypeObject(JSONschema):
+
+    kw_defaults = {"properties": {}, "additionalProperties": {}, "required": [
+    ], "minProperties": 0, "maxProperties": infinity, "dependencies": {}, "patternProperties": {}}
+
+    def __init__(self, s):
+        super().__init__(s)
+
+    def meet(self, s2):
+        pass
+
+    def _isSubtype(self, s2):
+
+        def _isObjectSubtype(s1, s2):
+            return
+
+        return super().isSubtype_handle_rhs(s2, _isObjectSubtype)
+
+
 class JSONanyOf(JSONschema):
 
     def meet(self, s):
@@ -488,10 +518,18 @@ class JSONanyOf(JSONschema):
         return super().isSubtype_handle_rhs(s2, _isAnyofSubtype)
 
 
+def JSONallOfFactory(s):
+    ret = JSONTOP()
+    for i in s.get("allOf"):
+        ret = ret.meet(i)
+    return ret
+
+
 class JSONallOf(JSONschema):
 
     def meet(self, s):
-        pass
+        # if s.get("allOf")
+        return
 
     def _isSubtype(Self, s2):
 
@@ -534,7 +572,7 @@ typeToConstructor = {
 
 boolToConstructor = {
     "anyOf": JSONanyOf,
-    "allOf": JSONallOf,
+    "allOf": JSONallOfFactory,
     "oneOf": JSONoneOf,
     "not": JSONnot
 }

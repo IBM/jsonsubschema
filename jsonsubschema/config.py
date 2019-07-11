@@ -9,4 +9,7 @@ import jsonschema
 VALIDATOR = jsonschema.Draft4Validator
 
 # Print debugging info?
-PRINT_DB = False
+PRINT_DB = True
+
+# Enable uninhabited types warning
+WARN_UNINHABITED = True

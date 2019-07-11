@@ -3,11 +3,14 @@ Created on May 24, 2019
 @author: Andrew Habib
 '''
 
+import math
 import numbers
 
-import config
-
 import intervals as I
+
+from greenery.lego import parse
+
+import config
 
 schema_validator = config.VALIDATOR
 
@@ -19,6 +22,21 @@ def validate_schema(s):
 def print_db(*args, **kwargs):
     if config.PRINT_DB:
         print("".join(str(arg) + " " for arg in args))
+
+
+def regex_meet(s1, s2, *args):
+    ret = parse(s1) & parse(s2)
+    for arg in args:
+        ret = ret & parse(arg)
+    return str(ret) if not ret.empty() else None
+
+
+def regex_isSubset(s1, s2):
+    return (parse(s1) & parse(s2).everythingbut()).empty()
+
+
+def lcm(x, y):
+    return a * b / math.gcd(a, b)
 
 
 def one(iterable):

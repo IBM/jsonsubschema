@@ -33,5 +33,8 @@ if __name__ == "__main__":
         s1 = json.load(f1)
     with open(s2_file, 'r') as f2:
         s2 = json.load(f2)
-
-    print("Usage scenario 2:", isSubschema(s1, s2))
+    
+    print()
+    print("LHS <: RHS", isSubschema(s1, s2))
+    print()
+    print("RHS <: LHS", isSubschema(s2, s1))
