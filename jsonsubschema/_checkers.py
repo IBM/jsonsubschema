@@ -92,9 +92,12 @@ class JSONschema(dict, metaclass=UninhabitedMeta):
         if isinstance(s2, JSONEmptySchema) or self == s2 or self.uninhabited:
             return True
         #
-        if isinstance(self, JSONEmptySchema):
-            return False
+        # TODO: revisit here... not necessarily
+        # if isinstance(self, JSONEmptySchema):
+        #     return False
         #
+        print_db(type(self), self)
+        print_db(type(s2), s2)
         return self._isSubtype(s2)
 
     def isSubtype_handle_rhs(self, s2, isSubtype_cb):
@@ -115,10 +118,11 @@ class JSONschema(dict, metaclass=UninhabitedMeta):
 
 
 class JSONEmptySchema(JSONschema):
-    kw_defaults = {"type": "EmptySchema"}
 
-    def __init__(self):
-        super().__init__({})
+    # kw_defaults = {"type": "EmptySchema"}
+
+    # def __init__(self):
+    #     super().__init__({})
 
     def _isUninhabited(self):
         return False
@@ -141,7 +145,8 @@ JSONTOP = JSONEmptySchema
 
 class JSONTypeString(JSONschema):
 
-    kw_defaults = {"minLength": 0, "maxLength": infinity, "pattern": ".*"}
+    kw_defaults = {"type": "string", "minLength": 0,
+                   "maxLength": infinity, "pattern": ".*"}
 
     def __init__(self, s):
         super().__init__(s)
@@ -209,7 +214,7 @@ def JSONNumericFactory(s):
 
 class JSONTypeInteger(JSONschema):
 
-    kw_defaults = {"minimum": -infinity, "maximum": infinity,
+    kw_defaults = {"type": "integer", "minimum": -infinity, "maximum": infinity,
                    "exclusiveMinimum": False, "exclusiveMaximum": False, "multipleOf": None}
 
     def __init__(self, s):
@@ -258,7 +263,8 @@ class JSONTypeInteger(JSONschema):
 
 
 class JSONTypeNumber(JSONschema):
-    kw_defaults = {"minimum": -infinity, "maximum": infinity,
+
+    kw_defaults = {"type": "number", "minimum": -infinity, "maximum": infinity,
                    "exclusiveMinimum": False, "exclusiveMaximum": False, "multipleOf": None}
 
     def __init__(self, s):
@@ -304,7 +310,8 @@ class JSONTypeNumber(JSONschema):
 
 
 class JSONTypeBoolean(JSONschema):
-    kw_defaults = {}
+
+    kw_defaults = {"type": "boolean"}
 
     def __init__(self, s):
         super().__init__(s)
@@ -321,7 +328,8 @@ class JSONTypeBoolean(JSONschema):
 
 
 class JSONTypeNull(JSONschema):
-    kw_defaults = {}
+
+    kw_defaults = {"type": "null"}
 
     def __init__(self, s):
         super().__init__(s)
@@ -339,7 +347,7 @@ class JSONTypeNull(JSONschema):
 
 class JSONTypeArray(JSONschema):
 
-    kw_defaults = {"minItems": 0, "maxItems": infinity,
+    kw_defaults = {"type": "array", "minItems": 0, "maxItems": infinity,
                    "items": JSONEmptySchema(), "additionalItems": JSONEmptySchema(), "uniqueItems": False}
 
     def __init__(self, s):
@@ -504,6 +512,9 @@ class JSONTypeObject(JSONschema):
 
 class JSONanyOf(JSONschema):
 
+    def _isUninhabited(self):
+        return False
+
     def meet(self, s):
         pass
 
@@ -528,7 +539,6 @@ def JSONallOfFactory(s):
 class JSONallOf(JSONschema):
 
     def meet(self, s):
-        # if s.get("allOf")
         return
 
     def _isSubtype(Self, s2):
