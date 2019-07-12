@@ -5,8 +5,9 @@ Created on June 7, 2019
 
 from intervals import inf as infinity
 
-Jtypes = set(["string", "number", "integer",
-              "boolean", "null", "array", "object"])
+Jnumeric = set(["integer", "number"])
+
+Jtypes = set(["string", "boolean", "null", "array", "object"]).union(Jnumeric)
 
 Jconnectors = set(["anyOf", "allOf", "oneOf", "not"])
 

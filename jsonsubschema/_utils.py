@@ -36,7 +36,15 @@ def regex_isSubset(s1, s2):
 
 
 def lcm(x, y):
-    return a * b / math.gcd(a, b)
+    if x == I.inf or x == -I.inf or  x == None:
+        if y == I.inf or y == -I.inf or y == None:
+            return None
+        else:
+            return y
+    elif y == I.inf or y == -I.inf or y == None:
+        return x
+    else:
+        return x * y / math.gcd(x, y)
 
 
 def one(iterable):

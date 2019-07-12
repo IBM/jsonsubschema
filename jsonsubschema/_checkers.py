@@ -20,6 +20,7 @@ from _utils import (
     regex_meet,
     regex_isSubset,
     is_sub_interval_from_optional_ranges,
+    lcm,
     is_num,
     is_list,
     is_dict,
@@ -117,12 +118,7 @@ class JSONschema(dict, metaclass=UninhabitedMeta):
             return isSubtype_cb(self, s2)
 
 
-class JSONEmptySchema(JSONschema):
-
-    # kw_defaults = {"type": "EmptySchema"}
-
-    # def __init__(self):
-    #     super().__init__({})
+class JSONtop(JSONschema):
 
     def _isUninhabited(self):
         return False
@@ -131,16 +127,34 @@ class JSONEmptySchema(JSONschema):
         return s
 
     def _isSubtype(self, s2):
-        # TODO revisit this!
-        def _isEmptySchemaSubtype(s1, s2):
-            if isinstance(s2, JSONEmptySchema):
+
+        def _isTopSubtype(s1, s2):
+            if isinstance(s2, JSONtop):
                 return True
             return False
 
-        super().isSubtype_handle_rhs(s2, _isEmptySchemaSubtype)
+        super().isSubtype_handle_rhs(s2, _isTopSubtype)
 
 
-JSONTOP = JSONEmptySchema
+JSONEmptySchema = JSONtop
+
+
+class JSONbot(JSONschema):
+
+    def _isUninhabited(self):
+        return True
+
+    def meet(self, s):
+        return self
+
+    def _isSubtype(self, s2):
+
+        def _isBotSubtype(s1, s2):
+            if isinstance(s2, JSONbot) or s2.uninhabited:
+                return True
+            return False
+
+        super().isSubtype_handle_rhs(s2, _isBotSubtype)
 
 
 class JSONTypeString(JSONschema):
@@ -158,7 +172,7 @@ class JSONTypeString(JSONschema):
         if s.type != "string":
             return
 
-        ret = copy.deepcopy(self.kw_defaults)
+        ret = {}
         ret["minLength"] = max(self.minLength, s.minLength)
         ret["maxLength"] = min(self.maxLength, s.maxLength)
         ret["pattern"] = regex_meet(self.pattern, s.pattern)
@@ -236,12 +250,20 @@ class JSONTypeInteger(JSONschema):
             (self.multipleOf != None and self.multipleOf not in self.interval)
 
     def meet(self, s):
-        pass
+        if s.type not in _constants.Jnumeric:
+            return
+
+        ret = {}
+        ret["type"] = "integer"
+        ret["minimum"] = max(self.minimum, s.minimum)
+        ret["maximum"] = min(self.maximum, s.maximum)
+        ret["multipleOf"] = lcm(self.multipleOf, s.multipleOf)
+        return JSONTypeInteger(ret)
 
     def _isSubtype(self, s2):
 
         def _isIntegerSubtype(s1, s2):
-            if s2.type not in ["integer", "number"]:
+            if s2.type not in _constants.Jnumeric:
                 return False
             #
             is_sub_interval = s1.interval in s2.interval
@@ -286,7 +308,15 @@ class JSONTypeNumber(JSONschema):
             (self.multipleOf != None and self.multipleOf not in self.interval)
 
     def meet(self, s):
-        pass
+        if s.type not in _constants.Jnumeric:
+            return
+
+        ret = {}
+        ret["type"] = "integer" if s2.type == "integer" else "number"
+        ret["minimum"] = max(self.minimum, s.minimum)
+        ret["maximum"] = min(self.maximum, s.maximum)
+        ret["multipleOf"] = lcm(self.multipleOf, s.multipleOf)
+        return JSONNumericFactory(ret)
 
     def _isSubtype(self, s2):
 
@@ -530,7 +560,7 @@ class JSONanyOf(JSONschema):
 
 
 def JSONallOfFactory(s):
-    ret = JSONTOP()
+    ret = JSONtop()
     for i in s.get("allOf"):
         ret = ret.meet(i)
     return ret

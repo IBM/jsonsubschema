@@ -467,3 +467,39 @@ class TestNumericSubtype(unittest.TestCase):
             self.assertTrue(isSubschema(s1, s2))
         with self.subTest():
             self.assertTrue(isSubschema(s2, s1))
+
+
+class TestCompositeNumericSubtype(unittest.TestCase):
+    
+    def test_invalid_schema(self):
+        s1 = {"$schema": "http://json-schema.org/draft-04/schema",
+              "type": "integer"}
+        s2 = {"$schema": "http://json-schema.org/draft-04/schema",
+              "type": "number",
+              "allOf": [""]}
+        with self.subTest():
+            self.assertRaises(SchemaError, isSubschema, s1, s2)
+        with self.subTest():
+            self.assertRaises(SchemaError, isSubschema, s2, s1)
+
+    def test_int_int_num1(self):
+        s1 = {"$schema": "http://json-schema.org/draft-04/schema",
+              "type": "integer"}
+        s2 = {"$schema": "http://json-schema.org/draft-04/schema",
+              "type": "number",
+              "allOf": [{"type": "integer"}, {"type": "number", "minimum": 10}]}
+        with self.subTest():
+            self.assertFalse(isSubschema(s1, s2))
+        with self.subTest():
+            self.assertTrue(isSubschema(s2, s1))
+
+    def test_int_int_num2(self):
+        s1 = {"$schema": "http://json-schema.org/draft-04/schema",
+              "type": "integer", "multipleOf" : 5}
+        s2 = {"$schema": "http://json-schema.org/draft-04/schema",
+              "type": "number",
+              "allOf": [{"type": "integer"}, {"type": "number", "minimum": 10}]}
+        with self.subTest():
+            self.assertFalse(isSubschema(s1, s2))
+        with self.subTest():
+            self.assertFalse(isSubschema(s2, s1))
