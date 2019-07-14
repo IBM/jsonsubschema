@@ -49,6 +49,9 @@ class JSONschema(dict, metaclass=UninhabitedMeta):
     def __getattr__(self, name):
         if name in self:
             return self[name]
+        elif name == "type" and set(self) & set(["anyOf", "allOf", "oneOf", "not"]):
+            # TODO do we need this?
+            return None
         else:
             raise AttributeError("No such attribute: ", name)
 
@@ -65,7 +68,7 @@ class JSONschema(dict, metaclass=UninhabitedMeta):
         for k, v in self.kw_defaults.items():
             if k not in self.keys():
                 self[k] = v
-        # dirty hack becuase self.items is already an attribute of dict
+        # dirty hack becuase self.items() is already an attribute of dict
         if "items" in self.keys():
             self["items_"] = self["items"]
             del self["items"]
@@ -76,29 +79,47 @@ class JSONschema(dict, metaclass=UninhabitedMeta):
     def checkUninhabited(self):
         self.uninhabited = self._isUninhabited()
 
-        if config.WARN_UNINHABITED and self.uninhabited:
-            print("Found an uninhabited type at: " + str(self))
+        if config.WARN_UNINHABITED and self.uninhabited and not isinstance(self, JSONbot):
+            print("Found an uninhabited type at: ", type(self), str(self))
 
     def _isUninhabited(self):
         pass
 
     def meet(self, s2):
-        pass
+        
+        if self == s2:  # identity
+            return self
+
+        if  isinstance(s2, JSONbot) or s2.uninhabited or isinstance(self, JSONbot) or self.uninhabited:
+            return JSONbot()        
+        if isinstance(s2, JSONtop):
+            return self
+        if isinstance(self, JSONtop):
+            return s2
+
+        if not self.isBoolean() and isinstance(s2, JSONanyOf):
+            s2 = summarize_anyof_based_on_type(self.type, s2)
+
+        return self._meet(s2)
 
     def join(self, s2):
         pass
 
     def isSubtype(self, s2):
         #
+        # print_db(type(self), self)
+        # print_db(type(s2), s2)
+        #
         if isinstance(s2, JSONEmptySchema) or self == s2 or self.uninhabited:
             return True
         #
+        if isinstance(s2, JSONbot) and not self.uninhabited:
+            return False
         # TODO: revisit here... not necessarily
         # if isinstance(self, JSONEmptySchema):
         #     return False
         #
-        print_db(type(self), self)
-        print_db(type(s2), s2)
+
         return self._isSubtype(s2)
 
     def isSubtype_handle_rhs(self, s2, isSubtype_cb):
@@ -123,7 +144,7 @@ class JSONtop(JSONschema):
     def _isUninhabited(self):
         return False
 
-    def meet(self, s):
+    def _meet(self, s):
         return s
 
     def _isSubtype(self, s2):
@@ -144,7 +165,7 @@ class JSONbot(JSONschema):
     def _isUninhabited(self):
         return True
 
-    def meet(self, s):
+    def _meet(self, s):
         return self
 
     def _isSubtype(self, s2):
@@ -168,9 +189,12 @@ class JSONTypeString(JSONschema):
     def _isUninhabited(self):
         return (self.minLength > self.maxLength) or self.pattern == None
 
-    def meet(self, s):
+    def _meet(self, s):
+        if isinstance(s, JSONtop):
+            return self
+
         if s.type != "string":
-            return
+            return JSONbot()
 
         ret = {}
         ret["minLength"] = max(self.minLength, s.minLength)
@@ -246,12 +270,15 @@ class JSONTypeInteger(JSONschema):
 
     def _isUninhabited(self):
         self.build_interval_draft4()
-        return self.interval.is_empty() or \
-            (self.multipleOf != None and self.multipleOf not in self.interval)
+        return self.interval.is_empty() #\
+            # or (self.multipleOf != None and self.multipleOf not in self.interval)
 
-    def meet(self, s):
+    def _meet(self, s):
+        if isinstance(s, JSONtop):
+            return self
+
         if s.type not in _constants.Jnumeric:
-            return
+            return JSONbot()
 
         ret = {}
         ret["type"] = "integer"
@@ -304,12 +331,16 @@ class JSONTypeNumber(JSONschema):
 
     def _isUninhabited(self):
         self.build_interval_draft4()
-        return self.interval.is_empty() or \
-            (self.multipleOf != None and self.multipleOf not in self.interval)
+        return self.interval.is_empty() #\ 
+            # or (self.multipleOf != None and self.multipleOf not in self.interval)
 
-    def meet(self, s):
+    def _meet(self, s):
+        if isinstance(s, JSONtop):
+            return self
+
         if s.type not in _constants.Jnumeric:
-            return
+            return JSONbot()
+
 
         ret = {}
         ret["type"] = "integer" if s2.type == "integer" else "number"
@@ -346,6 +377,17 @@ class JSONTypeBoolean(JSONschema):
     def __init__(self, s):
         super().__init__(s)
 
+    def _isUninhabited(self):
+        return False
+
+    def _meet(self, s):
+        if isinstance(s, JSONtop):
+            return self
+
+        if s.type != "boolean":
+            return JSONbot()
+        return self
+
     def _isSubtype(self, s2):
 
         def _isBooleanSubtype(self, s2):
@@ -363,6 +405,17 @@ class JSONTypeNull(JSONschema):
 
     def __init__(self, s):
         super().__init__(s)
+
+    def _isUninhabited(self):
+        return False
+
+    def _meet(self, s):
+        if isinstance(s, JSONtop):
+            return self
+
+        if s.type != "null":
+            return JSONbot()
+        return self
 
     def _isSubtype(self, s2):
 
@@ -382,7 +435,6 @@ class JSONTypeArray(JSONschema):
 
     def __init__(self, s):
         super().__init__(s)
-        self.compute_actual_maxItems()
 
     def compute_actual_maxItems(self):
         if is_list(self.items_) and \
@@ -390,12 +442,20 @@ class JSONTypeArray(JSONschema):
             self.maxItems = min(self.maxItems, len(self.items_))
 
     def _isUninhabited(self):
+        self.compute_actual_maxItems()
         return (self.minItems > self.maxItems) or \
             (is_list(self.items) and self.additionalItems ==
              False and self.minItems > len(self.items))
 
-    def meet(self, s2):
-        pass
+    def _meet(self, s):
+        if isinstance(s, JSONtop):
+            return self
+
+        if s.type != "array":
+            return JSONbot()
+        # TODO
+        # array meet
+        return self
 
     def _isSubtype(self, s2):
 
@@ -523,30 +583,66 @@ class JSONTypeArray(JSONschema):
 
 class JSONTypeObject(JSONschema):
 
-    kw_defaults = {"properties": {}, "additionalProperties": {}, "required": [
-    ], "minProperties": 0, "maxProperties": infinity, "dependencies": {}, "patternProperties": {}}
+    kw_defaults = {"properties": {}, "additionalProperties": {}, "required": [],
+     "minProperties": 0, "maxProperties": infinity, "dependencies": {}, "patternProperties": {}}
 
     def __init__(self, s):
         super().__init__(s)
 
-    def meet(self, s2):
-        pass
+    def _isUninhabited(self):
+        # TODO
+        return False
+
+    def _meet(self, s):
+        if isinstance(s, JSONtop):
+            return self
+
+        if s.type != "object":
+            return JSONbot()
+        # TODO
+        # object meet
+        return self
 
     def _isSubtype(self, s2):
 
         def _isObjectSubtype(s1, s2):
+            # TODO
             return
 
         return super().isSubtype_handle_rhs(s2, _isObjectSubtype)
 
 
+def summarize_anyof_based_on_type(t, s):
+    ret = JSONtop()
+    for i in s.anyOf:
+        if i.type == t:
+            ret = ret.meet(i)
+    return ret
+    
+
 class JSONanyOf(JSONschema):
 
+    def __init__(self, s):
+        super().__init__(s)
+        
     def _isUninhabited(self):
-        return False
+        return all(i.uninhabited for i in self.anyOf)
 
-    def meet(self, s):
-        pass
+    def _meet(self, s):
+        if isinstance(s, JSONtop):
+            return self
+        print("_meet anyOf", self.anyOf)
+        anyofs = []
+        for i in self.anyOf:
+            tmp = i.meet(s)
+            if not tmp.uninhabited:
+                anyofs.append(tmp)
+        if len(anyofs) > 1:
+            return JSONanyOf({"anyOf": anyofs})
+        elif len(anyofs) == 1:
+            return anyofs.pop()
+        else:
+            return JSONbot()
 
     def _isSubtype(self, s2):
 
@@ -568,9 +664,19 @@ def JSONallOfFactory(s):
 
 class JSONallOf(JSONschema):
 
-    def meet(self, s):
-        return
+    def __init__(self, s):
+        super().__init__(s)
 
+    def _isUninhabited(self):
+        return any(i.uninhabited for i in self.allOf)
+
+    def _meet(self, s):
+        allofs = []
+        for i in self.allOf:
+            allofs.append(i.meet(s))
+
+        return JSONallOfFactory({"allOf": allofs})
+        
     def _isSubtype(Self, s2):
 
         def _isAllOfSubtype(self, s2):
@@ -584,11 +690,14 @@ class JSONallOf(JSONschema):
 
 class JSONoneOf(JSONschema):
 
+    def _isUninhabited(self):
+        return False
+
     def meet(self, s):
         pass
 
     def _isSubtype(self, s2):
-        sys.exit("onOf on the lhs is not supported yet.")
+        sys.exit("oneOf on the lhs is not supported yet.")
 
 
 class JSONnot(JSONschema):
