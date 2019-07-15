@@ -46,5 +46,5 @@ def isSubschema(s1, s2):
     s2_ = copy.deepcopy(s2)
     s2_ = canoncalize_json(s2_)
     print_db("RHS_canonical", s2_)
-    
+
     return s1_.isSubtype(s2_)

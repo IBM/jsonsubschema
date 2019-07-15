@@ -209,6 +209,16 @@ class TestIntegerSubtype(unittest.TestCase):
         with self.subTest():
             self.assertFalse(isSubschema(s2, s1))
 
+    def test_min_max_mul(self):
+        s1 = {"$schema": "http://json-schema.org/draft-04/schema",
+              "type": "integer", "minimum": 5, "maximum": 10, "multipleOf": 15}
+        s2 = {"$schema": "http://json-schema.org/draft-04/schema",
+              "type": "integer"}
+        with self.subTest():
+            self.assertTrue(isSubschema(s1, s2))
+        with self.subTest():
+            self.assertFalse(isSubschema(s2, s1))
+
 
 class TestNumberSubtype(unittest.TestCase):
 
@@ -533,7 +543,31 @@ class TestCompositeNumericSubtype(unittest.TestCase):
               "type": "integer", "allOf": [{"multipleOf": 3}, {"minimum": 5}]}
         s2 = {"$schema": "http://json-schema.org/draft-04/schema",
               "type": "number", "multipleOf": 3,
-              "allOf": [{"type": "integer"}, {"type": "number", "multipleOf": 5}]} # ..., -30, -15, 15, 30, 45, ..
+              "allOf": [{"type": "integer"}, {"type": "number", "multipleOf": 5}]}  # ..., -30, -15, 15, 30, 45, ..
+        with self.subTest():
+            self.assertFalse(isSubschema(s1, s2))
+        with self.subTest():
+            self.assertFalse(isSubschema(s2, s1))
+
+    def test_all_all_2(self):
+        s1 = {"$schema": "http://json-schema.org/draft-04/schema",
+              "type": "integer",
+              "allOf": [{"multipleOf": 3}]}
+        s2 = {"$schema": "http://json-schema.org/draft-04/schema",
+              "type": "number", "multipleOf": 3,
+              "allOf": [{"type": "integer"}, {"type": "number", "multipleOf": 3}]}  # ..., -30, -15, 15, 30, 45, ..
+        with self.subTest():
+            self.assertTrue(isSubschema(s1, s2))
+        with self.subTest():
+            self.assertTrue(isSubschema(s2, s1))
+
+    def test_all_all_3(self):
+        s1 = {"$schema": "http://json-schema.org/draft-04/schema",
+              "type": "number",
+              "allOf": [{"multipleOf": .3}]}
+        s2 = {"$schema": "http://json-schema.org/draft-04/schema",
+              "type": "number", "multipleOf": 3,
+              "allOf": [{"type": "integer"}, {"type": "number", "multipleOf": 3}]}  # ..., -30, -15, 15, 30, 45, ..
         with self.subTest():
             self.assertFalse(isSubschema(s1, s2))
         with self.subTest():

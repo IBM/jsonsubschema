@@ -11,7 +11,7 @@ from config import VALIDATOR
 from _checkers import (
     typeToConstructor,
     boolToConstructor,
-    JSONEmptySchema
+    JSONtop
 )
 
 
@@ -26,7 +26,7 @@ def canoncalize_json(obj):
 
 def canoncalize_dict(d):
     if d == {}:
-        return JSONEmptySchema()
+        return JSONtop()
 
     t = d.get("type")
     has_connectors = set(d.keys()) & _constants.Jconnectors

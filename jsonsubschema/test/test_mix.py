@@ -60,16 +60,24 @@ class TestMixedTypes(unittest.TestCase):
         with self.subTest():
             self.assertFalse(isSubschema(s2, s1))
 
-    
     def test_str_int(self):
-        s1 = {
-            "$schema": "http://json-schema.org/draft-04/schema",
-            "type": "string", "pattern": "a+",
-            "allOf": [{"type": "string", "pattern": "b+"}, {"allOf": [{"type": "string", "maxLength": 10}]}]
-            }
+        s1 = {"$schema": "http://json-schema.org/draft-04/schema",
+              "type": "string", "pattern": "a+",
+              "allOf": [{"type": "string", "pattern": "b+"}, {"allOf": [{"type": "string", "maxLength": 10}]}]
+              }
         s2 = {"$schema": "http://json-schema.org/draft-04/schema",
               "type": "integer", "maxLength": 1}
         with self.subTest("LHS is uninhabited"):
             self.assertTrue(isSubschema(s1, s2))
         with self.subTest("RHS is uninhabited"):
             self.assertFalse(isSubschema(s2, s1))
+
+    def test_str_bool_any(self):
+        s1 = {"$schema": "http://json-schema.org/draft-04/schema",
+              "type": ["string", "boolean"]}
+        s2 = {"$schema": "http://json-schema.org/draft-04/schema",
+              "anyOf": [{"type": "string"}, {"type": "boolean"}]}
+        with self.subTest():
+            self.assertTrue(isSubschema(s1, s2))
+        with self.subTest():
+            self.assertTrue(isSubschema(s2, s1))
