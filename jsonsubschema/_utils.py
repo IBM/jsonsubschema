@@ -3,6 +3,7 @@ Created on May 24, 2019
 @author: Andrew Habib
 '''
 
+import fractions as frac
 import math
 import numbers
 
@@ -36,7 +37,7 @@ def regex_isSubset(s1, s2):
 
 
 def lcm(x, y):
-    if x == I.inf or x == -I.inf or  x == None:
+    if x == I.inf or x == -I.inf or x == None:
         if y == I.inf or y == -I.inf or y == None:
             return None
         else:
@@ -44,7 +45,7 @@ def lcm(x, y):
     elif y == I.inf or y == -I.inf or y == None:
         return x
     else:
-        return x * y / math.gcd(x, y)
+        return x * y / frac.gcd(x, y)
 
 
 def one(iterable):
@@ -58,12 +59,16 @@ def one(iterable):
 class PythonTypes:
 
     @staticmethod
+    def is_str(i):
+        return isinstance(i, str)
+
+    @staticmethod
     def is_num(i):
         return isinstance(i, int) or isinstance(i, numbers.Number)
 
     @staticmethod
-    def is_str(i):
-        return isinstance(i, str)
+    def is_bool(i):
+        return isinstance(i, bool)
 
     @staticmethod
     def is_list(i):
@@ -83,6 +88,7 @@ class PythonTypes:
 
 
 is_num = PythonTypes.is_num
+is_bool = PythonTypes.is_bool
 is_list = PythonTypes.is_list
 is_dict = PythonTypes.is_dict
 is_empty_dict_or_none = PythonTypes.is_empty_dict_or_none
