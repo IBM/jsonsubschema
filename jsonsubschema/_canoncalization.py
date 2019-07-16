@@ -2,9 +2,10 @@
 Created on June 24, 2019
 @author: Andrew Habib
 '''
+
 import copy
-import numbers
 import jsonschema
+import numbers
 
 import _constants
 from config import VALIDATOR

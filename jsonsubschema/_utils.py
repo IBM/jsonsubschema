@@ -3,12 +3,13 @@ Created on May 24, 2019
 @author: Andrew Habib
 '''
 
-import fractions as frac
+
 import math
 import numbers
 
-import intervals as I
+import fractions as frac
 
+import intervals as I
 from greenery.lego import parse
 
 import config

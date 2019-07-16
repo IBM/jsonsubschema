@@ -11,8 +11,6 @@ import numbers
 import sys
 
 import intervals as I
-# from abc import ABC, abstractmethod
-from intervals import inf as infinity
 
 import config
 import _constants
@@ -194,7 +192,7 @@ def is_bot(obj):
 class JSONTypeString(JSONschema):
 
     kw_defaults = {"type": "string", "minLength": 0,
-                   "maxLength": infinity, "pattern": ".*"}
+                   "maxLength": I.inf, "pattern": ".*"}
 
     def __init__(self, s):
         super().__init__(s)
@@ -265,7 +263,7 @@ def JSONNumericFactory(s):
 
 class JSONTypeInteger(JSONschema):
 
-    kw_defaults = {"type": "integer", "minimum": -infinity, "maximum": infinity,
+    kw_defaults = {"type": "integer", "minimum": -I.inf, "maximum": I.inf,
                    "exclusiveMinimum": False, "exclusiveMaximum": False, "multipleOf": None}
 
     def __init__(self, s):
@@ -327,7 +325,7 @@ class JSONTypeInteger(JSONschema):
 
 class JSONTypeNumber(JSONschema):
 
-    kw_defaults = {"type": "number", "minimum": -infinity, "maximum": infinity,
+    kw_defaults = {"type": "number", "minimum": -I.inf, "maximum": I.inf,
                    "exclusiveMinimum": False, "exclusiveMaximum": False, "multipleOf": None}
 
     def __init__(self, s):
@@ -444,7 +442,7 @@ class JSONTypeNull(JSONschema):
 
 class JSONTypeArray(JSONschema):
 
-    kw_defaults = {"type": "array", "minItems": 0, "maxItems": infinity,
+    kw_defaults = {"type": "array", "minItems": 0, "maxItems": I.inf,
                    "items": JSONtop(), "additionalItems": JSONtop(), "uniqueItems": False}
 
     def __init__(self, s):
@@ -476,7 +474,8 @@ class JSONTypeArray(JSONschema):
         ret["uniqueItems"] = self.uniqueItems or s.uniqueItems
 
         def meet_arrayItems_dict_list(s1, s2, ret):
-            assert is_dict(s1.items_) and is_list(s2.items_), "Violating meet_arrayItems_dict_list condition: 's1.items is dict' and 's2.items is list'"
+            assert is_dict(s1.items_) and is_list(
+                s2.items_), "Violating meet_arrayItems_dict_list condition: 's1.items is dict' and 's2.items is list'"
             itms = []
             for i in s2.items_:
                 r = i.meet(s1.items_)
@@ -516,7 +515,7 @@ class JSONTypeArray(JSONschema):
             elif is_list(s.items_):
                 self_len = len(self.items_)
                 s_len = len(s.items_)
-                
+
                 def meet_arrayAdditionalItems_list_list(s1, s2):
                     if is_bool(s1.additionalItems) and is_bool(s2.additionalItems):
                         ad = s1.additionalItems and s2.additionalItems
@@ -552,7 +551,7 @@ class JSONTypeArray(JSONschema):
                     ret["additionalItems"] = ad
                     ret["items"] = itms
                     return ret
-            
+
                 if self_len == s_len:
                     itms = []
                     for i, j in zip(self.items_, s.items_):
@@ -703,7 +702,7 @@ class JSONTypeArray(JSONschema):
 class JSONTypeObject(JSONschema):
 
     kw_defaults = {"properties": {}, "additionalProperties": {}, "required": [],
-                   "minProperties": 0, "maxProperties": infinity, "dependencies": {}, "patternProperties": {}}
+                   "minProperties": 0, "maxProperties": I.inf, "dependencies": {}, "patternProperties": {}}
 
     def __init__(self, s):
         super().__init__(s)
