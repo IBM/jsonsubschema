@@ -20,7 +20,7 @@ from _utils import (
     regex_meet,
     regex_isSubset,
     lcm,
-    is_num,
+    is_int,
     is_bool,
     is_list,
     is_dict,
@@ -43,11 +43,10 @@ class JSONschema(dict, metaclass=UninhabitedMeta):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         # Since some of the default values for JSON types
-        # are not compatible with the jsonschema validator, 
+        # are not compatible with the jsonschema validator,
         # we don't explicitly add the keys with default values
         # to the underlying dict.
         # self.updateKeys()
-
 
     def __getattr__(self, name):
 
@@ -62,9 +61,9 @@ class JSONschema(dict, metaclass=UninhabitedMeta):
                 return self.kw_defaults["items"]
             else:
                 raise AttributeError("Couldn't find items_: ", name)
-                
+
         elif name in self.kw_defaults:
-            return self.kw_defaults[name]    
+            return self.kw_defaults[name]
         else:
             raise AttributeError("No such attribute: ", name)
 
@@ -122,10 +121,10 @@ class JSONschema(dict, metaclass=UninhabitedMeta):
         #
         else:
             return meet_cb(self, s)
-        
+
     def join(self, s):
         #
-        if self == s or is_bot(s): 
+        if self == s or is_bot(s):
             return self
         #
         if is_bot(self):
@@ -140,7 +139,6 @@ class JSONschema(dict, metaclass=UninhabitedMeta):
             return JSONbot()
         else:
             return ret
-        
 
     def isSubtype(self, s):
         #
@@ -161,7 +159,7 @@ class JSONschema(dict, metaclass=UninhabitedMeta):
                 return all(isSubtype_cb(self, i) for i in s.allOf)
             elif s.type == "oneOf":
                 return one(isSubtype_cb(self, i) for i in s.oneOf)
-            elif s.type  == "not":
+            elif s.type == "not":
                 # TODO
                 print("No handling of 'not' on rhs yet.")
                 return None
@@ -189,6 +187,7 @@ class JSONtop(JSONschema):
     def __repr__(self):
         return "JSON_TOP"
 
+
 def is_top(obj):
     return isinstance(obj, JSONtop) or obj == True
 
@@ -213,6 +212,7 @@ class JSONbot(JSONschema):
     def __repr__(self):
         return "JSON_BOT"
 
+
 def is_bot(obj):
     return isinstance(obj, JSONbot) or obj == False \
         or (isinstance(obj, JSONschema) and obj.uninhabited)
@@ -231,7 +231,7 @@ class JSONTypeString(JSONschema):
         return (self.minLength > self.maxLength) or self.pattern == None
 
     def _meet(self, s):
-        
+
         def _meetString(s1, s2):
             if s2.type == "string":
                 ret = {}
@@ -276,7 +276,7 @@ def JSONNumericFactory(s):
         In this case, the JSON number becomes a JSON integer.'''
 
     if s.get("type") == "number":
-        if s.get("multipleOf") and float(s.get("multipleOf")).is_integer():
+        if is_int(s.get("multipleOf")):
             s["type"] = "integer"
             if s.get("minimum") != None:  # -I.inf:
                 s["minimum"] = math.floor(s.get("minimum")) if s.get(
@@ -290,10 +290,12 @@ def JSONNumericFactory(s):
     else:
         return JSONTypeInteger(s)
 
+
 def isNumericUninhabited(s):
     return s.interval.is_empty()  \
-    or (s.multipleOf != None and s.multipleOf not in s.interval
-        and s.interval.lower != -I.inf and s.interval.upper != I.inf)
+        or (s.multipleOf != None and s.multipleOf not in s.interval
+            and s.interval.lower != -I.inf and s.interval.upper != I.inf)
+
 
 class JSONTypeInteger(JSONschema):
 
@@ -329,7 +331,7 @@ class JSONTypeInteger(JSONschema):
                 return JSONTypeInteger(ret)
             else:
                 return JSONbot()
-        
+
         return super().meet_handle_rhs(s, _meetInteger)
 
     def _isSubtype(self, s):
@@ -380,7 +382,7 @@ class JSONTypeNumber(JSONschema):
         return isNumericUninhabited(self)
 
     def _meet(self, s):
-        
+
         def _meetNumber(s1, s2):
             if s2.type in _constants.Jnumeric:
                 ret = {}
@@ -391,9 +393,8 @@ class JSONTypeNumber(JSONschema):
                 return JSONNumericFactory(ret)
             else:
                 return JSONbot()
-        
-        return super().meet_handle_rhs(s, _meetNumber)
 
+        return super().meet_handle_rhs(s, _meetNumber)
 
     def _isSubtype(self, s):
 
@@ -460,7 +461,7 @@ class JSONTypeNull(JSONschema):
     def _meet(self, s):
 
         def _meetNull(s1, s2):
-                
+
             if s2.type == "null":
                 return s1
             else:
@@ -557,9 +558,11 @@ class JSONTypeArray(JSONschema):
                             if is_bool(s1.additionalItems) and is_bool(s2.additionalItems):
                                 ad = s1.additionalItems and s2.additionalItems
                             elif is_dict(s1.additionalItems):
-                                ad = s1.additionalItems.meet(s2.additionalItems)
+                                ad = s1.additionalItems.meet(
+                                    s2.additionalItems)
                             elif is_dict(s2.additionalItems):
-                                ad = s2.additionalItems.meet(s1.additionalItems)
+                                ad = s2.additionalItems.meet(
+                                    s1.additionalItems)
                             return False if is_bot(ad) else ad
 
                         def meet_array_longlist_shorterlist(s1, s2, ret):
@@ -583,7 +586,8 @@ class JSONTypeArray(JSONschema):
                                         ad = False
                                         break
                                 else:
-                                    ad = meet_arrayAdditionalItems_list_list(s1, s2)
+                                    ad = meet_arrayAdditionalItems_list_list(
+                                        s1, s2)
 
                             ret["additionalItems"] = ad
                             ret["items"] = itms
@@ -599,7 +603,8 @@ class JSONTypeArray(JSONschema):
                                     ad = False
                                     break
                             else:
-                                ad = meet_arrayAdditionalItems_list_list(s1, s2)
+                                ad = meet_arrayAdditionalItems_list_list(
+                                    s1, s2)
 
                             ret["additionalItems"] = ad
                             ret["items"] = itms
@@ -611,10 +616,10 @@ class JSONTypeArray(JSONschema):
                             ret = meet_array_longlist_shorterlist(s2, s1, ret)
 
                 return JSONTypeArray(ret)
-            
+
             else:
                 return JSONbot()
-            
+
         return super().meet_handle_rhs(s, _meetArray)
 
     def _isSubtype(self, s):
@@ -760,7 +765,7 @@ class JSONTypeObject(JSONschema):
                 pass
             else:
                 return JSONbot()
-            
+
         return super().meet_handle_rhs(s, _meetObject)
 
     def _isSubtype(self, s):
@@ -783,12 +788,11 @@ class JSONanyOf(JSONschema):
         return all(i.uninhabited for i in self.anyOf)
 
     def _meet(self, s):
-        
+
         return super().meet_handle_rhs(s, JSONanyOf._meetAnyOf)
-        
 
     @staticmethod
-    def _meetAnyOf(s1, s2):        
+    def _meetAnyOf(s1, s2):
         anyofs = []
         for i in s1.anyOf:
             tmp = i.meet(s2)
@@ -801,7 +805,6 @@ class JSONanyOf(JSONschema):
             return anyofs.pop()
         else:
             return JSONbot()
-    
 
     def _isSubtype(self, s):
 
@@ -869,7 +872,7 @@ class JSONoneOf(JSONschema):
 class JSONnot(JSONschema):
 
     kw_defaults = {"type": "not"}
-    
+
     def __init__(self, s):
         super().__init__(s)
 
