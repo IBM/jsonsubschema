@@ -93,8 +93,8 @@ class JSONschema(dict, metaclass=UninhabitedMeta):
 
     def checkUninhabited(self):
         self.uninhabited = self._isUninhabited()
-        if config.WARN_UNINHABITED and self.uninhabited and not is_bot(self):
-            print("Found an uninhabited type at: ", type(self), str(self))
+        if config.WARN_UNINHABITED and self.uninhabited:
+            print("Found an uninhabited type at: ", type(self), self)
 
     def meet(self, s):
         #
@@ -145,7 +145,8 @@ class JSONschema(dict, metaclass=UninhabitedMeta):
         if self == s or is_bot(self) or is_top(s):
             return True
         #
-        if not is_bot(self) and is_bot(s):
+        if (not is_bot(self) and is_bot(s)) \
+            or (is_top(self) and not is_top(s)):
             return False
         #
         return self._isSubtype(s)
