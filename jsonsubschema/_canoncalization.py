@@ -108,12 +108,12 @@ def canoncalize_untyped_enum(d):
     for i in d.get("enum"):
         if isinstance(i, str):
             t.add("string")
+        elif isinstance(i, bool):  # bool is subtype of int, so this check has to preceed int check
+            t.add("boolean")
         elif isinstance(i, int):
             t.add("integer")
         elif isinstance(i, float):
             t.add("number")
-        elif isinstance(i, bool):
-            t.add("boolean")
         elif isinstance(i, type(None)):
             t.add("null")
         elif isinstance(i, list):
