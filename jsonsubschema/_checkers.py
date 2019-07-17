@@ -42,11 +42,29 @@ class JSONschema(dict, metaclass=UninhabitedMeta):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.updateKeys()
+        # Since some of the default values for JSON types
+        # are not compatible with the jsonschema validator, 
+        # we don't explicitly add the keys with default values
+        # to the underlying dict.
+        # self.updateKeys()
+
 
     def __getattr__(self, name):
+
         if name in self:
             return self[name]
+        # hack for JSONarray items because the inherit from dict
+        # which also has a method named dict.items()
+        elif name == "items_":
+            if "items" in self.keys():
+                return self["items"]
+            elif "items" in self.kw_defaults:
+                return self.kw_defaults["items"]
+            else:
+                raise AttributeError("Couldn't find items_: ", name)
+                
+        elif name in self.kw_defaults:
+            return self.kw_defaults[name]    
         else:
             raise AttributeError("No such attribute: ", name)
 
@@ -55,7 +73,10 @@ class JSONschema(dict, metaclass=UninhabitedMeta):
 
     def __delattr__(self, name):
         if name in self:
-            del self[name]
+            if name == "items_":
+                del self["items"]
+            else:
+                del self[name]
         else:
             raise AttributeError("No such attribute: ", name)
 
