@@ -19,7 +19,6 @@ from _utils import (
     print_db,
     regex_meet,
     regex_isSubset,
-    is_sub_interval_from_optional_ranges,
     lcm,
     is_num,
     is_bool,
@@ -48,9 +47,6 @@ class JSONschema(dict, metaclass=UninhabitedMeta):
     def __getattr__(self, name):
         if name in self:
             return self[name]
-        # TODO do we need this?
-        elif name == "type" and set(self) & set(["anyOf", "allOf", "oneOf", "not"]):
-            return None
         else:
             raise AttributeError("No such attribute: ", name)
 
@@ -77,66 +73,74 @@ class JSONschema(dict, metaclass=UninhabitedMeta):
 
     def checkUninhabited(self):
         self.uninhabited = self._isUninhabited()
-
         if config.WARN_UNINHABITED and self.uninhabited and not is_bot(self):
             print("Found an uninhabited type at: ", type(self), str(self))
 
-    # def _isUninhabited(self):
-    #     pass
-
     def meet(self, s):
-
-        if self == s or s == True or is_top(s):
+        #
+        if self == s or is_top(s):
             return self
-
+        #
         if is_top(self):
             return s
-
-        if is_bot(self) or self.uninhabited or is_bot(s) or s == False or s.uninhabited:
+        #
+        if is_bot(self) or is_bot(s):
             return JSONbot()
-
-        if not self.isBoolean() and isinstance(s, JSONanyOf):
-            s = summarize_anyof_based_on_type(self.type, s)
-
-        # instead of returning uninhabited types, return bot
+        #
         ret = self._meet(s)
-        if ret.uninhabited:
+        # instead of returning uninhabited types, return bot
+        if is_bot(ret):
             return JSONbot()
         else:
             return ret
 
+    def meet_handle_rhs(self, s, meet_cb):
+        #
+        if s.type == "anyOf":
+            return JSONanyOf._meetAnyOf(s, self)
+        #
+        else:
+            return meet_cb(self, s)
+        
     def join(self, s):
-
-        if self == s:  # identity
+        #
+        if self == s or is_bot(s): 
             return self
+        #
+        if is_bot(self):
+            return s
+        #
+        if is_top(self) or is_top(s):
+            return JSONtop()
+        #
+        ret = self._join(s)
+        # instead of returning uninhabited types, return bot
+        if is_bot(ret):
+            return JSONbot()
+        else:
+            return ret
+        
 
     def isSubtype(self, s):
         #
-        # print_db(type(self), self)
-        # print_db(type(s2), s2)
-        #
-        if self == s or self.uninhabited or is_top(s) or s == True:
+        if self == s or is_bot(self) or is_top(s):
             return True
         #
-        if not self.uninhabited and (is_bot(s) or s == False):
+        if not is_bot(self) and is_bot(s):
             return False
-        # TODO: revisit here... not necessarily
-        # if is_top(self):
-        #     return False
         #
-
         return self._isSubtype(s)
 
     def isSubtype_handle_rhs(self, s, isSubtype_cb):
         if s.isBoolean():
             # TODO revisit all of this. They are wrong.
-            if "anyOf" in s:
+            if s.type == "anyOf":
                 return any(isSubtype_cb(self, i) for i in s.anyOf)
-            elif "allOf" in s:
+            elif s.type == "allOf":
                 return all(isSubtype_cb(self, i) for i in s.allOf)
-            elif "oneOf" in s:
+            elif s.type == "oneOf":
                 return one(isSubtype_cb(self, i) for i in s.oneOf)
-            elif "not" in s:
+            elif s.type  == "not":
                 # TODO
                 print("No handling of 'not' on rhs yet.")
                 return None
@@ -155,12 +159,14 @@ class JSONtop(JSONschema):
     def _isSubtype(self, s):
 
         def _isTopSubtype(s1, s2):
-            if isinstance(s2, JSONtop):
+            if is_top(s2):
                 return True
             return False
 
         super().isSubtype_handle_rhs(s, _isTopSubtype)
 
+    def __repr__(self):
+        return "JSON_TOP"
 
 def is_top(obj):
     return isinstance(obj, JSONtop) or obj == True
@@ -177,12 +183,14 @@ class JSONbot(JSONschema):
     def _isSubtype(self, s):
 
         def _isBotSubtype(s1, s2):
-            if isinstance(s2, JSONbot) or s2.uninhabited:
+            if is_bot(s2):
                 return True
             return False
 
         super().isSubtype_handle_rhs(s, _isBotSubtype)
 
+    def __repr__(self):
+        return "JSON_BOT"
 
 def is_bot(obj):
     return isinstance(obj, JSONbot) or obj == False \
@@ -198,45 +206,46 @@ class JSONTypeString(JSONschema):
         super().__init__(s)
 
     def _isUninhabited(self):
+        self.interval = I.closed(self.minLength, self.maxLength)
         return (self.minLength > self.maxLength) or self.pattern == None
 
     def _meet(self, s):
-        # if is_top(s):
-        #     return self
+        
+        def _meetString(s1, s2):
+            if s2.type == "string":
+                ret = {}
+                ret["minLength"] = max(s1.minLength, s2.minLength)
+                ret["maxLength"] = min(s1.maxLength, s2.maxLength)
+                ret["pattern"] = regex_meet(s1.pattern, s2.pattern)
+                return JSONTypeString(ret)
+            else:
+                return JSONbot()
 
-        if s.type != "string":
-            return JSONbot()
-
-        ret = {}
-        ret["minLength"] = max(self.minLength, s.minLength)
-        ret["maxLength"] = min(self.maxLength, s.maxLength)
-        ret["pattern"] = regex_meet(self.pattern, s.pattern)
-        return JSONTypeString(ret)
+        return super().meet_handle_rhs(s, _meetString)
 
     def _isSubtype(self, s):
 
         def _isStringSubtype(s1, s2):
-            if s2.type != "string":
-                return False
-
-            is_sub_interval = is_sub_interval_from_optional_ranges(
-                s1.minLength, s1.maxLength, s2.minLength, s2.maxLength)
-            if not is_sub_interval:
-                return False
-            #
-            # at this point, length is compatible,
-            # so we should now worry about pattern only.
-            if s2.pattern == None or s2.pattern == "":
-                return True
-            elif s1.pattern == None or s1.pattern == "":
-                return False
-            elif s1.pattern == s2.pattern:
-                return True
-            else:
-                if regex_isSubset(s1.pattern, s2.pattern):
+            if s2.type == "string":
+                is_sub_interval = s1.interval in s2.interval
+                if not is_sub_interval:
+                    return False
+                #
+                # at this point, length is compatible,
+                # so we should now worry about pattern only.
+                if s2.pattern == None or s2.pattern == "":
+                    return True
+                elif s1.pattern == None or s1.pattern == "":
+                    return False
+                elif s1.pattern == s2.pattern:
                     return True
                 else:
-                    return False
+                    if regex_isSubset(s1.pattern, s2.pattern):
+                        return True
+                    else:
+                        return False
+            else:
+                return False
 
         return super().isSubtype_handle_rhs(s, _isStringSubtype)
 
@@ -260,6 +269,10 @@ def JSONNumericFactory(s):
     else:
         return JSONTypeInteger(s)
 
+def isNumericUninhabited(s):
+    return s.interval.is_empty()  \
+    or (s.multipleOf != None and s.multipleOf not in s.interval
+        and s.interval.lower != -I.inf and s.interval.upper != I.inf)
 
 class JSONTypeInteger(JSONschema):
 
@@ -281,43 +294,43 @@ class JSONTypeInteger(JSONschema):
 
     def _isUninhabited(self):
         self.build_interval_draft4()
-        return self.interval.is_empty()  \
-            or (self.multipleOf != None and self.multipleOf not in self.interval
-                and self.interval.lower != -I.inf and self.interval.upper != I.inf)
+        return isNumericUninhabited(self)
 
     def _meet(self, s):
-        # if is_top(s):
-        #     return self
 
-        if s.type not in _constants.Jnumeric:
-            return JSONbot()
-
-        ret = {}
-        ret["type"] = "integer"
-        ret["minimum"] = max(self.minimum, s.minimum)
-        ret["maximum"] = min(self.maximum, s.maximum)
-        ret["multipleOf"] = lcm(self.multipleOf, s.multipleOf)
-        return JSONTypeInteger(ret)
+        def _meetInteger(s1, s2):
+            if s2.type in _constants.Jnumeric:
+                ret = {}
+                ret["type"] = "integer"
+                ret["minimum"] = max(s1.minimum, s2.minimum)
+                ret["maximum"] = min(s1.maximum, s2.maximum)
+                ret["multipleOf"] = lcm(s1.multipleOf, s2.multipleOf)
+                return JSONTypeInteger(ret)
+            else:
+                return JSONbot()
+        
+        return super().meet_handle_rhs(s, _meetInteger)
 
     def _isSubtype(self, s):
 
         def _isIntegerSubtype(s1, s2):
-            if s2.type not in _constants.Jnumeric:
-                return False
-            #
-            is_sub_interval = s1.interval in s2.interval
-            if not is_sub_interval:
-                print_db("num__00")
-                return False
-            #
-            if (s1.multipleOf == s2.multipleOf) \
-                    or (s1.multipleOf != None and s2.multipleOf == None) \
-                    or (s1.multipleOf != None and s2.multipleOf != None and s1.multipleOf % s2.multipleOf == 0) \
-                    or (s1.multipleOf == None and s2.multipleOf == 1):
-                print_db("num__02")
-                return True
-
-            if s1.multipleOf == None and s2.multipleOf != None:
+            if s2.type in _constants.Jnumeric:
+                #
+                is_sub_interval = s1.interval in s2.interval
+                if not is_sub_interval:
+                    print_db("num__00")
+                    return False
+                #
+                if (s1.multipleOf == s2.multipleOf) \
+                        or (s1.multipleOf != None and s2.multipleOf == None) \
+                        or (s1.multipleOf != None and s2.multipleOf != None and s1.multipleOf % s2.multipleOf == 0) \
+                        or (s1.multipleOf == None and s2.multipleOf == 1):
+                    print_db("num__02")
+                    return True
+                #
+                if s1.multipleOf == None and s2.multipleOf != None:
+                    return False
+            else:
                 return False
 
         return super().isSubtype_handle_rhs(s, _isIntegerSubtype)
@@ -343,41 +356,41 @@ class JSONTypeNumber(JSONschema):
 
     def _isUninhabited(self):
         self.build_interval_draft4()
-        return self.interval.is_empty()  \
-            or (self.multipleOf != None and self.multipleOf not in self.interval
-                and self.interval.lower != -I.inf and self.interval.upper != I.inf)
+        return isNumericUninhabited(self)
 
     def _meet(self, s):
-        # if is_top(s):
-        #     return self
+        
+        def _meetNumber(s1, s2):
+            if s2.type in _constants.Jnumeric:
+                ret = {}
+                ret["type"] = "integer" if s2.type == "integer" else "number"
+                ret["minimum"] = max(s1.minimum, s2.minimum)
+                ret["maximum"] = min(s1.maximum, s2.maximum)
+                ret["multipleOf"] = lcm(s1.multipleOf, s2.multipleOf)
+                return JSONNumericFactory(ret)
+            else:
+                return JSONbot()
+        
+        return super().meet_handle_rhs(s, _meetNumber)
 
-        if s.type not in _constants.Jnumeric:
-            return JSONbot()
-
-        ret = {}
-        ret["type"] = "integer" if s.type == "integer" else "number"
-        ret["minimum"] = max(self.minimum, s.minimum)
-        ret["maximum"] = min(self.maximum, s.maximum)
-        ret["multipleOf"] = lcm(self.multipleOf, s.multipleOf)
-        return JSONNumericFactory(ret)
 
     def _isSubtype(self, s):
 
         def _isNumberSubtype(s1, s2):
-            if s2.type != "number":
+            if s2.type == "number":
+                is_sub_interval = s1.interval in s2.interval
+                if not is_sub_interval:
+                    print_db("num__00")
+                    return False
+                #
+                if (s1.multipleOf == s2.multipleOf) \
+                        or (s1.multipleOf != None and s2.multipleOf == None) \
+                        or (s1.multipleOf != None and s2.multipleOf != None and s1.multipleOf % s2.multipleOf == 0) \
+                        or (s1.multipleOf == None and s2.multipleOf == 1):
+                    print_db("num__02")
+                    return True
+            else:
                 return False
-            #
-            is_sub_interval = s1.interval in s2.interval
-            if not is_sub_interval:
-                print_db("num__00")
-                return False
-            #
-            if (s1.multipleOf == s2.multipleOf) \
-                    or (s1.multipleOf != None and s2.multipleOf == None) \
-                    or (s1.multipleOf != None and s2.multipleOf != None and s1.multipleOf % s2.multipleOf == 0) \
-                    or (s1.multipleOf == None and s2.multipleOf == 1):
-                print_db("num__02")
-                return True
 
         return super().isSubtype_handle_rhs(s, _isNumberSubtype)
 
@@ -393,12 +406,14 @@ class JSONTypeBoolean(JSONschema):
         return False
 
     def _meet(self, s):
-        # if is_top(s):
-        #     return self
 
-        if s.type != "boolean":
-            return JSONbot()
-        return self
+        def _meetBoolean(s1, s2):
+            if s2.type == "boolean":
+                return s1
+            else:
+                return JSONbot()
+
+        return super().meet_handle_rhs(s, _meetBoolean)
 
     def _isSubtype(self, s):
 
@@ -422,12 +437,15 @@ class JSONTypeNull(JSONschema):
         return False
 
     def _meet(self, s):
-        # if is_top(s):
-        #     return self
 
-        if s.type != "null":
-            return JSONbot()
-        return self
+        def _meetNull(s1, s2):
+                
+            if s2.type == "null":
+                return s1
+            else:
+                return JSONbot()
+
+        return super().meet_handle_rhs(s, _meetNull)
 
     def _isSubtype(self, s):
 
@@ -455,125 +473,128 @@ class JSONTypeArray(JSONschema):
 
     def _isUninhabited(self):
         self.compute_actual_maxItems()
+        self.interval = I.closed(self.minItems, self.maxItems)
         return (self.minItems > self.maxItems) or \
             (is_list(self.items_) and self.additionalItems ==
              False and self.minItems > len(self.items_)) or \
             (is_list(self.items_) and len(self.items_) == 0)
 
     def _meet(self, s):
-        # if is_top(s):
-        #     return self
 
-        if s.type != "array":
-            return JSONbot()
+        def _meetArray(s1, s2):
+            if s2.type == "array":
+                ret = {}
+                ret["type"] = "array"
+                ret["minItems"] = max(s1.minItems, s2.minItems)
+                ret["maxItems"] = min(s1.maxItems, s2.maxItems)
+                ret["uniqueItems"] = s1.uniqueItems or s2.uniqueItems
 
-        ret = {}
-        ret["type"] = "array"
-        ret["minItems"] = max(self.minItems, s.minItems)
-        ret["maxItems"] = min(self.maxItems, s.maxItems)
-        ret["uniqueItems"] = self.uniqueItems or s.uniqueItems
-
-        def meet_arrayItems_dict_list(s1, s2, ret):
-            assert is_dict(s1.items_) and is_list(
-                s2.items_), "Violating meet_arrayItems_dict_list condition: 's1.items is dict' and 's2.items is list'"
-            itms = []
-            for i in s2.items_:
-                r = i.meet(s1.items_)
-                if not (is_bot(r) or r.uninhabited):
-                    itms.append(r)
-                else:
-                    break
-
-            ret["items"] = itms
-
-            if s2.additionalItems == True:
-                ret["additionalItems"] = copy.deepcopy(s1.items_)
-            elif s2.additionalItems == False:
-                ret["additionalItems"] = False
-            elif is_dict(s2.additionalItems):
-                ad = copy.deepcopy(s2.additionalItems)
-                ad = ad.meet(s1.items_)
-                ret["additionalItems"] = False if is_bot(ad) else ad
-            return ret
-
-        if is_dict(self.items_):
-
-            if is_dict(s.items_):
-                i = copy.deepcopy(self.items_)
-                i = i.meet(s.items_)
-                ret["items"] = i
-                ret["additionalItems"] = True
-
-            elif is_list(s.items_):
-                ret = meet_arrayItems_dict_list(self, s, ret)
-
-        elif is_list(self.items_):
-
-            if is_dict(s.items_):
-                ret = meet_arrayItems_dict_list(s, self, ret)
-
-            elif is_list(s.items_):
-                self_len = len(self.items_)
-                s_len = len(s.items_)
-
-                def meet_arrayAdditionalItems_list_list(s1, s2):
-                    if is_bool(s1.additionalItems) and is_bool(s2.additionalItems):
-                        ad = s1.additionalItems and s2.additionalItems
-                    elif is_dict(s1.additionalItems):
-                        ad = s1.additionalItems.meet(s2.additionalItems)
-                    elif is_dict(s2.additionalItems):
-                        ad = s2.additionalItems.meet(s1.additionalItems)
-                    return False if is_bot(ad) else ad
-
-                def meet_array_longlist_shorterlist(s1, s2, ret):
-                    s1_len = len(s1.items_)
-                    s2_len = len(s2.items_)
-                    assert s1_len > s2_len, "Violating meet_array_longlist_shorterlist condition: 's1.len > s2.len'"
+                def meet_arrayItems_dict_list(s1, s2, ret):
+                    assert is_dict(s1.items_) and is_list(
+                        s2.items_), "Violating meet_arrayItems_dict_list condition: 's1.items is dict' and 's2.items is list'"
                     itms = []
-                    for i, j in zip(s1.items_, s2.items_):
-                        r = i.meet(j)
+                    for i in s2.items_:
+                        r = i.meet(s1.items_)
                         if not (is_bot(r) or r.uninhabited):
                             itms.append(r)
                         else:
-                            ad = False
                             break
-                    else:
-                        for i in range(s2_len, s1_len):
-                            r = s1.items_[i].meet(s2.additionalItems)
-                            if not (is_bot(r) or r.uninhabited):
-                                itms.append(r)
-                            else:
-                                ad = False
-                                break
-                        else:
-                            ad = meet_arrayAdditionalItems_list_list(s1, s2)
 
-                    ret["additionalItems"] = ad
                     ret["items"] = itms
+
+                    if s2.additionalItems == True:
+                        ret["additionalItems"] = copy.deepcopy(s1.items_)
+                    elif s2.additionalItems == False:
+                        ret["additionalItems"] = False
+                    elif is_dict(s2.additionalItems):
+                        ad = copy.deepcopy(s2.additionalItems)
+                        ad = ad.meet(s1.items_)
+                        ret["additionalItems"] = False if is_bot(ad) else ad
                     return ret
 
-                if self_len == s_len:
-                    itms = []
-                    for i, j in zip(self.items_, s.items_):
-                        r = i.meet(j)
-                        if not (is_bot(r) or r.uninhabited):
-                            itms.append(r)
-                        else:
-                            ad = False
-                            break
-                    else:
-                        ad = meet_arrayAdditionalItems_list_list(self, s)
+                if is_dict(s1.items_):
 
-                    ret["additionalItems"] = ad
-                    ret["items"] = itms
+                    if is_dict(s2.items_):
+                        i = copy.deepcopy(s1.items_)
+                        i = i.meet(s2.items_)
+                        ret["items"] = i
+                        ret["additionalItems"] = True
 
-                elif self_len > s_len:
-                    ret = meet_array_longlist_shorterlist(self, s, ret)
+                    elif is_list(s2.items_):
+                        ret = meet_arrayItems_dict_list(s1, s2, ret)
 
-                elif self_len < s_len:
-                    ret = meet_array_longlist_shorterlist(s, self, ret)
+                elif is_list(s1.items_):
 
-        return JSONTypeArray(ret)
+                    if is_dict(s2.items_):
+                        ret = meet_arrayItems_dict_list(s2, s1, ret)
+
+                    elif is_list(s2.items_):
+                        self_len = len(s1.items_)
+                        s_len = len(s2.items_)
+
+                        def meet_arrayAdditionalItems_list_list(s1, s2):
+                            if is_bool(s1.additionalItems) and is_bool(s2.additionalItems):
+                                ad = s1.additionalItems and s2.additionalItems
+                            elif is_dict(s1.additionalItems):
+                                ad = s1.additionalItems.meet(s2.additionalItems)
+                            elif is_dict(s2.additionalItems):
+                                ad = s2.additionalItems.meet(s1.additionalItems)
+                            return False if is_bot(ad) else ad
+
+                        def meet_array_longlist_shorterlist(s1, s2, ret):
+                            s1_len = len(s1.items_)
+                            s2_len = len(s2.items_)
+                            assert s1_len > s2_len, "Violating meet_array_longlist_shorterlist condition: 's1.len > s2.len'"
+                            itms = []
+                            for i, j in zip(s1.items_, s2.items_):
+                                r = i.meet(j)
+                                if not (is_bot(r) or r.uninhabited):
+                                    itms.append(r)
+                                else:
+                                    ad = False
+                                    break
+                            else:
+                                for i in range(s2_len, s1_len):
+                                    r = s1.items_[i].meet(s2.additionalItems)
+                                    if not (is_bot(r) or r.uninhabited):
+                                        itms.append(r)
+                                    else:
+                                        ad = False
+                                        break
+                                else:
+                                    ad = meet_arrayAdditionalItems_list_list(s1, s2)
+
+                            ret["additionalItems"] = ad
+                            ret["items"] = itms
+                            return ret
+
+                        if self_len == s_len:
+                            itms = []
+                            for i, j in zip(s1.items_, s2.items_):
+                                r = i.meet(j)
+                                if not (is_bot(r) or r.uninhabited):
+                                    itms.append(r)
+                                else:
+                                    ad = False
+                                    break
+                            else:
+                                ad = meet_arrayAdditionalItems_list_list(s1, s2)
+
+                            ret["additionalItems"] = ad
+                            ret["items"] = itms
+
+                        elif self_len > s_len:
+                            ret = meet_array_longlist_shorterlist(s1, s2, ret)
+
+                        elif self_len < s_len:
+                            ret = meet_array_longlist_shorterlist(s2, s1, ret)
+
+                return JSONTypeArray(ret)
+            
+            else:
+                return JSONbot()
+            
+        return super().meet_handle_rhs(s, _meetArray)
 
     def _isSubtype(self, s):
 
@@ -582,9 +603,7 @@ class JSONTypeArray(JSONschema):
                 return False
             #
             # -- minItems and maxItems
-            is_sub_interval = is_sub_interval_from_optional_ranges(
-                s1.minItems, s1.maxItems, s2.minItems, s2.maxItems)
-            # also takes care of {'items' = [..], 'additionalItems' = False}
+            is_sub_interval = s1.interval in s2.interval
             if not is_sub_interval:
                 print_db("__01__")
                 return False
@@ -712,14 +731,16 @@ class JSONTypeObject(JSONschema):
         return False
 
     def _meet(self, s):
-        if is_top(s):
-            return self
 
-        if s.type != "object":
-            return JSONbot()
-        # TODO
-        # object meet
-        return self
+        def _meetObject(s1, s2):
+            if s2.type == "object":
+                # TODO
+                # object meet
+                pass
+            else:
+                return JSONbot()
+            
+        return super().meet_handle_rhs(s, _meetObject)
 
     def _isSubtype(self, s):
 
@@ -730,16 +751,9 @@ class JSONTypeObject(JSONschema):
         return super().isSubtype_handle_rhs(s, _isObjectSubtype)
 
 
-def summarize_anyof_based_on_type(t, s):
-    # TODO THIS IS WRONG
-    ret = JSONtop()
-    for i in s.anyOf:
-        if i.type == t:
-            ret = ret.meet(i)
-    return ret
-
-
 class JSONanyOf(JSONschema):
+
+    kw_defaults = {"type": "anyOf"}
 
     def __init__(self, s):
         super().__init__(s)
@@ -748,20 +762,25 @@ class JSONanyOf(JSONschema):
         return all(i.uninhabited for i in self.anyOf)
 
     def _meet(self, s):
-        if is_top(s):
-            return self
-        print("_meet anyOf", self.anyOf)
+        
+        return super().meet_handle_rhs(s, JSONanyOf._meetAnyOf)
+        
+
+    @staticmethod
+    def _meetAnyOf(s1, s2):        
         anyofs = []
-        for i in self.anyOf:
-            tmp = i.meet(s)
-            if not tmp.uninhabited:
+        for i in s1.anyOf:
+            tmp = i.meet(s2)
+            if not is_bot(tmp):
                 anyofs.append(tmp)
+
         if len(anyofs) > 1:
             return JSONanyOf({"anyOf": anyofs})
         elif len(anyofs) == 1:
             return anyofs.pop()
         else:
             return JSONbot()
+    
 
     def _isSubtype(self, s):
 
@@ -782,6 +801,8 @@ def JSONallOfFactory(s):
 
 
 class JSONallOf(JSONschema):
+
+    kw_defaults = {"type": "allOf"}
 
     def __init__(self, s):
         super().__init__(s)
@@ -809,10 +830,15 @@ class JSONallOf(JSONschema):
 
 class JSONoneOf(JSONschema):
 
+    kw_defaults = {"type": "oneOf"}
+
+    def __init__(self, s):
+        super().__init__(s)
+
     def _isUninhabited(self):
         return False
 
-    def meet(self, s):
+    def _meet(self, s):
         pass
 
     def _isSubtype(self, s):
@@ -821,7 +847,12 @@ class JSONoneOf(JSONschema):
 
 class JSONnot(JSONschema):
 
-    def meet(self, s):
+    kw_defaults = {"type": "not"}
+    
+    def __init__(self, s):
+        super().__init__(s)
+
+    def _meet(self, s):
         pass
 
     def _isSubtype(self, s):
@@ -841,6 +872,6 @@ typeToConstructor = {
 boolToConstructor = {
     "anyOf": JSONanyOf,
     "allOf": JSONallOfFactory,
-    "oneOf": JSONoneOf,
-    "not": JSONnot
+    # "oneOf": JSONoneOf,
+    # "not": JSONnot
 }
