@@ -81,3 +81,13 @@ class TestMixedTypes(unittest.TestCase):
             self.assertTrue(isSubschema(s1, s2))
         with self.subTest():
             self.assertTrue(isSubschema(s2, s1))
+
+    def test_allany_any(self):
+        s1 = {"$schema": "http://json-schema.org/draft-04/schema",
+              "allOf": [{"type": ["string", "boolean"]}], "type": ["string", "boolean"]}
+        s2 = {"$schema": "http://json-schema.org/draft-04/schema",
+              "anyOf": [{"type": "string"}, {"type": "boolean"}]}
+        with self.subTest():
+            self.assertTrue(isSubschema(s1, s2))
+        with self.subTest():
+            self.assertTrue(isSubschema(s2, s1))

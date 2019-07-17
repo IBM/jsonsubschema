@@ -539,8 +539,7 @@ class TestCompositeNumericSubtype(unittest.TestCase):
             self.assertTrue(isSubschema(s2, s1))
 
     def test_all_all_1(self):
-        s1 = {"$schema": "http://json-schema.org/draft-04/schema",
-              "type": "integer", "allOf": [{"multipleOf": 3}, {"minimum": 5}]}
+        s1 = {"$schema": "http://json-schema.org/draft-04/schema", "type": "integer", "allOf": [{"multipleOf": 3}, {"minimum": 5}]}
         s2 = {"$schema": "http://json-schema.org/draft-04/schema",
               "type": "number", "multipleOf": 3,
               "allOf": [{"type": "integer"}, {"type": "number", "multipleOf": 5}]}  # ..., -30, -15, 15, 30, 45, ..
@@ -563,8 +562,7 @@ class TestCompositeNumericSubtype(unittest.TestCase):
 
     def test_all_all_3(self):
         s1 = {"$schema": "http://json-schema.org/draft-04/schema",
-              "type": "number",
-              "allOf": [{"multipleOf": .3}]}
+              "type": "number", "allOf": [{"multipleOf": .3}]}
         s2 = {"$schema": "http://json-schema.org/draft-04/schema",
               "type": "number", "multipleOf": 3,
               "allOf": [{"type": "integer"}, {"type": "number", "multipleOf": 3}]}  # ..., -30, -15, 15, 30, 45, ..
