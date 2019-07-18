@@ -50,8 +50,7 @@ def canoncalize_single_type(d):
     t = d.get("type")
     if t in typeToConstructor.keys():
         # remove irrelevant keywords
-        tmp = copy.deepcopy(d)
-        for k, v in tmp.items():
+        for k, v in list(d.items()):
             if k not in _constants.Jtypecommonkw and k not in _constants.JtypesToKeywords.get(t):
                 d.pop(k)
             elif isinstance(v, dict):
@@ -63,8 +62,8 @@ def canoncalize_single_type(d):
                     # continue
                     for i in v:
                         try:
-                            jsonschema.validate(instance=i, schema=tmp)
-                        except:
+                            jsonschema.validate(instance=i, schema=d)
+                        except jsonschema.ValidationError:                            
                             d.get(k).remove(i)
                     else:
                         # if we have an outer schema and
