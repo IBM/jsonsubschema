@@ -59,17 +59,17 @@ def canoncalize_single_type(d):
                 # if entry in enum does not validate against outer schema,
                 # remove it.
                 if k == "enum":
-                    # continue
+                    values = d.get(k)
                     for i in v:
                         try:
                             jsonschema.validate(instance=i, schema=d)
                         except jsonschema.ValidationError:                            
-                            d.get(k).remove(i)
+                            values.remove(i)
                     else:
                         # if we have an outer schema and
                         # and enum without any valid value against the schema
                         # then this entire outer schema with the enum is uninhabited
-                        if d.get(k) == []:
+                        if values == []:
                             return JSONbot()
                 else:
                     d[k] = [canoncalize_dict(i) for i in v]
