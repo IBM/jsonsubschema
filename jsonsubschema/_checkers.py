@@ -786,7 +786,7 @@ class JSONanyOf(JSONschema):
         super().__init__(s)
 
     def _isUninhabited(self):
-        return all(i.uninhabited for i in self.anyOf)
+        return any(is_bot(i) for i in self.anyOf)
 
     def _meet(self, s):
 
@@ -833,7 +833,7 @@ class JSONallOf(JSONschema):
         super().__init__(s)
 
     def _isUninhabited(self):
-        return any(i.uninhabited for i in self.allOf)
+        return any(is_bot(i) for i in self.allOf)
 
     def _meet(self, s):
         allofs = []
@@ -861,7 +861,7 @@ class JSONoneOf(JSONschema):
         super().__init__(s)
 
     def _isUninhabited(self):
-        return False
+        return all(is_bot(i) for i in self.oneOf)
 
     def _meet(self, s):
         pass
