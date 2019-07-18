@@ -12,7 +12,8 @@ from config import VALIDATOR
 from _checkers import (
     typeToConstructor,
     boolToConstructor,
-    JSONtop
+    JSONtop,
+    JSONbot
 )
 
 
@@ -59,11 +60,18 @@ def canoncalize_single_type(d):
                 # if entry in enum does not validate against outer schema,
                 # remove it.
                 if k == "enum":
+                    # continue
                     for i in v:
                         try:
                             jsonschema.validate(instance=i, schema=tmp)
                         except:
                             d.get(k).remove(i)
+                    else:
+                        # if we have an outer schema and
+                        # and enum without any valid value against the schema
+                        # then this entire outer schema with the enum is uninhabited
+                        if d.get(k) == []:
+                            return JSONbot()
                 else:
                     d[k] = [canoncalize_dict(i) for i in v]
         # if d.get("enum", None) == []:
