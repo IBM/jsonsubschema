@@ -515,6 +515,7 @@ class JSONTypeArray(JSONschema):
                 def meet_arrayItems_dict_list(s1, s2, ret):
                     assert is_dict(s1.items_) and is_list(
                         s2.items_), "Violating meet_arrayItems_dict_list condition: 's1.items is dict' and 's2.items is list'"
+
                     itms = []
                     for i in s2.items_:
                         r = i.meet(s1.items_)
@@ -530,17 +531,16 @@ class JSONTypeArray(JSONschema):
                     elif s2.additionalItems == False:
                         ret["additionalItems"] = False
                     elif is_dict(s2.additionalItems):
-                        ad = copy.deepcopy(s2.additionalItems)
-                        ad = ad.meet(s1.items_)
-                        ret["additionalItems"] = False if is_bot(ad) else ad
+                        addItms = s2.additionalItems.meet(s1.items_)
+                        ret["additionalItems"] = False if is_bot(addItms) else addItms
                     return ret
 
                 if is_dict(s1.items_):
 
                     if is_dict(s2.items_):
-                        i = copy.deepcopy(s1.items_)
-                        i = i.meet(s2.items_)
-                        ret["items"] = i
+                        # i = copy.deepcopy(s1.items_)
+                        # i = i.meet(s2.items_)
+                        ret["items"] = s1.items_.meet(s2.items_)
                         ret["additionalItems"] = True
 
                     elif is_list(s2.items_):
