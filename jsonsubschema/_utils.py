@@ -24,14 +24,19 @@ def is_str(i):
 def is_int(i):
     if isinstance(i, bool):
         return False
-    return isinstance(i, int) or (isinstance(i, float) and float(i).is_integer())
+    return isinstance(i, int)
 
-# def is_int_equiv(i):
-#     return is_inst(i) or ( isinstance(i, float) and float(i).is_integer() )
+
+def is_int_equiv(i):
+    if isinstance(i, bool):
+        return False
+    return isinstance(i, int) or (isinstance(i, float) and float(i).is_integer())
 
 
 def is_num(i):
-    return is_int(i) or isinstance(i, numbers.Number)
+    if isinstance(i, bool):
+        return False
+    return isinstance(i, numbers.Number)
 
 
 def is_bool(i):

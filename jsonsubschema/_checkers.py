@@ -21,7 +21,7 @@ from _utils import (
     regex_meet,
     regex_isSubset,
     lcm,
-    is_int,
+    is_int_equiv,
     is_bool,
     is_list,
     is_dict,
@@ -245,18 +245,18 @@ class JSONtop(JSONschema):
 
         super().isSubtype_handle_rhs(s, _isTopSubtype)
 
-    # def __eq__(self, s):
+    def __eq__(self, s):
         if is_top(s):
             return True
         else:
             return False
 
-    # def __repr__(self):
+    def __repr__(self):
         return "JSON_TOP"
 
 
 def is_top(obj):
-    return isinstance(obj, JSONtop) or obj == True
+    return obj == True or obj == {} or isinstance(obj, JSONtop)
 
 
 class JSONbot(JSONschema):
@@ -278,18 +278,20 @@ class JSONbot(JSONschema):
 
         super().isSubtype_handle_rhs(s, _isBotSubtype)
 
-    # def __eq__(self, s):
+    def __eq__(self, s):
         if is_bot(s):
             return True
         else:
             return False
 
-    # def __repr__(self):
+    def __repr__(self):
         return "JSON_BOT"
 
 
 def is_bot(obj):
-    return isinstance(obj, JSONbot) or obj == False \
+    return obj == False \
+        or (is_dict(obj) and obj.get("not") == {}) \
+        or isinstance(obj, JSONbot) \
         or (isinstance(obj, JSONschema) and obj.checkUninhabited()) \
         or (isinstance(obj, JSONschema) and obj.hasEnum() and not obj.enum)
 
@@ -354,14 +356,16 @@ def JSONNumericFactory(s):
         In this case, the JSON number becomes a JSON integer.'''
 
     if s.get("type") == "number":
-        if is_int(s.get("multipleOf")):
+        if is_int_equiv(s.get("multipleOf")):
             s["type"] = "integer"
             if s.get("minimum") != None:  # -I.inf:
-                s["minimum"] = math.floor(s.get("minimum")) if s.get(
-                    "exclusiveMinimum") else math.ceil(s.get("minimum"))
+                # s["minimum"] = math.floor(s.get("minimum")) if s.get(
+                #     "exclusiveMinimum") else math.ceil(s.get("minimum"))
+                s["minimum"] = math.floor(s.get("minimum"))
             if s.get("maximum") != None:  # I.inf:
-                s["maximum"] = math.ceil(s.get("maximum")) if s.get(
-                    "exclusiveMaximum") else math.floor(s.get("maximum"))
+                # s["maximum"] = math.ceil(s.get("maximum")) if s.get(
+                #     "exclusiveMaximum") else math.floor(s.get("maximum"))
+                s["maximum"] = math.floor(s.get("maximum"))
             return JSONTypeInteger(s)
         else:
             return JSONTypeNumber(s)
