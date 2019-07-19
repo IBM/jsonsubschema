@@ -15,6 +15,7 @@ from _checkers import (
     JSONtop,
     JSONbot
 )
+from _utils import get_valid_enum_vals
 
 
 def canoncalize_json(obj):
@@ -56,26 +57,17 @@ def canoncalize_single_type(d):
             elif isinstance(v, dict):
                 d[k] = canoncalize_dict(v)
             elif isinstance(v, list):
-                # if entry in enum does not validate against outer schema,
-                # remove it.
                 if k == "enum":
-                    values = d.get(k)
-                    for i in v:
-                        try:
-                            jsonschema.validate(instance=i, schema=d)
-                        except jsonschema.ValidationError:                            
-                            values.remove(i)
-                    else:
-                        # if we have an outer schema and
-                        # and enum without any valid value against the schema
-                        # then this entire outer schema with the enum is uninhabited
-                        if values == []:
-                            return JSONbot()
+                    v = get_valid_enum_vals(v, d)
+                    # if we have a schema with enum key and the
+                    # enum does not have any valid value against the schema,
+                    # then this entire schema with the enum is uninhabited
+                    if not v:
+                        return JSONbot()
                 else:
                     d[k] = [canoncalize_dict(i) for i in v]
-        # if d.get("enum", None) == []:
-        #     return
         return typeToConstructor[t](d)
+
     else:
         # TODO: or just return?
         print("Unknown schema type {} at:".format(t))

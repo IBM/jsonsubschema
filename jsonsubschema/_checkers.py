@@ -17,6 +17,7 @@ import _constants
 
 from _utils import (
     print_db,
+    get_valid_enum_vals,
     regex_meet,
     regex_isSubset,
     lcm,
@@ -32,6 +33,7 @@ class UninhabitedMeta(type):
 
     def __call__(cls, *args, **kwargs):
         obj = type.__call__(cls, *args, **kwargs)
+        obj.updateInternalState()
         obj.checkUninhabited()
         return obj
 
@@ -47,6 +49,7 @@ class JSONschema(dict, metaclass=UninhabitedMeta):
         # we don't explicitly add the keys with default values
         # to the underlying dict.
         # self.updateKeys()
+        # self.updateInternalState()
 
     def __getattr__(self, name):
 
@@ -79,6 +82,29 @@ class JSONschema(dict, metaclass=UninhabitedMeta):
         else:
             raise AttributeError("No such attribute: ", name)
 
+    def __setitem__(self, k, v):
+        # if the original json dict is missing type-specific keywords,
+        # on accessing these missing attributes, retrieve the default values
+        # from the the per-type kw_defaults insteat of copying the default values
+        # into the the json dict iteself.
+        if k in self.kw_defaults.keys():
+            if v == self.kw_defaults[k]:
+                return
+            else:
+                # if there is an update to type-specific keyword,
+                # and the new value is NOT the default,
+                # then assign the new value to the key and insert
+                # the pair into the jsn dict.
+                # After this, call updateInternalState to make any necessary
+                # changes or re-computation
+                dict.__setitem__(self, k, v)
+                self.updateInternalState()
+        else:
+            dict.__setitem__(self, k, v)
+
+    def updateInternalState(self):
+        pass
+
     def updateKeys(self):
         for k, v in self.kw_defaults.items():
             if k not in self.keys():
@@ -91,10 +117,18 @@ class JSONschema(dict, metaclass=UninhabitedMeta):
     def isBoolean(self):
         return self.keys() & _constants.Jconnectors
 
+    def hasEnum(self):
+        return "enum" in self.keys()
+
     def checkUninhabited(self):
-        self.uninhabited = self._isUninhabited()
-        if config.WARN_UNINHABITED and self.uninhabited:
+        # Don't store uninhabited key,
+        # but rather re-check on the fly to
+        # get an updated results based on the
+        # current internal state.
+        uninhabited = self._isUninhabited()
+        if config.WARN_UNINHABITED and uninhabited:
             print("Found an uninhabited type at: ", type(self), self)
+        return uninhabited
 
     def meet(self, s):
         #
@@ -108,11 +142,25 @@ class JSONschema(dict, metaclass=UninhabitedMeta):
             return JSONbot()
         #
         ret = self._meet(s)
+        #
+        if self.hasEnum() or s.hasEnum():
+            ret = ret.meet_enum(self, s)
         # instead of returning uninhabited types, return bot
         if is_bot(ret):
             return JSONbot()
         else:
             return ret
+
+    def meet_enum(self, s1, s2):
+        enum = set(s1.get("enum", [])) | set(s2.get("enum", []))
+        valid_enum1 = get_valid_enum_vals(enum, s1)
+        valid_enum2 = get_valid_enum_vals(enum, s2)
+        enum = valid_enum1 & valid_enum2
+        if enum:
+            self["enum"] = list(enum)
+            return self
+        else:
+            return JSONbot()
 
     def meet_handle_rhs(self, s, meet_cb):
         #
@@ -146,10 +194,22 @@ class JSONschema(dict, metaclass=UninhabitedMeta):
             return True
         #
         if (not is_bot(self) and is_bot(s)) \
-            or (is_top(self) and not is_top(s)):
+                or (is_top(self) and not is_top(s)):
             return False
         #
-        return self._isSubtype(s)
+        return self.subtype_enum(s) and self._isSubtype(s)
+
+    def subtype_enum(self, s):
+        if self.hasEnum():
+            valid_enum = get_valid_enum_vals(self.enum, s)
+            # no need to check individual elements
+            # as enum values are unique by definition
+            if len(valid_enum) == len(self.enum):
+                return True
+            else:
+                return False
+        else:
+            return True
 
     def isSubtype_handle_rhs(self, s, isSubtype_cb):
         if s.isBoolean():
@@ -185,7 +245,13 @@ class JSONtop(JSONschema):
 
         super().isSubtype_handle_rhs(s, _isTopSubtype)
 
-    def __repr__(self):
+    # def __eq__(self, s):
+        if is_top(s):
+            return True
+        else:
+            return False
+
+    # def __repr__(self):
         return "JSON_TOP"
 
 
@@ -194,6 +260,8 @@ def is_top(obj):
 
 
 class JSONbot(JSONschema):
+    def __init__(self):
+        super().__init__({"not": {}})
 
     def _isUninhabited(self):
         return True
@@ -210,13 +278,20 @@ class JSONbot(JSONschema):
 
         super().isSubtype_handle_rhs(s, _isBotSubtype)
 
-    def __repr__(self):
+    # def __eq__(self, s):
+        if is_bot(s):
+            return True
+        else:
+            return False
+
+    # def __repr__(self):
         return "JSON_BOT"
 
 
 def is_bot(obj):
     return isinstance(obj, JSONbot) or obj == False \
-        or (isinstance(obj, JSONschema) and obj.uninhabited)
+        or (isinstance(obj, JSONschema) and obj.checkUninhabited()) \
+        or (isinstance(obj, JSONschema) and obj.hasEnum() and not obj.enum)
 
 
 class JSONTypeString(JSONschema):
@@ -228,17 +303,19 @@ class JSONTypeString(JSONschema):
         super().__init__(s)
 
     def _isUninhabited(self):
-        self.interval = I.closed(self.minLength, self.maxLength)
         return (self.minLength > self.maxLength) or self.pattern == None
+
+    def updateInternalState(self):
+        self.interval = I.closed(self.minLength, self.maxLength)
 
     def _meet(self, s):
 
         def _meetString(s1, s2):
             if s2.type == "string":
-                ret = {}
-                ret["minLength"] = max(s1.minLength, s2.minLength)
-                ret["maxLength"] = min(s1.maxLength, s2.maxLength)
-                ret["pattern"] = regex_meet(s1.pattern, s2.pattern)
+                ret = JSONTypeString({})
+                ret.minLength = max(s1.minLength, s2.minLength)
+                ret.maxLength = min(s1.maxLength, s2.maxLength)
+                ret.pattern = regex_meet(s1.pattern, s2.pattern)
                 return JSONTypeString(ret)
             else:
                 return JSONbot()
@@ -317,19 +394,20 @@ class JSONTypeInteger(JSONschema):
             self.interval = I.closed(self.minimum, self.maximum)
 
     def _isUninhabited(self):
-        self.build_interval_draft4()
         return isNumericUninhabited(self)
+
+    def updateInternalState(self):
+        self.build_interval_draft4()
 
     def _meet(self, s):
 
         def _meetInteger(s1, s2):
             if s2.type in _constants.Jnumeric:
-                ret = {}
-                ret["type"] = "integer"
-                ret["minimum"] = max(s1.minimum, s2.minimum)
-                ret["maximum"] = min(s1.maximum, s2.maximum)
-                ret["multipleOf"] = lcm(s1.multipleOf, s2.multipleOf)
-                return JSONTypeInteger(ret)
+                ret = JSONTypeInteger({})
+                ret.minimum = max(s1.minimum, s2.minimum)
+                ret.maximum = min(s1.maximum, s2.maximum)
+                ret.multipleOf = lcm(s1.multipleOf, s2.multipleOf)
+                return ret
             else:
                 return JSONbot()
 
@@ -379,8 +457,10 @@ class JSONTypeNumber(JSONschema):
             self.interval = I.closed(self.minimum, self.maximum)
 
     def _isUninhabited(self):
-        self.build_interval_draft4()
         return isNumericUninhabited(self)
+
+    def updateInternalState(self):
+        self.build_interval_draft4()
 
     def _meet(self, s):
 
@@ -491,26 +571,35 @@ class JSONTypeArray(JSONschema):
 
     def compute_actual_maxItems(self):
         if is_list(self.items_) and \
-                (self.additionalItems == False or (is_dict(self.additionalItems) and self.additionalItems.uninhabited)):
-            self.maxItems = min(self.maxItems, len(self.items_))
+                (self.additionalItems == False or (is_dict(self.additionalItems) and self.additionalItems.checkUninhabited())):
+            new_max = min(self.maxItems, len(self.items_))
+            if new_max != self.maxItems:
+                self.maxItems = new_max
 
     def _isUninhabited(self):
-        self.compute_actual_maxItems()
-        self.interval = I.closed(self.minItems, self.maxItems)
         return (self.minItems > self.maxItems) or \
             (is_list(self.items_) and self.additionalItems ==
              False and self.minItems > len(self.items_)) or \
             (is_list(self.items_) and len(self.items_) == 0)
 
+    def updateInternalState(self):
+        self.compute_actual_maxItems()
+        self.interval = I.closed(self.minItems, self.maxItems)
+
     def _meet(self, s):
 
         def _meetArray(s1, s2):
             if s2.type == "array":
-                ret = {}
-                ret["type"] = "array"
-                ret["minItems"] = max(s1.minItems, s2.minItems)
-                ret["maxItems"] = min(s1.maxItems, s2.maxItems)
-                ret["uniqueItems"] = s1.uniqueItems or s2.uniqueItems
+                # ret = {}
+                # ret["type"] = "array"
+                # ret["minItems"] = max(s1.minItems, s2.minItems)
+                # ret["maxItems"] = min(s1.maxItems, s2.maxItems)
+                # ret["uniqueItems"] = s1.uniqueItems or s2.uniqueItems
+                ret = JSONTypeArray({})
+                # ret["type"] = "array"
+                ret.minItems = max(s1.minItems, s2.minItems)
+                ret.maxItems = min(s1.maxItems, s2.maxItems)
+                ret.uniqueItems = s1.uniqueItems or s2.uniqueItems
 
                 def meet_arrayItems_dict_list(s1, s2, ret):
                     assert is_dict(s1.items_) and is_list(
@@ -519,20 +608,21 @@ class JSONTypeArray(JSONschema):
                     itms = []
                     for i in s2.items_:
                         r = i.meet(s1.items_)
-                        if not (is_bot(r) or r.uninhabited):
+                        if not (is_bot(r) or r.checkUninhabited()):
                             itms.append(r)
                         else:
                             break
 
-                    ret["items"] = itms
+                    ret.items_ = itms
 
                     if s2.additionalItems == True:
-                        ret["additionalItems"] = copy.deepcopy(s1.items_)
+                        ret.additionalItems = copy.deepcopy(s1.items_)
                     elif s2.additionalItems == False:
-                        ret["additionalItems"] = False
+                        ret.additionalItems = False
                     elif is_dict(s2.additionalItems):
                         addItms = s2.additionalItems.meet(s1.items_)
-                        ret["additionalItems"] = False if is_bot(addItms) else addItms
+                        ret.additionalItems = False if is_bot(
+                            addItms) else addItms
                     return ret
 
                 if is_dict(s1.items_):
@@ -540,8 +630,8 @@ class JSONTypeArray(JSONschema):
                     if is_dict(s2.items_):
                         # i = copy.deepcopy(s1.items_)
                         # i = i.meet(s2.items_)
-                        ret["items"] = s1.items_.meet(s2.items_)
-                        ret["additionalItems"] = True
+                        ret.items = s1.items_.meet(s2.items_)
+                        ret.additionalItems = True
 
                     elif is_list(s2.items_):
                         ret = meet_arrayItems_dict_list(s1, s2, ret)
@@ -573,7 +663,7 @@ class JSONTypeArray(JSONschema):
                             itms = []
                             for i, j in zip(s1.items_, s2.items_):
                                 r = i.meet(j)
-                                if not (is_bot(r) or r.uninhabited):
+                                if not (is_bot(r) or r.checkUninhabited()):
                                     itms.append(r)
                                 else:
                                     ad = False
@@ -581,7 +671,7 @@ class JSONTypeArray(JSONschema):
                             else:
                                 for i in range(s2_len, s1_len):
                                     r = s1.items_[i].meet(s2.additionalItems)
-                                    if not (is_bot(r) or r.uninhabited):
+                                    if not (is_bot(r) or r.checkUninhabited()):
                                         itms.append(r)
                                     else:
                                         ad = False
@@ -590,15 +680,15 @@ class JSONTypeArray(JSONschema):
                                     ad = meet_arrayAdditionalItems_list_list(
                                         s1, s2)
 
-                            ret["additionalItems"] = ad
-                            ret["items"] = itms
+                            ret.additionalItems = ad
+                            ret.items_ = itms
                             return ret
 
                         if self_len == s_len:
                             itms = []
                             for i, j in zip(s1.items_, s2.items_):
                                 r = i.meet(j)
-                                if not (is_bot(r) or r.uninhabited):
+                                if not (is_bot(r) or r.checkUninhabited()):
                                     itms.append(r)
                                 else:
                                     ad = False
@@ -607,8 +697,8 @@ class JSONTypeArray(JSONschema):
                                 ad = meet_arrayAdditionalItems_list_list(
                                     s1, s2)
 
-                            ret["additionalItems"] = ad
-                            ret["items"] = itms
+                            ret.additionalItems = ad
+                            ret.items_ = itms
 
                         elif self_len > s_len:
                             ret = meet_array_longlist_shorterlist(s1, s2, ret)
@@ -616,7 +706,7 @@ class JSONTypeArray(JSONschema):
                         elif self_len < s_len:
                             ret = meet_array_longlist_shorterlist(s2, s1, ret)
 
-                return JSONTypeArray(ret)
+                return ret
 
             else:
                 return JSONbot()
@@ -692,7 +782,12 @@ class JSONTypeArray(JSONschema):
                         for i in s1.items_:
                             if not i.isSubtype(s2.items_):
                                 return False
-                        return True
+                            # since s1.additional items is True,
+                            # then TOP should also be a subtype of
+                            # s2.items
+                        if JSONtop().isSubtype(s2.items_):
+                            return True
+                        return False
                     elif is_dict(s1.additionalItems):
                         for i in s1.items_:
                             if not i.isSubtype(s2.items_):

@@ -4,11 +4,13 @@ Created on May 24, 2019
 '''
 
 
+import copy
 import math
 import numbers
 
 import fractions as frac
 
+import jsonschema
 import intervals as I
 from greenery.lego import parse
 
@@ -22,10 +24,11 @@ def is_str(i):
 def is_int(i):
     if isinstance(i, bool):
         return False
-    return isinstance(i, int) or ( isinstance(i, float) and float(i).is_integer() )
+    return isinstance(i, int) or (isinstance(i, float) and float(i).is_integer())
 
 # def is_int_equiv(i):
 #     return is_inst(i) or ( isinstance(i, float) and float(i).is_integer() )
+
 
 def is_num(i):
     return is_int(i) or isinstance(i, numbers.Number)
@@ -53,6 +56,17 @@ def is_dict_or_true(i):
 
 def validate_schema(s):
     return config.VALIDATOR.check_schema(s)
+
+
+def get_valid_enum_vals(enum, s):
+    vals = copy.deepcopy(enum)
+    for i in enum:
+        try:
+            jsonschema.validate(instance=i, schema=s)
+        except jsonschema.ValidationError:
+            vals.remove(i)
+
+    return vals
 
 
 def print_db(*args, **kwargs):
@@ -91,7 +105,7 @@ def lcm(x, y):
         if is_int(x) and is_int(y):
             return x * y / math.gcd(int(x), int(y))
         else:
-            import warnings
-            with warnings.catch_warnings():
-                warnings.filterwarnings("ignore", category=DeprecationWarning)
-                return x * y / frac.gcd(x, y)
+            # import warnings
+            # with warnings.catch_warnings():
+            #     warnings.filterwarnings("ignore", category=DeprecationWarning)
+            return x * y / frac.gcd(x, y)
