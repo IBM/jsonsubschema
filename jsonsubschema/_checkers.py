@@ -298,6 +298,11 @@ class JSONTypeString(JSONschema):
 
     def updateInternalState(self):
         self.interval = I.closed(self.minLength, self.maxLength)
+        # json regexes are not anchored but the greenery library we use
+        # for regex inclusion assumes anchored regexes. So
+        # pad the regex with '.*' from both sides.
+        if self.pattern and self.pattern != self.kw_defaults["pattern"]:
+            self.pattern == ".*" + self.pattern+ ".*"
 
     def _meet(self, s):
 
