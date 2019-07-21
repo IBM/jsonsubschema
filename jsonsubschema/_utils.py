@@ -33,6 +33,10 @@ def is_int_equiv(i):
     return isinstance(i, int) or (isinstance(i, float) and float(i).is_integer())
 
 
+def is_float(i):
+    return isinstance(i, float)
+
+
 def is_num(i):
     if isinstance(i, bool):
         return False
@@ -41,6 +45,10 @@ def is_num(i):
 
 def is_bool(i):
     return isinstance(i, bool)
+
+
+def is_null(i):
+    isinstance(i, type(None))
 
 
 def is_list(i):

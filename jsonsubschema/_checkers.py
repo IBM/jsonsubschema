@@ -13,20 +13,9 @@ import sys
 import intervals as I
 
 import config
-import _constants
 
-from _utils import (
-    print_db,
-    get_valid_enum_vals,
-    regex_meet,
-    regex_isSubset,
-    lcm,
-    is_int_equiv,
-    is_bool,
-    is_list,
-    is_dict,
-    one
-)
+import _constants as definitions
+import _utils as utils
 
 
 class UninhabitedMeta(type):
@@ -115,7 +104,7 @@ class JSONschema(dict, metaclass=UninhabitedMeta):
             del self["items"]
 
     def isBoolean(self):
-        return self.keys() & _constants.Jconnectors
+        return self.keys() & definitions.Jconnectors
 
     def hasEnum(self):
         return "enum" in self.keys()
@@ -153,8 +142,8 @@ class JSONschema(dict, metaclass=UninhabitedMeta):
 
     def meet_enum(self, s1, s2):
         enum = set(s1.get("enum", [])) | set(s2.get("enum", []))
-        valid_enum1 = get_valid_enum_vals(enum, s1)
-        valid_enum2 = get_valid_enum_vals(enum, s2)
+        valid_enum1 = utils.get_valid_enum_vals(enum, s1)
+        valid_enum2 = utils.get_valid_enum_vals(enum, s2)
         enum = valid_enum1 & valid_enum2
         if enum:
             self["enum"] = list(enum)
@@ -201,7 +190,7 @@ class JSONschema(dict, metaclass=UninhabitedMeta):
 
     def subtype_enum(self, s):
         if self.hasEnum():
-            valid_enum = get_valid_enum_vals(self.enum, s)
+            valid_enum = utils.get_valid_enum_vals(self.enum, s)
             # no need to check individual elements
             # as enum values are unique by definition
             if len(valid_enum) == len(self.enum):
@@ -219,7 +208,7 @@ class JSONschema(dict, metaclass=UninhabitedMeta):
             elif s.type == "allOf":
                 return all(isSubtype_cb(self, i) for i in s.allOf)
             elif s.type == "oneOf":
-                return one(isSubtype_cb(self, i) for i in s.oneOf)
+                return utils.one(isSubtype_cb(self, i) for i in s.oneOf)
             elif s.type == "not":
                 # TODO
                 print("No handling of 'not' on rhs yet.")
@@ -290,7 +279,7 @@ class JSONbot(JSONschema):
 
 def is_bot(obj):
     return obj == False \
-        or (is_dict(obj) and obj.get("not") == {}) \
+        or (utils.is_dict(obj) and obj.get("not") == {}) \
         or isinstance(obj, JSONbot) \
         or (isinstance(obj, JSONschema) and obj.checkUninhabited()) \
         or (isinstance(obj, JSONschema) and obj.hasEnum() and not obj.enum)
@@ -317,7 +306,7 @@ class JSONTypeString(JSONschema):
                 ret = JSONTypeString({})
                 ret.minLength = max(s1.minLength, s2.minLength)
                 ret.maxLength = min(s1.maxLength, s2.maxLength)
-                ret.pattern = regex_meet(s1.pattern, s2.pattern)
+                ret.pattern = utils.regex_meet(s1.pattern, s2.pattern)
                 return JSONTypeString(ret)
             else:
                 return JSONbot()
@@ -341,7 +330,7 @@ class JSONTypeString(JSONschema):
                 elif s1.pattern == s2.pattern:
                     return True
                 else:
-                    if regex_isSubset(s1.pattern, s2.pattern):
+                    if utils.regex_isSubset(s1.pattern, s2.pattern):
                         return True
                     else:
                         return False
@@ -351,12 +340,17 @@ class JSONTypeString(JSONschema):
         return super().isSubtype_handle_rhs(s, _isStringSubtype)
 
 
+class JSONTypeNegString(JSONTypeString):
+    pass
+
+
 def JSONNumericFactory(s):
     '''Factory method handle the case of JSON number with multipleOf being integer.
         In this case, the JSON number becomes a JSON integer.'''
-
+    # WARNING: calling this method with an empty dict like {} will always return
+    # a json integer. should always be called with {"type": integer/number}
     if s.get("type") == "number":
-        if is_int_equiv(s.get("multipleOf")):
+        if utils.is_int_equiv(s.get("multipleOf")):
             s["type"] = "integer"
             if s.get("minimum") != None:  # -I.inf:
                 # s["minimum"] = math.floor(s.get("minimum")) if s.get(
@@ -406,11 +400,11 @@ class JSONTypeInteger(JSONschema):
     def _meet(self, s):
 
         def _meetInteger(s1, s2):
-            if s2.type in _constants.Jnumeric:
+            if s2.type in definitions.Jnumeric:
                 ret = JSONTypeInteger({})
                 ret.minimum = max(s1.minimum, s2.minimum)
                 ret.maximum = min(s1.maximum, s2.maximum)
-                ret.multipleOf = lcm(s1.multipleOf, s2.multipleOf)
+                ret.multipleOf = utils.lcm(s1.multipleOf, s2.multipleOf)
                 return ret
             else:
                 return JSONbot()
@@ -420,18 +414,18 @@ class JSONTypeInteger(JSONschema):
     def _isSubtype(self, s):
 
         def _isIntegerSubtype(s1, s2):
-            if s2.type in _constants.Jnumeric:
+            if s2.type in definitions.Jnumeric:
                 #
                 is_sub_interval = s1.interval in s2.interval
                 if not is_sub_interval:
-                    print_db("num__00")
+                    utils.print_db("num__00")
                     return False
                 #
                 if (s1.multipleOf == s2.multipleOf) \
                         or (s1.multipleOf != None and s2.multipleOf == None) \
                         or (s1.multipleOf != None and s2.multipleOf != None and s1.multipleOf % s2.multipleOf == 0) \
                         or (s1.multipleOf == None and s2.multipleOf == 1):
-                    print_db("num__02")
+                    utils.print_db("num__02")
                     return True
                 #
                 if s1.multipleOf == None and s2.multipleOf != None:
@@ -469,12 +463,12 @@ class JSONTypeNumber(JSONschema):
     def _meet(self, s):
 
         def _meetNumber(s1, s2):
-            if s2.type in _constants.Jnumeric:
+            if s2.type in definitions.Jnumeric:
                 ret = {}
                 ret["type"] = "integer" if s2.type == "integer" else "number"
                 ret["minimum"] = max(s1.minimum, s2.minimum)
                 ret["maximum"] = min(s1.maximum, s2.maximum)
-                ret["multipleOf"] = lcm(s1.multipleOf, s2.multipleOf)
+                ret["multipleOf"] = utils.lcm(s1.multipleOf, s2.multipleOf)
                 return JSONNumericFactory(ret)
             else:
                 return JSONbot()
@@ -487,14 +481,14 @@ class JSONTypeNumber(JSONschema):
             if s2.type == "number":
                 is_sub_interval = s1.interval in s2.interval
                 if not is_sub_interval:
-                    print_db("num__00")
+                    utils.print_db("num__00")
                     return False
                 #
                 if (s1.multipleOf == s2.multipleOf) \
                         or (s1.multipleOf != None and s2.multipleOf == None) \
                         or (s1.multipleOf != None and s2.multipleOf != None and s1.multipleOf % s2.multipleOf == 0) \
                         or (s1.multipleOf == None and s2.multipleOf == 1):
-                    print_db("num__02")
+                    utils.print_db("num__02")
                     return True
             else:
                 return False
@@ -568,23 +562,23 @@ class JSONTypeNull(JSONschema):
 class JSONTypeArray(JSONschema):
 
     kw_defaults = {"type": "array", "minItems": 0, "maxItems": I.inf,
-                   "items": JSONtop(), "additionalItems": JSONtop(), "uniqueItems": False}
+                   "items": JSONtop(), "additionalItems": True, "uniqueItems": False}
 
     def __init__(self, s):
         super().__init__(s)
 
     def compute_actual_maxItems(self):
-        if is_list(self.items_) and \
-                (self.additionalItems == False or (is_dict(self.additionalItems) and self.additionalItems.checkUninhabited())):
+        if utils.is_list(self.items_) and \
+                (self.additionalItems == False or (utils.is_dict(self.additionalItems) and self.additionalItems.checkUninhabited())):
             new_max = min(self.maxItems, len(self.items_))
             if new_max != self.maxItems:
                 self.maxItems = new_max
 
     def _isUninhabited(self):
         return (self.minItems > self.maxItems) or \
-            (is_list(self.items_) and self.additionalItems ==
+            (utils.is_list(self.items_) and self.additionalItems ==
              False and self.minItems > len(self.items_)) or \
-            (is_list(self.items_) and len(self.items_) == 0)
+            (utils.is_list(self.items_) and len(self.items_) == 0)
 
     def updateInternalState(self):
         self.compute_actual_maxItems()
@@ -606,7 +600,7 @@ class JSONTypeArray(JSONschema):
                 ret.uniqueItems = s1.uniqueItems or s2.uniqueItems
 
                 def meet_arrayItems_dict_list(s1, s2, ret):
-                    assert is_dict(s1.items_) and is_list(
+                    assert utils.is_dict(s1.items_) and utils.is_list(
                         s2.items_), "Violating meet_arrayItems_dict_list condition: 's1.items is dict' and 's2.items is list'"
 
                     itms = []
@@ -623,39 +617,36 @@ class JSONTypeArray(JSONschema):
                         ret.additionalItems = copy.deepcopy(s1.items_)
                     elif s2.additionalItems == False:
                         ret.additionalItems = False
-                    elif is_dict(s2.additionalItems):
+                    elif utils.is_dict(s2.additionalItems):
                         addItms = s2.additionalItems.meet(s1.items_)
                         ret.additionalItems = False if is_bot(
                             addItms) else addItms
                     return ret
 
-                if is_dict(s1.items_):
+                if utils.is_dict(s1.items_):
 
-                    if is_dict(s2.items_):
-                        # i = copy.deepcopy(s1.items_)
-                        # i = i.meet(s2.items_)
+                    if utils.is_dict(s2.items_):
                         ret.items = s1.items_.meet(s2.items_)
-                        ret.additionalItems = True
 
-                    elif is_list(s2.items_):
+                    elif utils.is_list(s2.items_):
                         ret = meet_arrayItems_dict_list(s1, s2, ret)
 
-                elif is_list(s1.items_):
+                elif utils.is_list(s1.items_):
 
-                    if is_dict(s2.items_):
+                    if utils.is_dict(s2.items_):
                         ret = meet_arrayItems_dict_list(s2, s1, ret)
 
-                    elif is_list(s2.items_):
+                    elif utils.is_list(s2.items_):
                         self_len = len(s1.items_)
                         s_len = len(s2.items_)
 
                         def meet_arrayAdditionalItems_list_list(s1, s2):
-                            if is_bool(s1.additionalItems) and is_bool(s2.additionalItems):
+                            if utils.is_bool(s1.additionalItems) and utils.is_bool(s2.additionalItems):
                                 ad = s1.additionalItems and s2.additionalItems
-                            elif is_dict(s1.additionalItems):
+                            elif utils.is_dict(s1.additionalItems):
                                 ad = s1.additionalItems.meet(
                                     s2.additionalItems)
-                            elif is_dict(s2.additionalItems):
+                            elif utils.is_dict(s2.additionalItems):
                                 ad = s2.additionalItems.meet(
                                     s1.additionalItems)
                             return False if is_bot(ad) else ad
@@ -726,61 +717,62 @@ class JSONTypeArray(JSONschema):
             # -- minItems and maxItems
             is_sub_interval = s1.interval in s2.interval
             if not is_sub_interval:
-                print_db("__01__")
+                utils.print_db("__01__")
                 return False
             #
             # -- uniqueItemsue
             # TODO Double-check. Could be more subtle?
             if not s1.uniqueItems and s2.uniqueItems:
-                print_db("__02__")
+                utils.print_db("__02__")
                 return False
             #
             # -- items = {not empty}
             # no need to check additionalItems
-            if is_dict(s1.items_):
-                if is_dict(s2.items_):
-                    print_db(s1.items_)
-                    print_db(s2.items_)
+            if utils.is_dict(s1.items_):
+                if utils.is_dict(s2.items_):
+                    utils.print_db(s1.items_)
+                    utils.print_db(s2.items_)
                     if s1.items_.isSubtype(s2.items_):
-                        print_db("__05__")
+                        utils.print_db("__05__")
                         return True
                     else:
-                        print_db("__06__")
+                        utils.print_db("__06__")
                         return False
-                elif is_list(s2.items_):
+                elif utils.is_list(s2.items_):
                     if s2.additionalItems == False:
-                        print_db("__07__")
+                        utils.print_db("__07__")
                         return False
                     elif s2.additionalItems == True:
                         for i in s2.items_:
                             if not s1.items_.isSubtype(i):
-                                print_db("__08__")
+                                utils.print_db("__08__")
                                 return False
-                        print_db("__09__")
+                        utils.print_db("__09__")
                         return True
-                    elif is_dict(s2.additionalItems):
+                    elif utils.is_dict(s2.additionalItems):
                         for i in s2.items_:
                             if not s1.items_.isSubtype(i):
-                                print_db("__10__")
+                                utils.print_db("__10__")
                                 return False
-                        print_db(type(s1.items_), s1.items_)
-                        print_db(type(s2.additionalItems), s2.additionalItems)
+                        utils.print_db(type(s1.items_), s1.items_)
+                        utils.print_db(type(s2.additionalItems),
+                                       s2.additionalItems)
                         if s1.items_.isSubtype(s2.additionalItems):
-                            print_db("__11__")
+                            utils.print_db("__11__")
                             return True
                         else:
-                            print_db("__12__")
+                            utils.print_db("__12__")
                             return False
             #
-            elif is_list(s1.items_):
-                print_db("lhs is list")
-                if is_dict(s2.items_):
+            elif utils.is_list(s1.items_):
+                utils.print_db("lhs is list")
+                if utils.is_dict(s2.items_):
                     if s1.additionalItems == False:
                         for i in s1.items_:
                             if not i.isSubtype(s2.items_):
-                                print_db("__13__")
+                                utils.print_db("__13__")
                                 return False
-                        print_db("__14__")
+                        utils.print_db("__14__")
                         return True
                     elif s1.additionalItems == True:
                         for i in s1.items_:
@@ -792,7 +784,7 @@ class JSONTypeArray(JSONschema):
                         if JSONtop().isSubtype(s2.items_):
                             return True
                         return False
-                    elif is_dict(s1.additionalItems):
+                    elif utils.is_dict(s1.additionalItems):
                         for i in s1.items_:
                             if not i.isSubtype(s2.items_):
                                 return False
@@ -801,15 +793,15 @@ class JSONTypeArray(JSONschema):
                         else:
                             return False
                 # now lhs and rhs are lists
-                elif is_list(s2.items_):
-                    print_db("lhs & rhs are lists")
+                elif utils.is_list(s2.items_):
+                    utils.print_db("lhs & rhs are lists")
                     len1 = len(s1.items_)
                     len2 = len(s2.items_)
                     for i, j in zip(s1.items_, s2.items_):
                         if not i.isSubtype(j):
                             return False
                     if len1 == len2:
-                        print_db("len1 == len2")
+                        utils.print_db("len1 == len2")
                         if s1.additionalItems == s2.additionalItems:
                             return True
                         elif s1.additionalItems == True and s2.additionalItems == False:
@@ -826,9 +818,9 @@ class JSONTypeArray(JSONschema):
                             elif s2.additionalItems == True:
                                 return True
                             elif not s1.items_[i].isSubtype(s2.additionalItems):
-                                print_db("9999")
+                                utils.print_db("9999")
                                 return False
-                        print_db("8888")
+                        utils.print_db("8888")
                         return True
                     else:  # len2 > len 1
                         diff = len2 - len1
@@ -969,12 +961,25 @@ class JSONoneOf(JSONschema):
         sys.exit("oneOf on the lhs is not supported yet.")
 
 
+def JSONnotFactory(s):
+    t = s.type
+    if t in definitions.Jtypes:
+        anyofs = []
+        for t_i in definitions.Jtypes - set([t]):
+            anyofs.append(typeToConstructor.get(t_i)({"type": t_i}))
+        anyofs.append(negTypeToConstructor.get(t)(s))
+        return JSONanyOf({"anyOf": anyofs})
+
+
 class JSONnot(JSONschema):
 
     kw_defaults = {"type": "not"}
 
     def __init__(self, s):
         super().__init__(s)
+
+    def _isUninhabited(self):
+        pass
 
     def _meet(self, s):
         pass
@@ -993,9 +998,13 @@ typeToConstructor = {
     "object": JSONTypeObject
 }
 
+negTypeToConstructor = {
+    "string": JSONTypeNegString
+}
+
 boolToConstructor = {
     "anyOf": JSONanyOf,
     "allOf": JSONallOfFactory,
     # "oneOf": JSONoneOf,
-    # "not": JSONnot
+    "not": JSONnotFactory
 }

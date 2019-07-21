@@ -32,19 +32,17 @@ class JSONSubSchemaFactory(json.JSONDecoder):
 def isSubschema(s1, s2):
     ''' Entry point for schema subtype checking. '''
 
-    # copy original json dict becuase
-    # we heavily modify the json object.
+    # Validate both lhs and rhs schemas before starting the subtype checking.
+    # Subtyping of invalid schemas is erroneous.
 
     validate_schema(s1)
     print_db("LHS", s1)
-    s1_ = copy.deepcopy(s1)
-    s1_ = canoncalize_json(s1_)
-    print_db("LHS_canonical", s1_)
+    s1 = canoncalize_json(s1)
+    print_db("LHS_canonical", s1)
 
     validate_schema(s2)
     print_db("RHS", s2)
-    s2_ = copy.deepcopy(s2)
-    s2_ = canoncalize_json(s2_)
-    print_db("RHS_canonical", s2_)
+    s2 = canoncalize_json(s2)
+    print_db("RHS_canonical", s2)
 
-    return s1_.isSubtype(s2_)
+    return s1.isSubtype(s2)

@@ -7,7 +7,8 @@ import copy
 import jsonschema
 import numbers
 
-import _constants
+import _constants as definitions
+import _utils as utils
 from config import VALIDATOR
 from _checkers import (
     typeToConstructor,
@@ -15,11 +16,10 @@ from _checkers import (
     JSONtop,
     JSONbot
 )
-from _utils import get_valid_enum_vals
 
 
 def canoncalize_json(obj):
-    if isinstance(obj, dict):
+    if utils.is_dict(obj):
         return canoncalize_dict(obj)
     else:
         # This can never happen as the schema validator, run prior to here,
@@ -28,22 +28,29 @@ def canoncalize_json(obj):
 
 
 def canoncalize_dict(d):
+
     if d == {}:
         return JSONtop()
+    elif d.get("not") == {}:
+        return JSONbot()
 
     t = d.get("type")
-    has_connectors = set(d.keys()) & _constants.Jconnectors
+    has_connectors = set(d.keys()) & definitions.Jconnectors
+
+    # Start canocnaliztion.
+    # Don't mofify original dict.
+    d = copy.deepcopy(d)
 
     if has_connectors:
         return canoncalize_connectors(d)
-    elif isinstance(t, str):
+    elif utils.is_str(t):
         return canoncalize_single_type(d)
-    elif isinstance(t, list):
+    elif utils.is_list(t):
         return canoncalize_list_of_types(d)
     elif "enum" in d.keys():
         return canoncalize_untyped_enum(d)
     else:
-        d["type"] = _constants.Jtypes
+        d["type"] = definitions.Jtypes
         return canoncalize_list_of_types(d)
 
 
@@ -52,13 +59,13 @@ def canoncalize_single_type(d):
     if t in typeToConstructor.keys():
         # remove irrelevant keywords
         for k, v in list(d.items()):
-            if k not in _constants.Jtypecommonkw and k not in _constants.JtypesToKeywords.get(t):
+            if k not in definitions.Jcommonkw and k not in definitions.JtypesToKeywords.get(t):
                 d.pop(k)
-            elif isinstance(v, dict):
+            elif utils.is_dict(v):
                 d[k] = canoncalize_dict(v)
-            elif isinstance(v, list):
+            elif utils.is_list(v):
                 if k == "enum":
-                    v = get_valid_enum_vals(v, d)
+                    v = utils.get_valid_enum_vals(v, d)
                     # if we have a schema with enum key and the
                     # enum does not have any valid value against the schema,
                     # then this entire schema with the enum is uninhabited
@@ -105,19 +112,20 @@ def canoncalize_list_of_types(d):
 def canoncalize_untyped_enum(d):
     t = set()
     for i in d.get("enum"):
-        if isinstance(i, str):
+        if utils.is_str(i):
             t.add("string")
-        elif isinstance(i, bool):  # bool is subtype of int, so this check has to preceed int check
+        # bool is subtype of int, so this check has to preceed int check
+        elif utils.is_bool(i):
             t.add("boolean")
-        elif isinstance(i, int):
+        elif utils.is_int(i):
             t.add("integer")
-        elif isinstance(i, float):
+        elif utils.is_float(i):
             t.add("number")
-        elif isinstance(i, type(None)):
+        elif utils.is_null(i):
             t.add("null")
-        elif isinstance(i, list):
+        elif utils.is_list(i):
             t.add("array")
-        elif isinstance(i, dict):
+        elif utils.is_dict(i):
             t.add("object")
 
     d["type"] = list(t)
@@ -125,25 +133,38 @@ def canoncalize_untyped_enum(d):
 
 
 def canoncalize_connectors(d):
-    connectors = set(d.keys()) & _constants.Jconnectors
-    lhs_kw = set(d.keys()) & _constants.Jkeywords_lhs
+    connectors = set(d.keys()) & definitions.Jconnectors
+    lhs_kw = set(d.keys()) & definitions.Jkeywords
     lhs_kw_without_connectors = lhs_kw - connectors
 
     if len(connectors) == 1 and not lhs_kw_without_connectors:
         c = connectors.pop()
-        d[c] = [canoncalize_dict(i) for i in d[c]]
-        return boolToConstructor.get(c)(d)
+        if c == "not":
+            d[c] = canoncalize_dict(d[c])
+            return boolToConstructor.get(c)(d[c])
+        else:
+            d[c] = [canoncalize_dict(i) for i in d[c]]
+            return boolToConstructor.get(c)(d)
     else:
-        ret = {"allOf": []}
-
+        allofs = []
         for c in connectors:
             if c == "allOf":
-                ret["allOf"].extend([canoncalize_dict(i) for i in d[c]])
+                allofs.extend([canoncalize_dict(i) for i in d[c]])
             else:
-                ret["allOf"].append(canoncalize_dict({c: d[c]}))
+                allofs.append(canoncalize_dict({c: d[c]}))
             del d[c]
 
         if lhs_kw_without_connectors:
-            ret["allOf"].append(canoncalize_dict(d))
+            allofs.append(canoncalize_dict(d))
 
-        return boolToConstructor.get("allOf")(ret)
+        return boolToConstructor.get("allOf")({"allOf": allofs})
+
+
+def canoncalize_not(d):
+    t = d.type
+    if t in definitions.Jtypes:
+        anyofs = []
+        for t_i in definitions.Jtypes - set([t]):
+            anyofs.append(typeToConstructor.get(t_i)({"type": t_i}))
+        anyofs.append(negTypeToConstructor.get(t)(d))
+        return JSONanyOf({"anyOf": anyofs})

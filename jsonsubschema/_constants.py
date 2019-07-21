@@ -3,15 +3,13 @@ Created on June 7, 2019
 @author: Andrew Habib
 '''
 
-import intervals as I
+import operator
+from functools import reduce
+
 
 Jnumeric = set(["integer", "number"])
 
-Jtypes = set(["string", "boolean", "null", "array", "object"]).union(Jnumeric)
-
-Jconnectors = set(["anyOf", "allOf", "oneOf", "not"])
-
-Jtypecommonkw = Jconnectors.union(["enum", "type"])
+Jtypes = Jnumeric | set(["string", "boolean", "null", "array", "object"])
 
 JtypesToKeywords = {
     "string": ["minLength", "maxLength", "pattern"],
@@ -23,17 +21,11 @@ JtypesToKeywords = {
     "object": ["properties", "additionalProperties", "required", "minProperties", "maxProperties", "dependencies", "patternProperties"]
 }
 
-JkeywordsToDefaults = {
-    "minLength": 0, "maxLength": I.inf, "pattern": ".*",
-    "minimum": -I.inf, "maximum": I.inf, "exclusiveMinimum": False, "exclusiveMaximum": False, "multipleOf": None,
-    "minItems": 0, "maxItems": I.inf, "items": {}, "additionalItems": {}, "uniqueItems": False,
-    "properties": {}, "additionalProperties": {}, "required": [], "minProperties": 0, "maxProperties": I.inf, "dependencies": {}, "patternProperties": {}
-}
+Jconnectors = set(["anyOf", "allOf", "oneOf", "not"])
 
-Jmeta = set(["$schema", "$id", "$ref"])
+Jcommonkw = Jconnectors.union(["enum", "type"])
 
-Jkeywords_lhs = Jtypecommonkw.union(Jconnectors, JkeywordsToDefaults.keys())
+Jmeta = set(["$schema", "$id", "$ref", "definitions", "title", "description"])
 
-Jkeywords = Jtypes.union(Jtypecommonkw)
-
-Jkeywords = Jkeywords.union(JkeywordsToDefaults.keys())
+Jkeywords = Jcommonkw.union(Jtypes,
+                            reduce(operator.add, JtypesToKeywords.values()))
