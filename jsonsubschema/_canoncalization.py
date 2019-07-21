@@ -22,8 +22,6 @@ def canoncalize_json(obj):
     if utils.is_dict(obj):
         return canoncalize_dict(obj)
     else:
-        # This can never happen as the schema validator, run prior to here,
-        # does not accept anything but dictionaries.
         return obj
 
 
@@ -37,8 +35,8 @@ def canoncalize_dict(d):
     t = d.get("type")
     has_connectors = set(d.keys()) & definitions.Jconnectors
 
-    # Start canocnaliztion.
-    # Don't mofify original dict.
+    # Start canoncalization.
+    # Don't modify original dict.
     d = copy.deepcopy(d)
 
     if has_connectors:
