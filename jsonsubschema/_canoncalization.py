@@ -6,6 +6,7 @@ Created on June 24, 2019
 import copy
 import jsonschema
 import numbers
+import sys
 
 import _constants as definitions
 import _utils as utils
@@ -13,6 +14,7 @@ from config import VALIDATOR
 from _checkers import (
     typeToConstructor,
     boolToConstructor,
+    negTypeToConstructor,
     JSONtop,
     JSONbot
 )
@@ -33,7 +35,7 @@ def canoncalize_dict(d):
         return JSONbot()
 
     t = d.get("type")
-    has_connectors = set(d.keys()) & definitions.Jconnectors
+    has_connectors = definitions.Jconnectors.intersection(d.keys())
 
     # Start canoncalization.
     # Don't modify original dict.
@@ -130,15 +132,14 @@ def canoncalize_untyped_enum(d):
 
 
 def canoncalize_connectors(d):
-    connectors = set(d.keys()) & definitions.Jconnectors
-    lhs_kw = set(d.keys()) & definitions.Jkeywords
-    lhs_kw_without_connectors = lhs_kw - connectors
+    connectors = definitions.Jconnectors.intersection(d.keys())
+    lhs_kw = definitions.Jkeywords.intersection(d.keys())
+    lhs_kw_without_connectors = lhs_kw.difference(connectors)
 
     if len(connectors) == 1 and not lhs_kw_without_connectors:
         c = connectors.pop()
         if c == "not":
-            d[c] = canoncalize_dict(d[c])
-            return boolToConstructor.get(c)(d[c])
+            return canoncalize_not(d)
         else:
             d[c] = [canoncalize_dict(i) for i in d[c]]
             return boolToConstructor.get(c)(d)
@@ -158,10 +159,22 @@ def canoncalize_connectors(d):
 
 
 def canoncalize_not(d):
-    t = d.type
+    pass
+    # d: {} has a not schema
+    nots = canoncalize_dict(d["not"])
+    # not schema is now in canonical form
+    t = nots.type
+
     if t in definitions.Jtypes:
         anyofs = []
-        for t_i in definitions.Jtypes - set([t]):
+        for t_i in definitions.Jtypes.difference([t]):
             anyofs.append(typeToConstructor.get(t_i)({"type": t_i}))
-        anyofs.append(negTypeToConstructor.get(t)(d))
-        return JSONanyOf({"anyOf": anyofs})
+        anyofs.append(negTypeToConstructor.get(t)(nots))
+        anyofs = list(filter(None, anyofs))
+        return boolToConstructor.get("anyOf")({"anyOf": anyofs})
+    # elif t in definitions.Jconnectors:
+    #     canoncalize_connectors
+    else:
+        print("elsee")
+        print("--> to be neg:", nots)
+        print("--> t", t)

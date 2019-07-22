@@ -105,6 +105,10 @@ def regex_isSubset(s1, s2):
     return (parse(s1) & parse(s2).everythingbut()).empty()
 
 
+def complement_of_string_pattern(s):
+    return str(parse(s).everythingbut())
+
+
 def lcm(x, y):
     bad_values = [I.inf, -I.inf, None]
     if x in bad_values:

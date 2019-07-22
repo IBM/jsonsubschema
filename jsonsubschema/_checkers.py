@@ -302,7 +302,7 @@ class JSONTypeString(JSONschema):
         # for regex inclusion assumes anchored regexes. So
         # pad the regex with '.*' from both sides.
         if self.pattern and self.pattern != self.kw_defaults["pattern"]:
-            self.pattern == ".*" + self.pattern+ ".*"
+            self.pattern == ".*" + self.pattern + ".*"
 
     def _meet(self, s):
 
@@ -345,8 +345,31 @@ class JSONTypeString(JSONschema):
         return super().isSubtype_handle_rhs(s, _isStringSubtype)
 
 
-class JSONTypeNegString(JSONTypeString):
-    pass
+def JSONTypeNegString(s):
+    negated_strings = []
+    for k, default in JSONTypeString.kw_defaults.items():
+        if s.__getattr__(k) != default:
+            if k == "minLength":
+                negated_strings.append(JSONTypeString(
+                    {"maxLength": s.__getattr__(k) - 1}))
+            elif k == "maxLength":
+                negated_strings.append(JSONTypeString(
+                    {"minLength": s.__getattr__(k) + 1}))
+            elif k == "pattern":
+                negated_strings.append(JSONTypeString(
+                    {k: utils.complement_of_string_pattern(s[k])}))
+
+    # if loop does not break,
+    # it means that a default JSON string is not accepted.
+    # So we return None to indicate that the not: {"type": "string"}
+    # is not accepted. I.e, no string is allowed.
+    if len(negated_strings) == 0:
+        return None
+    else:
+        return JSONanyOf({"anyOf": negated_strings})
+
+    # Here, loop exited normally,
+    # meaning that we have a non-default string.
 
 
 def JSONNumericFactory(s):
@@ -532,6 +555,10 @@ class JSONTypeBoolean(JSONschema):
         return super().isSubtype_handle_rhs(s, _isBooleanSubtype)
 
 
+def JSONTypeNegBoolean(s):
+    return None
+
+
 class JSONTypeNull(JSONschema):
 
     kw_defaults = {"type": "null"}
@@ -562,6 +589,10 @@ class JSONTypeNull(JSONschema):
                 return False
 
         return super().isSubtype_handle_rhs(s, _isNullSubtype)
+
+
+def JSONTypeNegNull(s):
+    return None
 
 
 class JSONTypeArray(JSONschema):
@@ -1004,7 +1035,9 @@ typeToConstructor = {
 }
 
 negTypeToConstructor = {
-    "string": JSONTypeNegString
+    "string": JSONTypeNegString,
+    "boolean": JSONTypeNegBoolean,
+    "null": JSONTypeNegNull
 }
 
 boolToConstructor = {
