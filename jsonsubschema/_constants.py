@@ -9,7 +9,7 @@ from functools import reduce
 
 Jnumeric = set(["integer", "number"])
 
-Jtypes = Jnumeric | set(["string", "boolean", "null", "array", "object"])
+Jtypes = Jnumeric.union(["string", "boolean", "null", "array", "object"])
 
 JtypesToKeywords = {
     "string": ["minLength", "maxLength", "pattern"],
