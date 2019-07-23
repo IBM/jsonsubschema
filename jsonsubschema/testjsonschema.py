@@ -6,7 +6,7 @@ Created on June 24, 2019
 import json
 import sys
 
-from checker import (
+from jsonsubschema.checker import (
     JSONSubSchemaFactory,
     isSubschema
 )

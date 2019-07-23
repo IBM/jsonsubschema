@@ -12,10 +12,10 @@ import sys
 
 import intervals as I
 
-import config
+import jsonsubschema.config as config
 
-import _constants as definitions
-import _utils as utils
+import jsonsubschema._constants as definitions
+import jsonsubschema._utils as utils
 
 
 class UninhabitedMeta(type):
@@ -969,7 +969,7 @@ class JSONallOf(JSONschema):
 
         return JSONallOfFactory({"allOf": allofs})
 
-    def _isSubtype(Self, s):
+    def _isSubtype(self, s):
 
         def _isAllOfSubtype(self, s2):
             for s in self.allOf:

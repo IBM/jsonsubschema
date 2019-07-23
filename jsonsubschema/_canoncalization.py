@@ -8,10 +8,10 @@ import jsonschema
 import numbers
 import sys
 
-import _constants as definitions
-import _utils as utils
-from config import VALIDATOR
-from _checkers import (
+import jsonsubschema._constants as definitions
+import jsonsubschema._utils as utils
+from jsonsubschema.config import VALIDATOR
+from jsonsubschema._checkers import (
     typeToConstructor,
     boolToConstructor,
     negTypeToConstructor,

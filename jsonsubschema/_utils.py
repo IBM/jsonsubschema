@@ -14,7 +14,7 @@ import jsonschema
 import intervals as I
 from greenery.lego import parse
 
-import config
+import jsonsubschema.config as config
 
 
 def is_str(i):

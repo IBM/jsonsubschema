@@ -6,11 +6,11 @@ Created on June 24, 2019
 import copy
 import json
 
-from _canoncalization import (
+from jsonsubschema._canoncalization import (
     canoncalize_dict,
     canoncalize_json
 )
-from _utils import (
+from jsonsubschema._utils import (
     print_db,
     validate_schema
 )

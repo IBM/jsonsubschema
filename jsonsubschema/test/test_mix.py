@@ -5,12 +5,12 @@ Created on June 3, 2019
 
 import unittest
 
-from checker import isSubschema
+from jsonsubschema.checker import isSubschema
 
 
 class TestMixedTypes(unittest.TestCase):
 
-    def test_t_t_2(self):
+    def test_t_t_1(self):
         s1 = {"$schema": "http://json-schema.org/draft-04/schema",
               "type": "number"}
         s2 = {"$schema": "http://json-schema.org/draft-04/schema",

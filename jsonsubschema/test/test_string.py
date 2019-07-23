@@ -8,7 +8,7 @@ import warnings
 
 from jsonschema.exceptions import SchemaError
 
-from checker import isSubschema
+from jsonsubschema.checker import isSubschema
 
 
 class TestStringSubtype(unittest.TestCase):
@@ -57,6 +57,23 @@ class TestNotStringSubtype(unittest.TestCase):
         s2 = {"allOf": [{"type": "string"}, {
             "not": {"type": "string", "minLength": 2}}]}
         with self.subTest():
-            self.assertTrue(isSubschema(s1, s2))
+            self.assertFalse(isSubschema(s1, s2))
         with self.subTest():
-            self.assertTrue(isSubschema(s2, s1))
+            self.assertFalse(isSubschema(s2, s1))
+
+    def test_str_not_str_with_range4(self):
+        s1 = {"type": "string", "minLength": 1, "maxLength": 5}
+        s2 = {"allOf": [{"type": "string"}, {
+            "not": {"type": "string", "minLength": 2}}]}
+        with self.subTest():
+            self.assertFalse(isSubschema(s1, s2))
+        with self.subTest():
+            self.assertFalse(isSubschema(s2, s1))
+
+    # def test_not_str_not_str(self):
+    #     s1 = {"not": {"type": "string"}}
+    #     s2 = {"not": {"not": s1}}
+    #     with self.subTest():
+    #         self.assertFalse(isSubschema(s1, s2))
+    #     with self.subTest():
+    #         self.assertFalse(isSubschema(s2, s1))
