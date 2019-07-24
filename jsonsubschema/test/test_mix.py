@@ -126,7 +126,7 @@ class TestMixedTypes(unittest.TestCase):
             self.assertTrue(isSubschema(s2, s1))
 
     def test_enum5(self):
-        s1 = {"enum": [3, 4, 5], "allOf": [{"enum": [1,2]}]}
+        s1 = {"enum": [3, 4, 5], "allOf": [{"enum": [1, 2]}]}
         s2 = {"enum": [4, 5, 3]}
         with self.subTest():
             self.assertTrue(isSubschema(s1, s2))

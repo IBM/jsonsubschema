@@ -70,10 +70,10 @@ class TestNotStringSubtype(unittest.TestCase):
         with self.subTest():
             self.assertFalse(isSubschema(s2, s1))
 
-    # def test_not_str_not_str(self):
-    #     s1 = {"not": {"type": "string"}}
-    #     s2 = {"not": {"not": s1}}
-    #     with self.subTest():
-    #         self.assertFalse(isSubschema(s1, s2))
-    #     with self.subTest():
-    #         self.assertFalse(isSubschema(s2, s1))
+    def test_not_str_not_str(self):
+        s1 = {"not": {"type": "string"}}
+        s2 = {"not": {"not": {"not": {"type": "string"}}}}
+        with self.subTest():
+            self.assertTrue(isSubschema(s1, s2))
+        with self.subTest():
+            self.assertTrue(isSubschema(s2, s1))
