@@ -72,14 +72,17 @@ def validate_schema(s):
 
 
 def get_valid_enum_vals(enum, s):
-    vals = copy.deepcopy(enum)
+    # copy eum into set for two reasons:
+    # 1- we need to modify a different copy from what we iterate on
+    # 2- hashing elements into set and back to list will guarantee
+    # the list is ordered and hence JSONschema __eq__ with enums should work.
+    vals = set(enum)
     for i in enum:
         try:
             jsonschema.validate(instance=i, schema=s)
         except jsonschema.ValidationError:
             vals.remove(i)
-
-    return vals
+    return list(vals)
 
 
 def print_db(*args, **kwargs):
