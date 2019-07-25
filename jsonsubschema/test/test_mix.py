@@ -67,9 +67,9 @@ class TestMixedTypes(unittest.TestCase):
               }
         s2 = {"$schema": "http://json-schema.org/draft-04/schema",
               "type": "integer", "maxLength": 1}
-        with self.subTest("LHS is uninhabited"):
-            self.assertTrue(isSubschema(s1, s2))
-        with self.subTest("RHS is uninhabited"):
+        with self.subTest():
+            self.assertFalse(isSubschema(s1, s2))
+        with self.subTest():
             self.assertFalse(isSubschema(s2, s1))
 
     def test_str_bool_any(self):

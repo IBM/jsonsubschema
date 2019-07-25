@@ -306,17 +306,18 @@ class JSONTypeString(JSONschema):
 
     def __init__(self, s):
         super().__init__(s)
+        # json regexes are not anchored but the greenery library we use
+        # for regex inclusion assumes anchored regexes. So
+        # pad the regex with '.*' from both sides.
+        # print(self.pattern)
+        if self.pattern and self.pattern != self.kw_defaults["pattern"]:
+            self.pattern = ".*" + self.pattern + ".*"
 
     def _isUninhabited(self):
         return (self.minLength > self.maxLength) or self.pattern == None
 
     def updateInternalState(self):
         self.interval = I.closed(self.minLength, self.maxLength)
-        # json regexes are not anchored but the greenery library we use
-        # for regex inclusion assumes anchored regexes. So
-        # pad the regex with '.*' from both sides.
-        if self.pattern and self.pattern != self.kw_defaults["pattern"]:
-            self.pattern == ".*" + self.pattern + ".*"
 
     def _meet(self, s):
 
