@@ -647,8 +647,7 @@ class JSONTypeArray(JSONschema):
         super().__init__(s)
 
     def compute_actual_maxItems(self):
-        if utils.is_list(self.items_) and \
-                (self.additionalItems == False or (utils.is_dict(self.additionalItems) and self.additionalItems.checkUninhabited())):
+        if utils.is_list(self.items_) and is_bot(self.additionalItems):
             new_max = min(self.maxItems, len(self.items_))
             if new_max != self.maxItems:
                 self.maxItems = new_max
