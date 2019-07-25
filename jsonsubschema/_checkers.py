@@ -24,6 +24,7 @@ class UninhabitedMeta(type):
         obj = type.__call__(cls, *args, **kwargs)
         obj.updateInternalState()
         obj.checkUninhabited()
+        utils.validate_schema(obj)
         return obj
 
 
