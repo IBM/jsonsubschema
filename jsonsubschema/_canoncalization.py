@@ -31,7 +31,7 @@ def canoncalize_json(obj):
 
 
 def canoncalize_dict(d, outer_key=None):
-    
+
     # skip normal dict canonicalization
     # for object.properties/patternProperties
     # because these should be usual dict containers.
