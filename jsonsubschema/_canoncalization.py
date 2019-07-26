@@ -30,8 +30,17 @@ def canoncalize_json(obj):
         return obj
 
 
-def canoncalize_dict(d):
+def canoncalize_dict(d, outer_key=None):
+    
+    # skip normal dict canonicalization
+    # for object.properties/patternProperties
+    # because these should be usual dict containers.
+    if outer_key in ["properties", "patternProperties"]:
+        for k, v in d.items():
+            d[k] = canoncalize_dict(v)
+        return d
 
+    # here, start dict canonicalization
     if d == {}:
         return JSONtop()
     elif d.get("not") == {}:
@@ -65,7 +74,7 @@ def canoncalize_single_type(d):
             if k not in definitions.Jcommonkw and k not in definitions.JtypesToKeywords.get(t):
                 d.pop(k)
             elif utils.is_dict(v):
-                d[k] = canoncalize_dict(v)
+                d[k] = canoncalize_dict(v, k)
             elif utils.is_list(v):
                 if k == "enum":
                     v = utils.get_valid_enum_vals(v, d)
