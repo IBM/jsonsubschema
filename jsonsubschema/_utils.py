@@ -97,6 +97,16 @@ def one(iterable):
     return False
 
 
+def unanchor_regex(p):
+    if p[0] != "^":
+        p = ".*" + p
+
+    if p[len(p) - 1] != "$":
+        p = p + ".*"
+
+    return p
+
+
 def regex_meet(s1, s2, *args):
     ret = parse(s1) & parse(s2)
     for arg in args:

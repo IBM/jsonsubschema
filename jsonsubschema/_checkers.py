@@ -312,7 +312,7 @@ class JSONTypeString(JSONschema):
         # pad the regex with '.*' from both sides.
         # print(self.pattern)
         if self.pattern and self.pattern != self.kw_defaults["pattern"]:
-            self.pattern = ".*" + self.pattern + ".*"
+            self.pattern = utils.unanchor_regex(self.pattern)
 
     def _isUninhabited(self):
         return (self.minLength > self.maxLength) or self.pattern == None
