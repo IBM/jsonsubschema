@@ -924,15 +924,39 @@ class JSONTypeArray(JSONschema):
 
 class JSONTypeObject(JSONschema):
 
-    kw_defaults = {"properties": {}, "additionalProperties": {}, "required": [],
+    kw_defaults = {"properties": {}, "additionalProperties": True, "required": [],
                    "minProperties": 0, "maxProperties": I.inf, "dependencies": {}, "patternProperties": {}}
 
     def __init__(self, s):
         super().__init__(s)
 
+    def compute_actual_min_max_Properties(self):
+
+        new_min = max(self.minProperties, len(self.required))
+        if new_min != self.minProperties:
+            self.minProperties = new_min
+
+        if is_bot(self.additionalProperties):
+            new_max = min(self.maxProperties, len(self.properties))
+            if new_max != self.maxProperties:
+                self.maxProperties = new_max
+
     def _isUninhabited(self):
-        # TODO
-        return False
+        return self.minProperties > self.maxProperties \
+            or len(self.required) > self.maxProperties
+
+    def updateInternalState(self):
+        self.compute_actual_min_max_Properties()
+        self.interval = I.closed(self.minProperties, self.maxProperties)
+        #
+        if self.patternProperties != self.kw_defaults["patternProperties"]:
+            p = {}
+            for k in list(self.patternProperties.keys()):
+                v = self.patternProperties.pop(k)
+                new_k = utils.unanchor_regex(k)
+                p[new_k] = v
+            for k in p.keys():
+                self.patternProperties[k] = p[k]
 
     def _meet(self, s):
 
@@ -949,8 +973,25 @@ class JSONTypeObject(JSONschema):
     def _isSubtype(self, s):
 
         def _isObjectSubtype(s1, s2):
-            # TODO
-            return s2.type == "object"
+            if s2.type != "object":
+                return False
+            # check properties count
+            is_sub_interval = s2.interval in s1.interval
+            if not is_sub_interval:
+                return False
+            # check
+            s1_props_keys = set(s1.properties.keys())
+            s2_props_keys = set(s2.properties.keys())
+            if s1_props_keys.issuperset(s2_props_keys):
+                for k in s1_props_keys & s2_props_keys:
+                    if not s1["properties"][k].isSubtype(s2["properties"][k]):
+                        return False
+
+            s1_pProps_keys = set(s1.patternProperties.keys())
+            s2_pProps_keys = set(s2.patternProperties.keys())
+
+            # TODO: remove this when done.
+            return True
 
         return super().isSubtype_handle_rhs(s, _isObjectSubtype)
 
