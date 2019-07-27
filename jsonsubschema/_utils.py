@@ -98,12 +98,14 @@ def one(iterable):
 
 
 def unanchor_regex(p):
-    if p[0] != "^":
-        p = ".*" + p
-
-    if p[len(p) - 1] != "$":
-        p = p + ".*"
-
+    # We need this cuz JSON regexs are not anchored by default
+    # while the regex library we use assumes the opposite:
+    # regexes are anchored by default.
+    if p:
+        if p[0] != "^":
+            p = ".*" + p
+        if p[len(p) - 1] != "$":
+            p = p + ".*"
     return p
 
 
