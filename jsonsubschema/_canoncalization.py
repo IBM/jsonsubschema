@@ -79,10 +79,12 @@ def canoncalize_single_type(d):
                     # if we have a schema with enum key and the
                     # enum does not have any valid value against the schema,
                     # then this entire schema with the enum is uninhabited
-                    if not v:
+                    if v:
+                        d[k] = v
+                    else:
                         return JSONbot()
                 elif k == "required":
-                    continue
+                    d[k] = list(set(v)) # to order the list
                 else:
                     d[k] = [canoncalize_dict(i) for i in v]
         return typeToConstructor[t](d)
