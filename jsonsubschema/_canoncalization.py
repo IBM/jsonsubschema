@@ -11,7 +11,7 @@ import sys
 import jsonsubschema._constants as definitions
 import jsonsubschema._utils as utils
 from jsonsubschema.config import VALIDATOR
-from jsonsubschema._checkers2 import (
+from jsonsubschema._checkers import (
     typeToConstructor,
     boolToConstructor,
     negTypeToConstructor,
