@@ -81,6 +81,8 @@ def canoncalize_single_type(d):
                     # then this entire schema with the enum is uninhabited
                     if not v:
                         return JSONbot()
+                elif k == "required":
+                    continue
                 else:
                     d[k] = [canoncalize_dict(i) for i in v]
         return typeToConstructor[t](d)
