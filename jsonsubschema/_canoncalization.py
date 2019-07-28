@@ -84,7 +84,8 @@ def canoncalize_single_type(d):
                     else:
                         return JSONbot()
                 elif k == "required":
-                    d[k] = list(set(v)) # to order the list
+                    # to order the list; for proper dict equality
+                    d[k] = list(set(v))
                 else:
                     d[k] = [canoncalize_dict(i) for i in v]
         return typeToConstructor[t](d)
