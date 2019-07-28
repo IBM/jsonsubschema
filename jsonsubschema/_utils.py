@@ -97,17 +97,24 @@ def one(iterable):
     return False
 
 
-def unanchor_regex(p):
+def regex_unanchor(p):
     # We need this cuz JSON regexs are not anchored by default
     # while the regex library we use assumes the opposite:
-    # regexes are anchored by default.
+    # regexes are anchored by default AND ^ and $ are literals
+    # and don't carry their anchoring meaning.
     if p:
-        if p[0] != "^":
+        if p[0] == "^":
+            p = p[1:]
+        else:
             p = ".*" + p
-        if p[len(p) - 1] != "$":
+        if p[-1] == "$":
+            p = p[:-1]
+        else:
             p = p + ".*"
     return p
 
+def regex_matches_string(regex=None, s=None):
+    return parse(regex).matches(s)
 
 def regex_meet(s1, s2, *args):
     ret = parse(s1) & parse(s2)
@@ -117,8 +124,19 @@ def regex_meet(s1, s2, *args):
 
 
 def regex_isSubset(s1, s2):
+    ''' regex subset is quite expensive to compute
+        especially for complex patterns. '''
     return (parse(s1) & parse(s2).everythingbut()).empty()
 
+def regex_isProperSubset(s1, s2):
+    ''' regex proper subset is quite expensive to compute
+        so we try to break it into two separate checks,
+        and do the more expensive check, only if the 
+        cheaper one passes first.'''
+    if not parse(s1).equivalent(parse(s2)):
+        if regex_isSubset(s1, s2):
+            return True
+    return False
 
 def complement_of_string_pattern(s):
     return str(parse(s).everythingbut())
