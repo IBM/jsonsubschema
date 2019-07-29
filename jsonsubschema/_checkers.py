@@ -258,6 +258,8 @@ class JSONtop(JSONschema):
     def __repr__(self):
         return "JSON_TOP"
 
+    def __bool__(self):
+        return True
 
 def is_top(obj):
     return obj == True or obj == {} or isinstance(obj, JSONtop)
@@ -291,6 +293,8 @@ class JSONbot(JSONschema):
     def __repr__(self):
         return "JSON_BOT"
 
+    def __bool__(self):
+        return False
 
 def is_bot(obj):
     return obj == False \
