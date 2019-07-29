@@ -948,8 +948,28 @@ class JSONTypeObject(JSONschema):
         #         self.maxProperties = new_max
 
     def _isUninhabited(self):
+
+        def required_is_uninhabited(s):
+            ''' checks if every required key is actually allowed 
+                by the key restrictions '''
+            if s.additionalProperties:
+                return False
+
+            for k in s.required:
+                if not k in s.properties.keys():
+                    for k_ in s.patternProperties.keys():
+                        if utils.regex_matches_string(k_, k):
+                            break
+                    else:
+                        # here, inner loop finished and key was not found;
+                        # so it is uninhabited because a required key is not allowed
+                        return True
+
+            return False
+
         return self.minProperties > self.maxProperties \
-            or len(self.required) > self.maxProperties
+            or len(self.required) > self.maxProperties \
+            or required_is_uninhabited(self)
 
     def updateInternalState(self):
         self.compute_actual_min_max_Properties()
