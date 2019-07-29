@@ -312,7 +312,7 @@ class JSONTypeString(JSONschema):
         # pad the regex with '.*' from both sides.
         # print(self.pattern)
         if self.pattern and self.pattern != self.kw_defaults["pattern"]:
-            self.pattern = utils.unanchor_regex(self.pattern)
+            self.pattern = utils.regex_unanchor(self.pattern)
 
     def _isUninhabited(self):
         return (self.minLength > self.maxLength) or self.pattern == None
@@ -924,7 +924,7 @@ class JSONTypeArray(JSONschema):
 
 class JSONTypeObject(JSONschema):
 
-    kw_defaults = {"properties": {}, "additionalProperties": True, "required": [],
+    kw_defaults = {"properties": {}, "additionalProperties": JSONtop(), "required": [],
                    "minProperties": 0, "maxProperties": I.inf, "dependencies": {}, "patternProperties": {}}
 
     def __init__(self, s):
@@ -936,10 +936,10 @@ class JSONTypeObject(JSONschema):
         if new_min != self.minProperties:
             self.minProperties = new_min
 
-        if is_bot(self.additionalProperties):
-            new_max = min(self.maxProperties, len(self.properties))
-            if new_max != self.maxProperties:
-                self.maxProperties = new_max
+        # if is_bot(self.additionalProperties): # This is wrong because of patternProperties
+        #     new_max = min(self.maxProperties, len(self.properties))
+        #     if new_max != self.maxProperties:
+        #         self.maxProperties = new_max
 
     def _isUninhabited(self):
         return self.minProperties > self.maxProperties \
@@ -953,7 +953,7 @@ class JSONTypeObject(JSONschema):
             p = {}
             for k in list(self.patternProperties.keys()):
                 v = self.patternProperties.pop(k)
-                new_k = utils.unanchor_regex(k)
+                new_k = utils.regex_unanchor(k)
                 p[new_k] = v
             for k in p.keys():
                 self.patternProperties[k] = p[k]
@@ -975,23 +975,131 @@ class JSONTypeObject(JSONschema):
         def _isObjectSubtype(s1, s2):
             if s2.type != "object":
                 return False
-            # check properties count
-            is_sub_interval = s2.interval in s1.interval
+            # check properties range
+            is_sub_interval = s1.interval in s2.interval
             if not is_sub_interval:
                 return False
-            # check
-            s1_props_keys = set(s1.properties.keys())
-            s2_props_keys = set(s2.properties.keys())
-            if s1_props_keys.issuperset(s2_props_keys):
-                for k in s1_props_keys & s2_props_keys:
+            else:
+            # if ranges are ok, check another trivial case
+                if set(s1.required).issuperset(s2.required) \
+                    and s1.properties == s2.properties \
+                    and s1.patternProperties == s2.patternProperties \
+                    and (s1.additionalProperties == s2.additionalProperties \
+                        or (utils.is_dict(s1.additionalProperties) \
+                            and s1.additionalProperties.isSubtype(s2.additionalProperties))):
+                    return True
+            #
+            def get_schema_for_key(k ,s):
+                if k in s.properties.keys():
+                    return k.properties[k]
+                else:
+                    for k_ in s.patternProperties.keys():
+                        if utils.regex_matches_string(k_, k):
+                            return k.patternProperties[k_]
+                
+                return s.additionalProperties
+
+            if not set(s1.required).issuperset(s2.required):
+                return False
+            else:
+                for k in set(s1.required).intersection(s2.required):
+                    lhs_ = get_schema_for_key(k, s1)
+                    rhs_ = get_schema_for_key(k, s2)
+                    if lhs_:
+                        if rhs_:
+                            if not lhs_.isSubtype(rhs_):
+                                return False
+                    
+            # missing keys on the rhs
+            # I) Simple case:
+            # lhs = {"properties": {p1: {string}}
+            # rhs = {"properties": {p1: {string}, p2: {int}}}
+            # >> this means lhs isNOT subtype of rhs cuz lhs 
+            # would accept any p2 that does not necesaarily match
+            # the type int of the p2 on the rhs 
+            # II) what if 
+            # lhs = {"properties": {p1: {string}, 
+            #        "patternProperties": {p2: {int}}} 
+            # again, ideally this means lhs isNOT subtype of rhs
+            # because lhs accept any property name with pattern .*p2.*
+            # III) however, the tricky case is: it could happend that 
+            # every string matched by patternProperties on the lhs exist as a property
+            # or property pattern on the rhs, then we need to do picky and enumerative
+            # checks cuz it could be that indeed lhs isSubtype of rhs.
+
+            # TODO: The following is very inefficient. Can we do better?
+            lhs_keys = "|".join(k for k in s1.properties.keys()) + "|".join(utils.regex_unanchor(k) for k in s1.patternProperties.keys())
+            rhs_keys = "|".join(k for k in s2.properties.keys()) + "|".join(utils.regex_unanchor(k) for k in s2.patternProperties.keys())
+            lhs_keys_proper_subset_rhs_keys = utils.regex_isProperSubset(lhs_keys, rhs_keys)
+            if lhs_keys_proper_subset_rhs_keys:
+                return False
+            #
+            missing_props_from_lhs = set(s2.properties.keys()) - set(s1.properties.keys())
+            for k in missing_props_from_lhs:
+                for k_ in s1.patternProperties.keys():
+                    if utils.regex_matches_string(k_, k):
+                        if not s1.patternProperties[k_].isSubtype(s2.properties[k]):
+                            return False
+                        # Now, lhs has a patternProperty which is subtype of a property on the rhs.
+                        # Idealy, at this point, I'd like to check that EVERY property matched by 
+                        # this pattern also exist on the rhs.
+                        # from greenery.lego import parse
+                        # p = parse(k_)
+                        # try:
+                            # p.cardinality
+
+
+            # first, matching properties should be subtype pairwise
+            unmatched_lhs_props_keys = set(s1.properties.keys())
+            for k in s1.properties.keys():
+                if k in s2.properties.keys():
+                    unmatched_lhs_props_keys.discard(k)
                     if not s1["properties"][k].isSubtype(s2["properties"][k]):
                         return False
+                # for the remaining keys, make sure they either don't exist 
+                # in rhs or if they, then their schemas should be sub-type
+                else:
+                    for k_ in s2.patternProperties:
+                        # if utils.regex_isSubset(k, k_):
+                        if utils.regex_matches_string(k_, k):
+                            unmatched_lhs_props_keys.discard(k)
+                            if not s1.properties[k].isSubtype(s2.patternProperties[k_]):
+                                return False
 
-            s1_pProps_keys = set(s1.patternProperties.keys())
-            s2_pProps_keys = set(s2.patternProperties.keys())
+            # second, matching patternProperties should be subtype pairwise
+            unmatched_lhs_pProps_keys = set(s1.patternProperties.keys())
+            for k in s1.patternProperties.keys():
+                for k_ in s2.patternProperties.keys():
+                    if utils.regex_isSubset(k, k_):
+                        unmatched_lhs_pProps_keys.discard(k)
+                        if not s1.patternProperties[k].isSubtype(s2.patternProperties[k_]):
+                            return False
+            # third, 
 
-            # TODO: remove this when done.
-            return True
+            # fourth,
+            if s2.additionalProperties == True:
+                return True
+            elif s2.additionalProperties == False:
+                if s1.additionalProperties == True:
+                    return False
+                elif unmatched_lhs_props_keys or unmatched_lhs_pProps_keys:
+                    return False
+                else:
+                    return True
+            else:
+                for k in unmatched_lhs_props_keys:
+                    if not s1.properties[k].isSubtype(s2.additionalProperties):
+                        return False
+                for k in unmatched_lhs_pProps_keys:
+                    if not s1.patternProperties[k].isSubtype(s2.additionalProperties):
+                        return False
+                if s1.additionalProperties == True:
+                    return False
+                elif s1.additionalProperties == False:
+                    return True
+                else:
+                    return s1.additionalProperties.isSubtype(s2.additionalProperties)
+    
 
         return super().isSubtype_handle_rhs(s, _isObjectSubtype)
 
