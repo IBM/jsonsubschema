@@ -153,6 +153,93 @@ class TestObjectSubtype(unittest.TestCase):
         with self.subTest():
             self.assertFalse(isSubschema(s2, s1))
 
+    def test_simple_obj2(self):
+        s1 = {
+            "type": "object",
+            "properties": {
+                "name": {"type": "string"},
+                "age": {"type": "integer"},
+                "gender": {"type": "string", "maxLength": 1, "enum": ["F", "M"]},
+                "email": {"type": "string", "format": "email"},
+            }
+        }
+        s2 = {
+            "type": "object",
+            "properties": {
+                "name": {"type": "string"},
+                "age": {"type": "integer"},
+                "gender": {"type": "string", "maxLength": 1, "enum": ["F", "M"]},
+                "email": {"type": "string", "format": "email"},
+            },
+            "patternProperties": {
+                "^b.*b$": {"type": "boolean"}
+            }
+        }
+        with self.subTest():
+            self.assertFalse(isSubschema(s1, s2))
+        with self.subTest():
+            self.assertTrue(isSubschema(s2, s1))
+
+    def test_simple_obj3(self):
+        s1 = {
+            "type": "object",
+            "properties": {
+                "name": {"type": "string"},
+                "age": {"type": "integer"},
+                "gender": {"type": "string", "maxLength": 1, "enum": ["F", "M"]},
+                "email": {"type": "string", "format": "email"},
+            },
+            "patternProperties": {
+                "b.*b": {"type": "boolean"}
+            }
+        }
+        s2 = {
+            "type": "object",
+            "properties": {
+                "name": {"type": "string"},
+                "age": {"type": "integer"},
+                "gender": {"type": "string", "maxLength": 1, "enum": ["F", "M"]},
+                "email": {"type": "string", "format": "email"},
+            },
+            "patternProperties": {
+                "^ba+b$": {"type": "boolean"}
+            }
+        }
+        with self.subTest():
+            self.assertTrue(isSubschema(s1, s2))
+        with self.subTest():
+            self.assertFalse(isSubschema(s2, s1))
+
+    def test_simple_obj4(self):
+        s1 = {
+            "type": "object",
+            "properties": {
+                "name": {"type": "string"},
+                "age": {"type": "integer"},
+                "gender": {"type": "string", "maxLength": 1, "enum": ["F", "M"]},
+                "email": {"type": "string", "format": "email"},
+            },
+            "patternProperties": {
+                "b.*b": {"type": "integer"}
+            }
+        }
+        s2 = {
+            "type": "object",
+            "properties": {
+                "name": {"type": "string"},
+                "age": {"type": "integer"},
+                "gender": {"type": "string", "maxLength": 1, "enum": ["F", "M"]},
+                "email": {"type": "string", "format": "email"},
+            },
+            "patternProperties": {
+                "^ba+b$": {"type": "boolean"}
+            }
+        }
+        with self.subTest():
+            self.assertFalse(isSubschema(s1, s2))
+        with self.subTest():
+            self.assertFalse(isSubschema(s2, s1))
+
     def test_tricky1(self):
         s1 = {
             "type": "object",
@@ -231,10 +318,9 @@ class TestObjectSubtype(unittest.TestCase):
             }
         }
         with self.subTest():
-            self.assertTrue(isSubschema(s1, s2))
+            self.assertFalse(isSubschema(s1, s2))
         with self.subTest():
             self.assertTrue(isSubschema(s2, s1))
-
 
     def test_tricky4(self):
         s1 = {
@@ -262,3 +348,90 @@ class TestObjectSubtype(unittest.TestCase):
             self.assertFalse(isSubschema(s1, s2))
         with self.subTest():
             self.assertTrue(isSubschema(s2, s1))
+
+    def test_tricky5(self):
+        s1 = {
+            "type": "object",
+            "properties": {
+                "name": {"type": "string"},
+                "age": {"type": "integer"},
+                "gender": {"type": "string", "maxLength": 1, "enum": ["F", "M"]},
+                "email": {"type": "string", "format": "email"},
+                "emaik": {"type": "string", "format": "email"}
+            },
+            "additionalProperties": {"type": "boolean"}
+        }
+        s2 = {
+            "type": "object",
+            "properties": {
+                "name": {"type": "string"},
+                "age": {"type": "integer"},
+                "gender": {"type": "string", "maxLength": 1, "enum": ["F", "M"]}
+            },
+            "patternProperties": {
+                "emai": {"type": "string", "minLength": 10}
+            }
+        }
+        with self.subTest():
+            self.assertFalse(isSubschema(s1, s2))
+        with self.subTest():
+            self.assertFalse(isSubschema(s2, s1))
+
+    def test_tricky6(self):
+        s1 = {
+            "type": "object",
+            "properties": {
+                "name": {"type": "string"},
+                "age": {"type": "integer"},
+                "gender": {"type": "string", "maxLength": 1, "enum": ["F", "M"]},
+                "email": {"type": "string", "format": "email"},
+                "emaik": {"type": "string", "format": "email"}
+            },
+            "additionalProperties": {"type": "boolean"}
+        }
+        s2 = {
+            "type": "object",
+            "properties": {
+                "name": {"type": "string"},
+                "age": {"type": "integer"},
+                "gender": {"type": "string", "maxLength": 1, "enum": ["F", "M"]}
+            },
+            "patternProperties": {
+                "emai": {"type": "string", "minLength": 10}
+            },
+            "additionalProperties": {"type": "boolean"}
+        }
+        with self.subTest():
+            self.assertFalse(isSubschema(s1, s2))
+        with self.subTest():
+            self.assertFalse(isSubschema(s2, s1))
+
+    def test_tricky7(self):
+        s1 = {
+            "type": "object",
+            "properties": {
+                "name": {"type": "string"},
+                "age": {"type": "integer"},
+                "gender": {"type": "string", "maxLength": 1, "enum": ["F", "M"]},
+                "email": {"type": "string", "format": "email"},
+                "emaik": {"type": "string", "format": "email"}
+            },
+            "additionalProperties": {"type": "string"}
+        }
+
+        s2 = {
+            "type": "object",
+            "properties": {
+                "name": {"type": "string"},
+                "age": {"type": "integer"},
+                "gender": {"type": "string", "maxLength": 1, "enum": ["F", "M"]}
+            },
+            "patternProperties": {
+                "emai": {"type": "string"}
+            }
+
+        }
+        with self.subTest():
+            self.assertTrue(isSubschema(s1, s2))
+        with self.subTest():
+            self.assertFalse(isSubschema(s2, s1))
