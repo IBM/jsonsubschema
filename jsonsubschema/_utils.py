@@ -105,41 +105,48 @@ def regex_unanchor(p):
     if p:
         if p[0] == "^":
             p = p[1:]
-        else:
+        elif p[:2] != ".*":
             p = ".*" + p
         if p[-1] == "$":
             p = p[:-1]
-        else:
+        elif p[-2:] != ".*":
             p = p + ".*"
     return p
 
+
 def regex_matches_string(regex=None, s=None):
     return parse(regex).matches(s)
+
 
 def regex_meet(s1, s2, *args):
     ret = parse(s1) & parse(s2)
     for arg in args:
         ret = ret & parse(arg)
-    return str(ret) if not ret.empty() else None
+    return str(ret.reduce()) if not ret.empty() else None
 
 
 def regex_isSubset(s1, s2):
     ''' regex subset is quite expensive to compute
         especially for complex patterns. '''
-    return (parse(s1) & parse(s2).everythingbut()).empty()
+    s1 = parse(s1).reduce()
+    s2 = parse(s2).reduce()
+    return s1.equivalent(s2) or (s1 & s2.everythingbut()).empty()
+
 
 def regex_isProperSubset(s1, s2):
     ''' regex proper subset is quite expensive to compute
         so we try to break it into two separate checks,
         and do the more expensive check, only if the 
         cheaper one passes first.'''
-    if not parse(s1).equivalent(parse(s2)):
-        if regex_isSubset(s1, s2):
-            return True
+    s1 = parse(s1).reduce()
+    s2 = parse(s2).reduce()
+    if not s1.equivalent(s2):
+        return (s1 & s2.everythingbut()).empty()
     return False
 
+
 def complement_of_string_pattern(s):
-    return str(parse(s).everythingbut())
+    return str(parse(s).everythingbut().reduce())
 
 
 def lcm(x, y):
