@@ -240,6 +240,36 @@ class TestObjectSubtype(unittest.TestCase):
         with self.subTest():
             self.assertFalse(isSubschema(s2, s1))
 
+    def test_simple_obj5(self):
+        s1 = {
+            "type": "object",
+            "properties": {
+                "name": {"type": "string"},
+                "age": {"type": "integer"},
+                "gender": {"type": "string", "maxLength": 1, "enum": ["F", "M"]},
+                "email": {"type": "string", "format": "email"},
+            },
+            "patternProperties": {
+                "b.*b": {"type": "integer"}
+            }
+        }
+        s2 = {
+            "type": "object",
+            "properties": {
+                "name": {"type": "string"},
+                "age": {"type": "integer"},
+                "gender": {"type": "string", "maxLength": 1, "enum": ["F", "M"]},
+                "email": {"type": "string", "format": "email"},
+            },
+            "patternProperties": {
+                "^b(\w)+b$": {"type": "integer", "minimum": 10}
+            }
+        }
+        with self.subTest():
+            self.assertFalse(isSubschema(s1, s2))
+        with self.subTest():
+            self.assertFalse(isSubschema(s2, s1))
+
     def test_tricky1(self):
         s1 = {
             "type": "object",
