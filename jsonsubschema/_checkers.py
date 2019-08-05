@@ -990,8 +990,52 @@ class JSONTypeObject(JSONschema):
         def _meetObject(s1, s2):
             if s2.type == "object":
                 # TODO
-                # object meet
-                pass
+                ret = JSONTypeObject({})
+                ret.required = list(set(s1.required).union(s2.required))
+                ret.minProperties = max(s1.minProperties, s2.minProperties)
+                ret.maxProperties = min(s1.maxProperties, s2.maxProperties)
+                #
+                if utils.is_bool(s1.additionalProperties) and utils.is_bool(s2.additionalProperties):
+                    ad = s1.additionalProperties and s2.additionalProperties
+                elif utils.is_dict(s1.additionalProperties):
+                    ad = s1.additionalProperties.meet(
+                        s2.additionalProperties)
+                elif utils.is_dict(s2.additionalProperties):
+                    ad = s2.additionalProperties.meet(
+                        s1.additionalProperties)
+                ret.additionalProperties = False if is_bot(ad) else ad
+                #
+                # For meet of properties and patternProperties,
+                # no need to check whether a key is valid against  patternProperties of the other schema
+                # or to calcualte intersections among patternProperties of both schemas
+                # cuz the validator takes care of this during validation of actual instances.
+                # For efficiency, we just include all key in properties and patternProperties of both schemas.
+                # We only have to handle exactly matching keys in both properties and patternProperties.
+                #
+                properties = {}
+                for k in s1.properties.keys():
+                    if k in s2.properties.keys():
+                        properties[k] = s1.properties[k].meet(s2.properties[k])
+                    else:
+                        properties[k] = s1.properties[k]
+                for k in s2.properties.keys():
+                    if k not in s1.properties.keys():
+                        properties[k] = s2.properties[k]
+                ret.properties = properties
+                #
+                pProperties = {}
+                for k in s1.patternProperties.keys():
+                    if k in s2.patternProperties.keys():
+                        pProperties[k] = s1.patternProperties[k].meet(s2.patternProperties[k])
+                    else:
+                        pProperties[k] = s1.patternProperties[k]
+                for k in s2.patternProperties.keys():
+                    if k not in s1.patternProperties.keys():
+                        pProperties[k] = s2.patternProperties[k]
+                ret.patternProperties = pProperties
+                #
+                ret.updateInternalState()
+                return ret
             else:
                 return JSONbot()
 
