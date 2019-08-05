@@ -785,7 +785,7 @@ class JSONTypeArray(JSONschema):
 
                         elif self_len < s_len:
                             ret = meet_array_longlist_shorterlist(s2, s1, ret)
-
+                ret.updateInternalState()
                 return ret
 
             else:
