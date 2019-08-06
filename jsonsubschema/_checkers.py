@@ -464,9 +464,19 @@ class JSONTypeInteger(JSONschema):
             if s2.type in definitions.Jnumeric:
                 ret = {}
                 ret["type"] = "integer"
-                ret["minimum"] = max(s1.minimum, s2.minimum)
-                ret["maximum"] = min(s1.maximum, s2.maximum)
-                ret["multipleOf"] = utils.lcm(s1.multipleOf, s2.multipleOf)
+                
+                mn = max(s1.minimum, s2.minimum)
+                if utils.is_num(mn):
+                    ret["minimum"] = mn
+                
+                mx = min(s1.maximum, s2.maximum)
+                if utils.is_num(mx):
+                    ret["maximum"] = mx 
+                
+                mulOf = utils.lcm(s1.multipleOf, s2.multipleOf)
+                if mulOf:
+                    ret["multipleOf"] = mulOf
+
                 return JSONNumericFactory(ret)
             else:
                 return JSONbot()
@@ -487,11 +497,8 @@ class JSONTypeInteger(JSONschema):
                         or (s1.multipleOf != None and s2.multipleOf == None) \
                         or (s1.multipleOf != None and s2.multipleOf != None and s1.multipleOf % s2.multipleOf == 0) \
                         or (s1.multipleOf == None and s2.multipleOf == 1):
-                    print_db("num__02")
+                    print_db("num__01")
                     return True
-                #
-                if s1.multipleOf == None and s2.multipleOf != None:
-                    return False
             else:
                 return False
 
@@ -535,11 +542,25 @@ class JSONTypeNumber(JSONschema):
         def _meetNumber(s1, s2):
             if s2.type in definitions.Jnumeric:
                 ret = {}
-                ret["type"] = "integer" if s2.type == "integer" else "number"
-                ret["minimum"] = max(s1.minimum, s2.minimum)
-                ret["maximum"] = min(s1.maximum, s2.maximum)
-                ret["multipleOf"] = utils.lcm(s1.multipleOf, s2.multipleOf)
-                return JSONNumericFactory(ret)
+
+                mn = max(s1.minimum, s2.minimum)
+                if utils.is_num(mn):
+                    ret["minimum"] = mn
+                
+                mx = min(s1.maximum, s2.maximum)
+                if utils.is_num(mx):
+                    ret["maximum"] = mx 
+                
+                mulOf = utils.lcm(s1.multipleOf, s2.multipleOf)
+                if mulOf:
+                    ret["multipleOf"] = mulOf
+
+                if s2.type == "integer":
+                    ret["type"] = "integer"
+                    return JSONTypeInteger(ret)
+                else:
+                    ret["type"] = "number"
+                    return JSONTypeNumber(ret)
             else:
                 return JSONbot()
 
@@ -557,10 +578,21 @@ class JSONTypeNumber(JSONschema):
                 if (s1.multipleOf == s2.multipleOf) \
                         or (s1.multipleOf != None and s2.multipleOf == None) \
                         or (s1.multipleOf != None and s2.multipleOf != None and s1.multipleOf % s2.multipleOf == 0) \
-                        or (s1.multipleOf == None and s2.multipleOf == 1):
+                        or (utils.is_int_equiv(s1.multipleOf) and s2.multipleOf == None):
+                    print_db("num__01")
+                    return True
+            elif s2.type == "integer":
+                is_sub_interval = s1.interval in s2.interval
+                if not is_sub_interval:
                     print_db("num__02")
+                    return False
+                #
+                if utils.is_int_equiv(s1.multipleOf) and \
+                    (s2.multipleOf == None or ((s1.multipleOf != None and s2.multipleOf != None and s1.multipleOf % s2.multipleOf == 0))):
+                    print_db("num__03")
                     return True
             else:
+                print_db("num__04")
                 return False
 
         return super().isSubtype_handle_rhs(s, _isNumberSubtype)
@@ -1400,8 +1432,10 @@ class JSONnot(JSONschema):
 
 typeToConstructor = {
     "string": JSONTypeString,
-    "integer": JSONNumericFactory,
-    "number": JSONNumericFactory,
+    # "integer": JSONNumericFactory,
+    # "number": JSONNumericFactory,
+    "integer": JSONTypeInteger,
+    "number": JSONTypeNumber,
     "boolean": JSONTypeBoolean,
     "null": JSONTypeNull,
     "array": JSONTypeArray,
