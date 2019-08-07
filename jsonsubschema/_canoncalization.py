@@ -189,7 +189,7 @@ def canoncalize_not(d):
     # d: {} has a not schema
     to_be_negated_schema = d["not"]
     if not isinstance(to_be_negated_schema, JSONschema):
-        to_be_negated_schema = canoncalize_dict(to_be_negated_schema)
+        to_be_negated_schema = canonicalize_dict(to_be_negated_schema)
 
     # not schema is now in canonical form
     t = to_be_negated_schema.type

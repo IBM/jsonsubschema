@@ -1,5 +1,7 @@
 # json-subschema checker
 
+[![Build Status](https://travis-ci.com/IBM/json-subschema.svg?branch=master)](https://travis-ci.com/IBM/json-subschema)
+
 This project is still in its early stage.
 
 ## License
