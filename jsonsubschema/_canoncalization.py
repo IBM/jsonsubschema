@@ -21,21 +21,21 @@ from jsonsubschema._checkers import (
 )
 
 
-def canoncalize_json(obj):
+def canonicalize_json(obj):
     if utils.is_dict(obj):
-        return canoncalize_dict(obj)
+        return canonicalize_dict(obj)
     else:
         return obj
 
 
-def canoncalize_dict(d, outer_key=None):
+def canonicalize_dict(d, outer_key=None):
 
     # skip normal dict canonicalization
     # for object.properties/patternProperties
     # because these should be usual dict containers.
     if outer_key in ["properties", "patternProperties"]:
         for k, v in d.items():
-            d[k] = canoncalize_dict(v)
+            d[k] = canonicalize_dict(v)
         return d
 
     # here, start dict canonicalization
@@ -72,7 +72,7 @@ def canoncalize_single_type(d):
             if k not in definitions.Jcommonkw and k not in definitions.JtypesToKeywords.get(t):
                 d.pop(k)
             elif utils.is_dict(v):
-                d[k] = canoncalize_dict(v, k)
+                d[k] = canonicalize_dict(v, k)
             elif utils.is_list(v):
                 if k == "enum":
                     v = utils.get_valid_enum_vals(v, d)
@@ -87,7 +87,7 @@ def canoncalize_single_type(d):
                     # to order the list; for proper dict equality
                     d[k] = list(set(v))
                 else:
-                    d[k] = [canoncalize_dict(i) for i in v]
+                    d[k] = [canonicalize_dict(i) for i in v]
         return typeToConstructor[t](d)
 
     else:
@@ -160,7 +160,7 @@ def canoncalize_connectors(d):
             return canoncalize_not(d)
 
         else:
-            d[c] = [canoncalize_dict(i) for i in d[c]]
+            d[c] = [canonicalize_dict(i) for i in d[c]]
             # Flatten nested connectors of the same type
             # This is not necessary currently.
             # TODO remove?
@@ -175,13 +175,13 @@ def canoncalize_connectors(d):
         allofs = []
         for c in connectors:
             if c == "allOf":
-                allofs.extend([canoncalize_dict(i) for i in d[c]])
+                allofs.extend([canonicalize_dict(i) for i in d[c]])
             else:
-                allofs.append(canoncalize_dict({c: d[c]}))
+                allofs.append(canonicalize_dict({c: d[c]}))
             del d[c]
 
         if lhs_kw_without_connectors:
-            allofs.append(canoncalize_dict(d))
+            allofs.append(canonicalize_dict(d))
         return boolToConstructor.get("allOf")({"allOf": allofs})
 
 
