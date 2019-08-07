@@ -6,7 +6,7 @@ Created on July 25, 2019
 import copy
 import unittest
 
-from jsonsubschema.checker import isSubschema
+from jsonsubschema.api import isSubschema
 
 
 class TestObjectSubtype(unittest.TestCase):

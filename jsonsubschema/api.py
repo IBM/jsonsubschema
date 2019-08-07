@@ -3,30 +3,28 @@ Created on June 24, 2019
 @author: Andrew Habib
 '''
 
-import copy
 import json
 
 from jsonsubschema._canoncalization import (
-    canoncalize_dict,
-    canoncalize_json
+    canonicalize_dict,
+    canonicalize_json
 )
 from jsonsubschema._utils import (
-    print_db,
-    validate_schema
+    validate_schema,
+    print_db
 )
 
 
 class JSONSubSchemaFactory(json.JSONDecoder):
-    ''' This is a json decoder which allows subtype checking.
-        Not recommended, however, due to the inability to properly 
-        validate the schema before starting the type checking. '''
+    ''' A json decoder which embeds subtype checking into the json object.
+        This is experimental at the moment. '''
 
     def __init__(self, *args, **kwargs):
         json.JSONDecoder.__init__(
             self, object_hook=self.object_hook, *args, **kwargs)
 
     def object_hook(self, d):
-        return canoncalize_dict(d)
+        return canonicalize_dict(d)
 
 
 def isSubschema(s1, s2):
@@ -37,12 +35,12 @@ def isSubschema(s1, s2):
 
     validate_schema(s1)
     print_db("LHS", s1)
-    s1 = canoncalize_json(s1)
+    s1 = canonicalize_json(s1)
     print_db("LHS_canonical", s1)
-
+    print_db()
     validate_schema(s2)
     print_db("RHS", s2)
-    s2 = canoncalize_json(s2)
+    s2 = canonicalize_json(s2)
     print_db("RHS_canonical", s2)
 
     return s1.isSubtype(s2)

@@ -1,3 +1,0 @@
-python-intervals
-greenery
-jsonschema
