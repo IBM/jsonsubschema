@@ -47,24 +47,24 @@ def canonicalize_dict(d, outer_key=None):
     t = d.get("type")
     has_connectors = definitions.Jconnectors.intersection(d.keys())
 
-    # Start canoncalization.
+    # Start canonicalization.
     # Don't modify original dict.
     d = copy.deepcopy(d)
 
     if has_connectors:
-        return canoncalize_connectors(d)
+        return canonicalize_connectors(d)
     elif utils.is_str(t):
-        return canoncalize_single_type(d)
+        return canonicalize_single_type(d)
     elif utils.is_list(t):
-        return canoncalize_list_of_types(d)
+        return canonicalize_list_of_types(d)
     elif "enum" in d.keys():
-        return canoncalize_untyped_enum(d)
+        return canonicalize_untyped_enum(d)
     else:
         d["type"] = definitions.Jtypes
-        return canoncalize_list_of_types(d)
+        return canonicalize_list_of_types(d)
 
 
-def canoncalize_single_type(d):
+def canonicalize_single_type(d):
     t = d.get("type")
     if t in typeToConstructor.keys():
         # remove irrelevant keywords
@@ -88,6 +88,8 @@ def canoncalize_single_type(d):
                     d[k] = list(set(v))
                 else:
                     d[k] = [canonicalize_dict(i) for i in v]
+            # elif k == "pattern":
+            #     d[k] = utils.regex_unanchor(v)
         return typeToConstructor[t](d)
 
     else:
@@ -98,21 +100,21 @@ def canoncalize_single_type(d):
         sys.exit(1)
 
 
-def canoncalize_list_of_types(d):
+def canonicalize_list_of_types(d):
 
     t = d.get("type")
 
     # to save an unnecessary anyOf with one option only.
     if len(t) == 1:
         d["type"] = t.pop()
-        return canoncalize_single_type(d)
+        return canonicalize_single_type(d)
 
     choices = []
     for t_i in t:
         if t_i in typeToConstructor.keys():
             s_i = copy.deepcopy(d)
             s_i["type"] = t_i
-            s_i = canoncalize_single_type(s_i)
+            s_i = canonicalize_single_type(s_i)
             choices.append(s_i)
         else:
             # TODO: or just return?
@@ -125,7 +127,7 @@ def canoncalize_list_of_types(d):
     return boolToConstructor.get("anyOf")(d)
 
 
-def canoncalize_untyped_enum(d):
+def canonicalize_untyped_enum(d):
     t = set()
     for i in d.get("enum"):
         if utils.is_str(i):
@@ -144,10 +146,10 @@ def canoncalize_untyped_enum(d):
             t.add("object")
 
     d["type"] = list(t)
-    return canoncalize_list_of_types(d)
+    return canonicalize_list_of_types(d)
 
 
-def canoncalize_connectors(d):
+def canonicalize_connectors(d):
     connectors = definitions.Jconnectors.intersection(d.keys())
     lhs_kw = definitions.Jkeywords.intersection(d.keys())
     lhs_kw_without_connectors = lhs_kw.difference(connectors)
@@ -157,7 +159,7 @@ def canoncalize_connectors(d):
         c = connectors.pop()
 
         if c == "not":
-            return canoncalize_not(d)
+            return canonicalize_not(d)
 
         else:
             d[c] = [canonicalize_dict(i) for i in d[c]]
@@ -185,7 +187,7 @@ def canoncalize_connectors(d):
         return boolToConstructor.get("allOf")({"allOf": allofs})
 
 
-def canoncalize_not(d):
+def canonicalize_not(d):
     # d: {} has a not schema
     to_be_negated_schema = d["not"]
     if not isinstance(to_be_negated_schema, JSONschema):
@@ -195,8 +197,18 @@ def canoncalize_not(d):
     t = to_be_negated_schema.type
     if t in definitions.Jtypes:
         anyofs = []
-        for t_i in definitions.Jtypes.difference([t]):
-            anyofs.append(typeToConstructor.get(t_i)({"type": t_i}))
+        if t in definitions.Jnumeric:
+            # Currently, return schema as in case it has negated multipleOf
+            if "multipleOf" in to_be_negated_schema.keys():
+                return {"not": to_be_negated_schema}
+            # because number and integer overlap, 
+            # we defer the nit-picking to the actual 
+            # neg_constructor.
+            for t_i in definitions.Jtypes.difference(definitions.Jnumeric):
+                anyofs.append(typeToConstructor.get(t_i)({"type": t_i}))
+        else:
+            for t_i in definitions.Jtypes.difference([t]):
+                anyofs.append(typeToConstructor.get(t_i)({"type": t_i}))
         anyofs.append(negTypeToConstructor.get(t)(to_be_negated_schema))
         anyofs = list(filter(None, anyofs))
         return boolToConstructor.get("anyOf")({"anyOf": anyofs})
@@ -209,13 +221,13 @@ def canoncalize_not(d):
         if t == "anyOf":
             allofs = []
             for i in to_be_negated_schema["anyOf"]:
-                allofs.append(canoncalize_not({"not": i}))
+                allofs.append(canonicalize_not({"not": i}))
             return boolToConstructor.get("allOf")({"allOf": allofs})
 
         elif t == "allOf":
             anyofs = []
             for i in to_be_negated_schema["allOf"]:
-                anyofs.append(canoncalize_not({"not": i}))
+                anyofs.append(canonicalize_not({"not": i}))
             return boolToConstructor.get("anyOf")({"anyOf": anyofs})
 
         elif t == "oneOf":
