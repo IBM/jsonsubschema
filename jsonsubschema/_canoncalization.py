@@ -39,7 +39,7 @@ def canonicalize_dict(d, outer_key=None):
         return d
 
     # here, start dict canonicalization
-    if d == {}:
+    if d == {} or not definitions.Jkeywords.intersection(d.keys()):
         return JSONtop()
     elif d.get("not") == {}:
         return JSONbot()
