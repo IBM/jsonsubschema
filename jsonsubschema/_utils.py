@@ -85,9 +85,12 @@ def get_valid_enum_vals(enum, s):
     return list(vals)
 
 
-def print_db(*args, **kwargs):
+def print_db(*args):
     if config.PRINT_DB:
-        print("".join(str(arg) + " " for arg in args))
+        if args:
+            print("".join(str(arg) + " " for arg in args))
+        else:
+            print()
 
 
 def one(iterable):
