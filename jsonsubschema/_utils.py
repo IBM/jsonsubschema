@@ -114,6 +114,8 @@ def regex_unanchor(p):
             p = p[:-1]
         elif p[-2:] != ".*":
             p = p + ".*"
+    else: # case p == "" the empty string
+        p = ".*"
     return p
 
 
