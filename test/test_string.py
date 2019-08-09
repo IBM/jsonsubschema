@@ -21,6 +21,29 @@ class TestStringSubtype(unittest.TestCase):
         with self.subTest():
             self.assertFalse(isSubschema(s2, s1))
 
+    def test_empty_pattern(self):
+        s1 = {"type": "string", "pattern": ""}
+        s2 = {"type": "string"}
+        with self.subTest():
+            self.assertTrue(isSubschema(s1, s2))
+        with self.subTest():
+            self.assertTrue(isSubschema(s2, s1))
+
+    def test_regx_range1(self):
+        s1 = {"type": "string", "maxLength": 5, "pattern": "(ab)*"}
+        s2 = {"type": "string", "pattern": "(ab){3}"}
+        with self.subTest():
+            self.assertFalse(isSubschema(s1, s2))
+        with self.subTest():
+            self.assertFalse(isSubschema(s2, s1))
+
+    def test_regx_range2(self):
+        s1 = {"type": "string", "maxLength": 5, "pattern": "^(ab)*$"}
+        s2 = {"type": "string", "pattern": "^(ab){0,3}$"}
+        with self.subTest():
+            self.assertTrue(isSubschema(s1, s2))
+        with self.subTest():
+            self.assertFalse(isSubschema(s2, s1))
 
 class TestNotStringSubtype(unittest.TestCase):
 

@@ -114,7 +114,7 @@ def regex_unanchor(p):
             p = p[:-1]
         elif p[-2:] != ".*":
             p = p + ".*"
-    else: # case p == "" the empty string
+    else:  # case p == "" the empty string
         p = ".*"
     return p
 
@@ -148,6 +148,18 @@ def regex_isProperSubset(s1, s2):
     if not s1.equivalent(s2):
         return (s1 & s2.everythingbut()).empty()
     return False
+
+
+def string_range_to_regex(min, max):
+    assert min <= max, ""
+    if min == max:
+        pattern = ".{" + str(min) + "}"             # '.{min}'
+    elif max == I.inf:
+        pattern = ".{" + str(min) + ",}"            # '.{min,}'
+    else:
+        pattern = ".{" + str(min) + "," + str(max) + "}"  # '.{min, max}'
+
+    return pattern
 
 
 def complement_of_string_pattern(s):

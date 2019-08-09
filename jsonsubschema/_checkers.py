@@ -259,10 +259,18 @@ class JSONTypeString(JSONschema):
             self["pattern"]) if "pattern" in self else ".*"
 
     def _isUninhabited(self):
-        return (self.minLength > self.maxLength) or self.pattern == None
+        return (self.minLength > self.maxLength) \
+            or self.pattern == None 
+            # See comment below at updateInternalState()
+            # or self.range_with_pattern == None
 
     def updateInternalState(self):
         self.interval = I.closed(self.minLength, self.maxLength)
+        #
+        # Should be done here to check for uninhabited string schema
+        # But will defer it to the actual subtype check for performance...
+        # range = utils.string_range_to_regex(self.minLength, self.maxLength)
+        # self.range_with_pattern = utils.regex_meet(range, self.pattern)
 
     def _meet(self, s):
 
@@ -293,16 +301,13 @@ class JSONTypeString(JSONschema):
                 if not is_sub_interval:
                     return False
                 #
-                # at this point, length is compatible,
-                # so we should now worry about pattern only.
-                if s2.pattern == None or s2.pattern == "":
-                    return True
-                elif s1.pattern == None or s1.pattern == "":
-                    return False
-                elif s1.pattern == s2.pattern:
+                if s1.pattern == s2.pattern:
                     return True
                 else:
-                    if utils.regex_isSubset(s1.pattern, s2.pattern):
+                    s1_range = utils.string_range_to_regex(s1.minLength, s1.maxLength)
+                    s2_range = utils.string_range_to_regex(s2.minLength, s2.maxLength)
+                    # if utils.regex_isSubset(s1.pattern, s2.pattern):
+                    if utils.regex_isSubset(utils.regex_meet(s1_range, s1.pattern), utils.regex_meet(s2_range, s2.pattern)):
                         return True
                     else:
                         return False
