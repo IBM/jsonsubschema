@@ -61,7 +61,8 @@ class JSONschema(dict, metaclass=UninhabitedMeta):
 
     def meet(self, s):
         #
-        if self == s or is_top(s):
+        # if self == s or is_top(s):
+        if is_top(s):
             return self
         #
         if is_top(self):
@@ -107,7 +108,8 @@ class JSONschema(dict, metaclass=UninhabitedMeta):
 
     def join(self, s):
         #
-        if self == s or is_bot(s):
+        # if self == s or is_bot(s):
+        if is_bot(s):
             return self
         #
         if is_bot(self):
@@ -135,7 +137,8 @@ class JSONschema(dict, metaclass=UninhabitedMeta):
 
     def isSubtype(self, s):
         #
-        if self == s or is_bot(self) or is_top(s):
+        # if self == s or is_bot(self) or is_top(s):
+        if is_bot(self) or is_top(s):
             return True
         #
         if (not is_bot(self) and is_bot(s)) \
@@ -267,13 +270,15 @@ class JSONTypeString(JSONschema):
         # json regexes are not anchored but the greenery library we use
         # for regex inclusion assumes anchored regexes. So
         # pad the regex with '.*' from both sides.
-        self.pattern = utils.regex_unanchor(
-            self["pattern"]) if "pattern" in self else ".*"
-        self.pattern = utils.prepare_pattern_for_greenry(self.pattern)
+        if "pattern" in s:
+            patrn = utils.regex_unanchor(s["pattern"])
+            self.pattern = utils.prepare_pattern_for_greenry(patrn)
+        else:
+            self.pattern = None
 
     def _isUninhabited(self):
-        return (self.minLength > self.maxLength) \
-            or self.pattern == None
+        return (self.minLength > self.maxLength)
+        # or self.pattern == None
         # See comment below at updateInternalState()
         # or self.range_with_pattern == None
 
@@ -298,8 +303,9 @@ class JSONTypeString(JSONschema):
                     ret["maxLength"] = mx
                 # Explicitly anchor pattern when assigned to the json key
                 # to reflect the greenery lib behavior on the json object.
-                ret["pattern"] = "^" + \
-                    utils.regex_meet(s1.pattern, s2.pattern) + "$"
+                patrn = utils.regex_meet(s1.pattern, s2.pattern)
+                if patrn:
+                    ret["pattern"] = "^" + patrn + "$"
                 return JSONTypeString(ret)
             else:
                 return JSONbot()
@@ -369,7 +375,7 @@ class JSONTypeString(JSONschema):
     def negString(s):
         negated_strings = []
 
-        if "minLength" in s:
+        if "minLength" in s and s.minLength - 1 >= 0:
             negated_strings.append(JSONTypeString(
                 {"maxLength": s.minLength - 1}))
         if "maxLength" in s:

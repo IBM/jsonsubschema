@@ -98,6 +98,13 @@ def one(iterable):
             return not (any(iterable[:i]) or any(iterable[i+1:]))
     return False
 
+#
+# To avoid regex bottlenecks, instead of using '.*'
+# as the default value for string.pattern, we use
+# 'None' and apply explicit checks for 'None'.
+# E.g. regex_meet(s1, None) = s1
+#
+
 
 def prepare_pattern_for_greenry(s):
     ''' The greenery library we use for regex intersection assumes 
@@ -106,6 +113,7 @@ def prepare_pattern_for_greenry(s):
         So basically strip any non-escaped ^ and $ when using greenery.
         Moreover, for any escaped ^ or $, we remove the \ to adhere to 
         greenery syntax (when they are escaped, they are literals). '''
+
     s = re.sub(r'(?<!\\|\[)((?:\\{2})*)\^', r'\g<1>',
                s)  # strip non-escaped ^ that is not inside []
     s = re.sub(r'(?<!\\)((?:\\{2})*)\$', r'\g<1>', s)  # strip non-escaped $
@@ -129,35 +137,49 @@ def regex_unanchor(p):
             p = p[:-1]
         elif p[-2:] != ".*":
             p = p + ".*"
-    else:  # case p == "" the empty string
-        p = ".*"
+    # else:  # case p == "" the empty string
+    #     p = ".*"
     return p
 
 
 def regex_matches_string(regex=None, s=None):
-    return parse(regex).matches(s)
+    if regex:
+        return parse(regex).matches(s)
+    else:
+        return True
 
 
-def regex_meet(s1, s2, *args):
-    ret = parse(s1) & parse(s2)
-    for arg in args:
-        ret = ret & parse(arg)
-    return str(ret.reduce()) if not ret.empty() else None
+def regex_meet(s1, s2):
+    if s1 and s2:
+        ret = parse(s1) & parse(s2)
+        return str(ret.reduce()) if not ret.empty() else None
+    elif s1:
+        return s1
+    elif s2:
+        return s2
+    else:
+        return None
 
 
 def regex_isSubset(s1, s2):
     ''' regex subset is quite expensive to compute
         especially for complex patterns. '''
-    s1 = parse(s1).reduce()
-    s2 = parse(s2).reduce()
-    return s1.equivalent(s2) or (s1 & s2.everythingbut()).empty()
+    if s1 and s2:
+        s1 = parse(s1).reduce()
+        s2 = parse(s2).reduce()
+        return s1.equivalent(s2) or (s1 & s2.everythingbut()).empty()
+    elif s1:
+        return True
+    elif s2:
+        return False
 
 
 def regex_isProperSubset(s1, s2):
     ''' regex proper subset is quite expensive to compute
         so we try to break it into two separate checks,
         and do the more expensive check, only if the 
-        cheaper one passes first.'''
+        cheaper one passes first. '''
+
     s1 = parse(s1).reduce()
     s2 = parse(s2).reduce()
     if not s1.equivalent(s2):
