@@ -45,6 +45,7 @@ class TestStringSubtype(unittest.TestCase):
         with self.subTest():
             self.assertFalse(isSubschema(s2, s1))
 
+
 class TestNotStringSubtype(unittest.TestCase):
 
     def test_str_not_str(self):
@@ -125,3 +126,13 @@ class TestNotStringSubtype(unittest.TestCase):
             self.assertFalse(isSubschema(s1, s2))
         with self.subTest():
             self.assertTrue(isSubschema(s2, s1))
+
+    def test_not_str_and_join_string(self):
+        s1 = {"allOf": [{"type": "string"}, {
+            "not": {"type": "string", "minLength": 5, "pattern": "a"}}]}
+        s2 = {"anyOf": [{"type": "string", "maxLength": 4},
+                        {"type": "string", "pattern": "[^a]"}]}
+        with self.subTest():
+            self.assertTrue(isSubschema(s1, s2))
+        with self.subTest():
+            self.assertFalse(isSubschema(s2, s1))

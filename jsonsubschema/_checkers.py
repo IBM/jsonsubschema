@@ -31,8 +31,6 @@ class UninhabitedMeta(type):
 
 class JSONschema(dict, metaclass=UninhabitedMeta):
 
-    # kw_defaults = {}
-
     def __init__(self, *args, **kwargs):
 
         super().__init__(*args, **kwargs)
@@ -43,15 +41,6 @@ class JSONschema(dict, metaclass=UninhabitedMeta):
 
     def updateInternalState(self):
         pass
-
-    def updateKeys(self):
-        for k, v in self.kw_defaults.items():
-            if k not in self.keys():
-                self[k] = v
-        # dirty hack becuase self.items() is already an attribute of dict
-        if "items" in self.keys():
-            self["items_"] = self["items"]
-            del self["items"]
 
     def isBoolean(self):
         return self.keys() & definitions.Jconnectors
@@ -86,8 +75,9 @@ class JSONschema(dict, metaclass=UninhabitedMeta):
         if self.hasEnum() or s.hasEnum():
             enum = JSONschema.meet_enum(self, s)
             if enum:
-                ret["enum"] = list(enum)
-                ret.enum = ret["enum"]
+                ret.enum = ret["enum"] = list(enum)
+                # ret["enum"] = list(enum)
+                # ret.enum = ret["enum"]
             # instead of returning uninhabited type, return bot
             else:
                 return JSONbot()
@@ -102,12 +92,18 @@ class JSONschema(dict, metaclass=UninhabitedMeta):
         return set(valid_enum1) & set(valid_enum2)
 
     def meet_handle_rhs(self, s, meet_cb):
-        #
+
         if s.type == "anyOf":
             return JSONanyOf._meetAnyOf(s, self)
-        #
+
         else:
             return meet_cb(self, s)
+
+    def _join(self, s):
+        ''' Place holder in case a subclass does not implement its own join.
+            Should be removed once we are done fully implementing join '''
+        ret = {"anyOf": [self, s]}
+        return JSONanyOf(ret)
 
     def join(self, s):
         #
@@ -121,11 +117,21 @@ class JSONschema(dict, metaclass=UninhabitedMeta):
             return JSONtop()
         #
         ret = self._join(s)
+        #
+        if self.hasEnum() and s.hasEnum():
+            enum = JSONschema.join_enum(self, s)
+            if enum:
+                ret.enum = ret["enum"] = list(enum)
         # instead of returning uninhabited types, return bot
         if is_bot(ret):
             return JSONbot()
         else:
             return ret
+
+    @staticmethod
+    def join_enum(s1, s2):
+        if s1.type == s2.type:
+            return set(s1.enum) | set(s2.enum)
 
     def isSubtype(self, s):
         #
@@ -179,6 +185,9 @@ class JSONtop(JSONschema):
     def _meet(self, s):
         return s
 
+    def _join(self, s):
+        return self
+
     def _isSubtype(self, s):
 
         def _isTopSubtype(s1, s2):
@@ -215,6 +224,9 @@ class JSONbot(JSONschema):
 
     def _meet(self, s):
         return self
+
+    def _join(self, s):
+        return s
 
     def _isSubtype(self, s):
 
@@ -257,12 +269,13 @@ class JSONTypeString(JSONschema):
         # pad the regex with '.*' from both sides.
         self.pattern = utils.regex_unanchor(
             self["pattern"]) if "pattern" in self else ".*"
+        self.pattern = utils.prepare_pattern_for_greenry(self.pattern)
 
     def _isUninhabited(self):
         return (self.minLength > self.maxLength) \
-            or self.pattern == None 
-            # See comment below at updateInternalState()
-            # or self.range_with_pattern == None
+            or self.pattern == None
+        # See comment below at updateInternalState()
+        # or self.range_with_pattern == None
 
     def updateInternalState(self):
         self.interval = I.closed(self.minLength, self.maxLength)
@@ -293,6 +306,38 @@ class JSONTypeString(JSONschema):
 
         return super().meet_handle_rhs(s, _meetString)
 
+    def _join(self, s):
+
+        def _joinString(s1, s2):
+            if s2.type == "string":
+                ret = {}
+                mn = min(s1.minLength, s2.minLength)
+                if utils.is_num(mn):
+                    ret["minLength"] = mn
+                mx = max(s1.maxLength, s2.maxLength)
+                if utils.is_num(mx):
+                    ret["maxLength"] = mx
+                s1_range = utils.string_range_to_regex(
+                    s1.minLength, s1.maxLength)
+                s2_range = utils.string_range_to_regex(
+                    s2.minLength, s2.maxLength)
+                s1_new_pattern = utils.regex_meet(s1_range, s1.pattern)
+                s2_new_pattern = utils.regex_meet(s2_range, s2.pattern)
+                if s1_new_pattern and s2_new_pattern:
+                    ret["pattern"] = "^" + s1_new_pattern + \
+                        "$|^" + s2_new_pattern + "$"
+                elif s1_new_pattern:
+                    ret["pattern"] = "^" + s1_new_pattern + "$"
+                elif s2_new_pattern:
+                    ret["pattern"] = "^" + s2_new_pattern + "$"
+                return JSONTypeString(ret)
+            else:
+                ret = {"anyOf": [self, s]}
+                return JSONanyOf(ret)
+                # return boolToConstructor.get("anyOf")({"anyOf": [self, s]})
+
+        return _joinString(self, s)
+
     def _isSubtype(self, s):
 
         def _isStringSubtype(s1, s2):
@@ -304,10 +349,14 @@ class JSONTypeString(JSONschema):
                 if s1.pattern == s2.pattern:
                     return True
                 else:
-                    s1_range = utils.string_range_to_regex(s1.minLength, s1.maxLength)
-                    s2_range = utils.string_range_to_regex(s2.minLength, s2.maxLength)
+                    s1_range = utils.string_range_to_regex(
+                        s1.minLength, s1.maxLength)
+                    s2_range = utils.string_range_to_regex(
+                        s2.minLength, s2.maxLength)
                     # if utils.regex_isSubset(s1.pattern, s2.pattern):
-                    if utils.regex_isSubset(utils.regex_meet(s1_range, s1.pattern), utils.regex_meet(s2_range, s2.pattern)):
+                    if utils.regex_isSubset(
+                            utils.regex_meet(s1_range, s1.pattern),
+                            utils.regex_meet(s2_range, s2.pattern)):
                         return True
                     else:
                         return False
@@ -335,7 +384,8 @@ class JSONTypeString(JSONschema):
         if len(negated_strings) == 0:
             return None
         else:
-            return JSONanyOf({"anyOf": negated_strings})
+            return boolToConstructor.get("anyOf")({"anyOf": negated_strings})
+            # return JSONanyOf({"anyOf": negated_strings})
 
 
 def isNumericUninhabited(s):
@@ -1113,7 +1163,6 @@ class JSONTypeObject(JSONschema):
                                     print_db("__04__")
                                     return False
 
-
             extra_keys_on_rhs = set(s2.properties.keys()).difference(
                 s1.properties.keys())
             for k in extra_keys_on_rhs.copy():
@@ -1158,7 +1207,7 @@ class JSONTypeObject(JSONschema):
             #                 return False
 
                         # Now, lhs has a patternProperty which is subtype of a property on the rhs.
-                        # Idealy, at this point, I'd like to check that EVERY property matched by
+                        # Ideally, at this point, I'd like to check that EVERY property matched by
                         # this pattern also exist on the rhs.
                         # from greenery.lego import parse
                         # p = parse(k_)
@@ -1300,7 +1349,6 @@ class JSONoneOf(JSONschema):
     def __init__(self, s):
         super().__init__(s)
 
-
     def _isUninhabited(self):
         return all(is_bot(i) for i in self.oneOf)
 
@@ -1318,7 +1366,8 @@ def JSONnotFactory(s):
         for t_i in definitions.Jtypes - set([t]):
             anyofs.append(typeToConstructor.get(t_i)({"type": t_i}))
         anyofs.append(negTypeToConstructor.get(t)(s))
-        return JSONanyOf({"anyOf": anyofs})
+        return boolToConstructor.get("anyOf")({"anyOf": anyofs})
+        # return JSONanyOf({"anyOf": anyofs})
 
 
 typeToConstructor = {
@@ -1342,7 +1391,8 @@ negTypeToConstructor = {
 }
 
 boolToConstructor = {
-    "anyOf": JSONanyOf,
+    # "anyOf": JSONanyOf,
+    "anyOf": JSONanyOfFactory,
     "allOf": JSONallOfFactory,
     # "oneOf": JSONoneOf,
     # "not": JSONnotFactory

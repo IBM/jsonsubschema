@@ -7,10 +7,9 @@ Created on May 24, 2019
 import copy
 import math
 import numbers
-
-import fractions as frac
-
+import re
 import jsonschema
+import fractions as frac
 import intervals as I
 from greenery.lego import parse
 
@@ -98,6 +97,22 @@ def one(iterable):
         if iterable[i]:
             return not (any(iterable[:i]) or any(iterable[i+1:]))
     return False
+
+
+def prepare_pattern_for_greenry(s):
+    ''' The greenery library we use for regex intersection assumes 
+        patterns are unanchored by default. Anchoring chars ^ and $ are
+        treated as literals by greenery.
+        So basically strip any non-escaped ^ and $ when using greenery.
+        Moreover, for any escaped ^ or $, we remove the \ to adhere to 
+        greenery syntax (when they are escaped, they are literals). '''
+    s = re.sub(r'(?<!\\|\[)((?:\\{2})*)\^', r'\g<1>',
+               s)  # strip non-escaped ^ that is not inside []
+    s = re.sub(r'(?<!\\)((?:\\{2})*)\$', r'\g<1>', s)  # strip non-escaped $
+    s = re.sub(r'(?<!\\)((?:\\{1})*)\\\^', r'\g<1>^', s)  # strip \ before ^
+    s = re.sub(r'(?<!\\)((?:\\{1})*)\\\$', r'\g<1>$', s)  # strip \ before $
+
+    return s
 
 
 def regex_unanchor(p):
