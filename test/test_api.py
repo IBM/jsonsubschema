@@ -36,10 +36,10 @@ class TestAPI(unittest.TestCase):
             self.assertEqual(s1.meet(s2), s2.meet(s1), c.JSONTypeInteger({}))
         #
         with self.subTest():
-            self.assertEqual(s1.join(s1), join(s1, s1), s1)
+            self.assertEqual(s1.join(s1), joinSchemas(s1, s1), s1)
         
         with self.subTest():
-            self.assertEqual(s2.join(s2), join(s2, s2), s2)
+            self.assertEqual(s2.join(s2), joinSchemas(s2, s2), s2)
         
         with self.subTest():
             self.assertEqual(s1.join(s2), s2.join(s1))
@@ -63,29 +63,29 @@ class TestAPI(unittest.TestCase):
             self.assertTrue(isSubschema(s2, s1))
         
         with self.subTest():
-            self.assertTrue(isSubschema(join(s1, s2), join(s2, s1)))
+            self.assertTrue(isSubschema(joinSchemas(s1, s2), joinSchemas(s2, s1)))
         with self.subTest():
-            self.assertTrue(isSubschema(meet(s1, s2), meet(s2, s1)))
+            self.assertTrue(isSubschema(meetSchemas(s1, s2), meetSchemas(s2, s1)))
 
         with self.subTest():
-            self.assertTrue(isSubschema(meet(s1, s2), join(s2, s1)))
+            self.assertTrue(isSubschema(meetSchemas(s1, s2), joinSchemas(s2, s1)))
         with self.subTest():
-            self.assertFalse(isSubschema(join(s1, s2), meet(s2, s1)))
+            self.assertFalse(isSubschema(joinSchemas(s1, s2), meetSchemas(s2, s1)))
 
     def test_api_meet(self):
         with self.subTest():
-            self.assertEqual(meet(s1, s2), meet(s2, s1), c.JSONTypeInteger({}))
+            self.assertEqual(meetSchemas(s1, s2), meetSchemas(s2, s1), c.JSONTypeInteger({}))
         
         with self.subTest():
-            self.assertEqual(meet(s1, s1), s1)
+            self.assertEqual(meetSchemas(s1, s1), s1)
         with self.subTest():
-            self.assertEqual(meet(s2, s2), s2)
+            self.assertEqual(meetSchemas(s2, s2), s2)
 
     def test_api_join(self):
         with self.subTest():
-            self.assertEqual(join(s1, s2), join(s2, s1))
+            self.assertEqual(joinSchemas(s1, s2), joinSchemas(s2, s1))
         
         # with self.subTest():
-        #     self.assertEqual(join(s1, s1), s1)
+        #     self.assertEqual(joinSchemas(s1, s1), s1)
         # with self.subTest():
-        #     self.assertEqual(join(s2, s2), s2)
+        #     self.assertEqual(joinSchemas(s2, s2), s2)

@@ -53,8 +53,8 @@ class JSONschema(dict, metaclass=UninhabitedMeta):
         # but rather re-check on the fly to
         # get an updated results based on the
         # current internal state.
-        uninhabited = self._isUninhabited() and (
-            "enum" in self and not self["enum"])
+        uninhabited = self._isUninhabited()  # and (
+        # "enum" in self and not self["enum"])
         if config.WARN_UNINHABITED and uninhabited:
             print("Found an uninhabited type at: ", type(self), self)
         return uninhabited
@@ -372,26 +372,31 @@ class JSONTypeString(JSONschema):
         return super().isSubtype_handle_rhs(s, _isStringSubtype)
 
     @staticmethod
-    def negString(s):
+    def neg(s):
         negated_strings = []
+        non_string = boolToConstructor.get("anyOf")(
+            {"anyOf": get_default_types_except("string")})
 
-        if "minLength" in s and s.minLength - 1 >= 0:
+        if "minLength" in s and s["minLength"] - 1 >= 0:
             negated_strings.append(JSONTypeString(
-                {"maxLength": s.minLength - 1}))
+                {"maxLength": s["minLength"] - 1}))
         if "maxLength" in s:
             negated_strings.append(JSONTypeString(
-                {"minLength": s.maxLength + 1}))
+                {"minLength": s["maxLength"] + 1}))
         if "pattern" in s:
             # Explicitly anchor pattern when assigned to the json key
             # to reflect the greenery lib behavior on the json object.
+            patrn = utils.prepare_pattern_for_greenry(
+                utils.regex_unanchor(s["pattern"]))
             negated_strings.append(JSONTypeString(
-                {"pattern": "^" + utils.complement_of_string_pattern(s.pattern) + "$"}))
+                {"pattern": "^" + utils.complement_of_string_pattern(patrn) + "$"}))
 
         if len(negated_strings) == 0:
-            return None
+            return non_string
         else:
-            return boolToConstructor.get("anyOf")({"anyOf": negated_strings})
-            # return JSONanyOf({"anyOf": negated_strings})
+            joined_string = boolToConstructor.get(
+                "anyOf")({"anyOf": negated_strings})
+            return non_string.join(joined_string)
 
 
 def isNumericUninhabited(s):
@@ -474,7 +479,7 @@ class JSONTypeInteger(JSONschema):
         return super().isSubtype_handle_rhs(s, _isIntegerSubtype)
 
     @staticmethod
-    def negInteger(s):
+    def neg(s):
         negated_int = []
         # We will always ignore setting exclusiveMin/Max and
         # instead, capture it in the min/max value directly.
@@ -608,7 +613,7 @@ class JSONTypeNumber(JSONschema):
         return super().isSubtype_handle_rhs(s, _isNumberSubtype)
 
     @staticmethod
-    def negNumber(s):
+    def neg(s):
         # for k, default in JSONTypeNumber.kw_defaults.items():
         #     if s.__getattr__(k) != default:
         #         break
@@ -646,7 +651,7 @@ class JSONTypeBoolean(JSONschema):
         return super().isSubtype_handle_rhs(s, _isBooleanSubtype)
 
     @staticmethod
-    def negBoolean(s):
+    def neg(s):
         return None
 
 
@@ -681,7 +686,7 @@ class JSONTypeNull(JSONschema):
         return super().isSubtype_handle_rhs(s, _isNullSubtype)
 
     @staticmethod
-    def negNull(s):
+    def neg(s):
         return None
 
 
@@ -964,7 +969,7 @@ class JSONTypeArray(JSONschema):
         return super().isSubtype_handle_rhs(s, _isArraySubtype)
 
     @staticmethod
-    def negArray(s):
+    def neg(s):
         # for k, default in JSONTypeArray.kw_defaults.items():
         #     if s.__getattr__(k) != default:
         #         break
@@ -1274,7 +1279,7 @@ class JSONTypeObject(JSONschema):
         return super().isSubtype_handle_rhs(s, _isObjectSubtype)
 
     @staticmethod
-    def negObject(s):
+    def neg(s):
         # for k, default in JSONTypeObject.kw_defaults.items():
         #     if s.__getattr__(k) != default:
         #         break
@@ -1336,6 +1341,47 @@ class JSONanyOf(JSONschema):
         else:
             return JSONbot()
 
+    # def _join(self, s):
+    #     # def flatten_anyof(l):
+    #     #     ret = []
+    #     #     for i in l:
+    #     #         if i.type != "anyOf":
+    #     #             ret.append(i)
+    #     #         else:
+    #     #             ret.extend(i.anyOf)
+
+    #     #     return JSONanyOf({"anyOf": ret})
+    #     ret = []
+    #     if s.type == "anyOf":
+    #         for i in self.anyOf:
+    #             i_inserted = False
+    #             for j in s.anyOf:
+    #                 if i.type == j.type:
+    #                     ret.append(i.join(j))
+    #                     i_inserted = True
+    #                 else:
+    #                     ret.append(j)
+    #             if not i_inserted:
+    #                 ret.append(i)
+
+    #     else:
+    #         s_inserted = False
+    #         for i in self.anyOf:
+    #             if i.type == s.type:
+    #                 ret.append(i.join(s))
+    #                 s_inserted = True
+    #             else:
+    #                 ret.append(i)
+    #         if not s_inserted:
+    #             ret.append(s)
+
+    #     # if len(ret) == 0:
+    #     #     JSONbot
+    #     if len(ret) == 1:
+    #         return ret.pop()
+    #     else:
+    #         return JSONanyOf({"anyOf": ret})
+
     def _isSubtype(self, s):
 
         def _isAnyofSubtype(s1, s2):
@@ -1353,21 +1399,6 @@ def JSONallOfFactory(s):
         ret = ret.meet(i)
 
     return ret
-
-
-class JSONoneOf(JSONschema):
-
-    def __init__(self, s):
-        super().__init__(s)
-
-    def _isUninhabited(self):
-        return all(is_bot(i) for i in self.oneOf)
-
-    def _meet(self, s):
-        pass
-
-    def _isSubtype(self, s):
-        sys.exit("oneOf on the lhs is not supported yet.")
 
 
 def JSONnotFactory(s):
@@ -1391,27 +1422,14 @@ typeToConstructor = {
     "object": JSONTypeObject
 }
 
-negTypeToConstructor = {
-    "string": JSONTypeString.negString,
-    "integer": JSONTypeInteger.negInteger,
-    "number": JSONTypeNumber.negNumber,
-    "boolean": JSONTypeBoolean.negBoolean,
-    "null": JSONTypeNull.negNull,
-    "array": JSONTypeArray.negArray,
-    "object": JSONTypeObject.negObject
-}
-
 boolToConstructor = {
-    # "anyOf": JSONanyOf,
     "anyOf": JSONanyOfFactory,
-    "allOf": JSONallOfFactory,
-    # "oneOf": JSONoneOf,
-    # "not": JSONnotFactory
+    "allOf": JSONallOfFactory
 }
 
-negBoolToConstructor = {
-    # "anyOf": None,
-    # "allOf": None,
-    # "oneOf": None,
-    # "not": None
-}
+
+def get_default_types_except(*args):
+    ret = []
+    for t in set(typeToConstructor.keys()).difference(args):
+        ret.append(typeToConstructor[t]({}))
+    return ret

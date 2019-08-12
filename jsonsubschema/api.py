@@ -5,9 +5,9 @@ Created on June 24, 2019
 
 import json
 
-from jsonsubschema._canoncalization import (
-    canonicalize_dict,
-    canonicalize_json
+from jsonsubschema._canonicalization import (
+    canonicalize_schema,
+    simplify_schema_and_embed_checkers
 )
 from jsonsubschema._utils import (
     validate_schema,
@@ -24,25 +24,28 @@ class JSONSubSchemaFactory(json.JSONDecoder):
             self, object_hook=self.object_hook, *args, **kwargs)
 
     def object_hook(self, d):
-        return canonicalize_dict(d)
+        return simplify_schema_and_embed_checkers(
+            canonicalize_schema(d))
 
 
 def prepare_operands(s1, s2):
-    # Validate both lhs and rhs schemas before starting the subtype checking.
-    # Subtyping of invalid schemas is erroneous.
+    # Canonicalize and embed checkers for both lhs
+    # and rhs schemas  before starting the subtype checking.
+    # This also validates input schemas and canonicalized schemas.
 
-    validate_schema(s1)
     print_db("LHS", s1)
-    s1 = canonicalize_json(s1)
+    print_db()
+    s1 = simplify_schema_and_embed_checkers(
+        canonicalize_schema(s1))
     print_db("LHS_canonical", s1)
-
     print_db()
 
-    validate_schema(s2)
     print_db("RHS", s2)
-    s2 = canonicalize_json(s2)
+    print_db()
+    s2 = simplify_schema_and_embed_checkers(
+        canonicalize_schema(s2))
     print_db("RHS_canonical", s2)
-
+    print_db()
     return s1, s2
 
 

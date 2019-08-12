@@ -5,7 +5,7 @@ Created on June 3, 2019
 
 import unittest
 
-from jsonsubschema.api import isSubschema
+from jsonsubschema import isSubschema, set_warn_uninhabited
 
 
 class TestMixedTypes(unittest.TestCase):
@@ -131,5 +131,36 @@ class TestMixedTypes(unittest.TestCase):
         s2 = {"type": "string", "enum": [1, 2, 3]}
         with self.subTest():
             self.assertFalse(isSubschema(s1, s2))
+        with self.subTest():
+            self.assertTrue(isSubschema(s2, s1))
+
+    def test_uninhabited1(self):
+        s1 = {"type": "string", "enum": [2]}
+        s2 = {"type": "boolean"}
+        set_warn_uninhabited(True)
+        with self.subTest():
+            self.assertTrue(isSubschema(s1, s2))
+        with self.subTest():
+            self.assertFalse(isSubschema(s2, s1))
+        set_warn_uninhabited(False)
+
+
+class TestBooleans(unittest.TestCase):
+
+    def test_oneof1(self):
+        # equiv to {"not": {string}}
+        s1 = {"oneOf": [{"type": "string"}, {}]}
+        s2 = {"type": "string"}
+        with self.subTest():
+            self.assertFalse(isSubschema(s1, s2))
+        with self.subTest():
+            self.assertFalse(isSubschema(s2, s1))
+
+    def test_oneof2(self):
+        # equiv to {"not": {string}}
+        s1 = {"oneOf": [{"type": "string"}, {}]}
+        s2 = {"not": {"type": "string"}}
+        with self.subTest():
+            self.assertTrue(isSubschema(s1, s2))
         with self.subTest():
             self.assertTrue(isSubschema(s2, s1))
