@@ -29,3 +29,8 @@ Jmeta = set(["$schema", "$id", "$ref", "definitions", "title", "description"])
 
 Jkeywords = Jcommonkw.union(Jtypes,
                             reduce(operator.add, JtypesToKeywords.values()))
+
+JtypesToPyTypes = {"integer": int, "number": float, "string": str,
+                   "boolean": bool, "null": type(None), "array": list, "object": dict}
+
+PyTypesToJtypes = dict([(v, k) for k, v in JtypesToPyTypes.items()])
