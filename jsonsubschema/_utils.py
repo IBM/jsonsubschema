@@ -14,6 +14,7 @@ import intervals as I
 from greenery.lego import parse
 
 import jsonsubschema.config as config
+import jsonsubschema._constants as definitions
 
 
 def is_str(i):
@@ -32,8 +33,8 @@ def is_int_equiv(i):
     return isinstance(i, int) or (isinstance(i, float) and float(i).is_integer())
 
 
-def is_float(i):
-    return isinstance(i, float)
+# def is_float(i):
+#     return isinstance(i, float)
 
 
 def is_num(i):
@@ -46,8 +47,8 @@ def is_bool(i):
     return isinstance(i, bool)
 
 
-def is_null(i):
-    isinstance(i, type(None))
+# def is_null(i):
+#     isinstance(i, type(None))
 
 
 def is_list(i):
@@ -58,12 +59,12 @@ def is_dict(i):
     return isinstance(i, dict)
 
 
-def is_empty_dict_or_none(i):
-    return i == {} or i == None
+# def is_empty_dict_or_none(i):
+#     return i == {} or i == None
 
 
-def is_dict_or_true(i):
-    return isinstance(i, dict) or i == True
+# def is_dict_or_true(i):
+#     return isinstance(i, dict) or i == True
 
 
 def validate_schema(s):
@@ -81,7 +82,16 @@ def get_valid_enum_vals(enum, s):
             jsonschema.validate(instance=i, schema=s)
         except jsonschema.ValidationError:
             vals.remove(i)
-    return list(vals)
+    try:
+        return sorted(vals)
+    except TypeError:
+        return list(vals)
+
+
+def get_typed_enum_vals(enum, t):
+    if t is "integer":
+        enum = filter(lambda i: not isinstance(i, bool), enum)
+    return sorted(filter(lambda i: isinstance(i, definitions.JtypesToPyTypes[t]), enum))
 
 
 def print_db(*args):
@@ -92,11 +102,11 @@ def print_db(*args):
             print()
 
 
-def one(iterable):
-    for i in range(len(iterable)):
-        if iterable[i]:
-            return not (any(iterable[:i]) or any(iterable[i+1:]))
-    return False
+# def one(iterable):
+#     for i in range(len(iterable)):
+#         if iterable[i]:
+#             return not (any(iterable[:i]) or any(iterable[i+1:]))
+#     return False
 
 #
 # To avoid regex bottlenecks, instead of using '.*'
@@ -174,17 +184,17 @@ def regex_isSubset(s1, s2):
         return False
 
 
-def regex_isProperSubset(s1, s2):
-    ''' regex proper subset is quite expensive to compute
-        so we try to break it into two separate checks,
-        and do the more expensive check, only if the 
-        cheaper one passes first. '''
+# def regex_isProperSubset(s1, s2):
+#     ''' regex proper subset is quite expensive to compute
+#         so we try to break it into two separate checks,
+#         and do the more expensive check, only if the
+#         cheaper one passes first. '''
 
-    s1 = parse(s1).reduce()
-    s2 = parse(s2).reduce()
-    if not s1.equivalent(s2):
-        return (s1 & s2.everythingbut()).empty()
-    return False
+#     s1 = parse(s1).reduce()
+#     s2 = parse(s2).reduce()
+#     if not s1.equivalent(s2):
+#         return (s1 & s2.everythingbut()).empty()
+#     return False
 
 
 def string_range_to_regex(min, max):
