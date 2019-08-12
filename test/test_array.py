@@ -5,7 +5,7 @@ Created on May 30, 2019
 
 import unittest
 
-from jsonsubschema.api import isSubschema
+from jsonsubschema import isSubschema
 
 
 class TestArraySubtype(unittest.TestCase):

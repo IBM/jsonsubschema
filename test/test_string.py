@@ -8,7 +8,7 @@ import warnings
 
 from jsonschema.exceptions import SchemaError
 
-from jsonsubschema.api import isSubschema
+from jsonsubschema import isSubschema, set_debug
 
 
 class TestStringSubtype(unittest.TestCase):

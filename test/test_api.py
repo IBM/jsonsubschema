@@ -7,7 +7,7 @@ import json
 import unittest
 
 import jsonsubschema._checkers as c
-from jsonsubschema.api import *
+from jsonsubschema import *
 
 s1 = {"type": "number"}
 s2 = {"type": "integer"}
@@ -18,8 +18,8 @@ s_2 = '{"type": "integer"}'
 class TestAPI(unittest.TestCase):
 
     def test_decoder_and_api(self):
-        s1 = json.loads(s_1, cls=JSONSubSchemaFactory)
-        s2 = json.loads(s_2, cls=JSONSubSchemaFactory)
+        s1 = json.loads(s_1, cls=subschemaDecoder)
+        s2 = json.loads(s_2, cls=subschemaDecoder)
 
         with self.subTest():
             self.assertFalse(s1.isSubtype(s2))

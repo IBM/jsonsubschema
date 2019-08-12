@@ -10,5 +10,7 @@ isSubschema = api.isSubschema
 meet = api.meet
 join = api.join
 
+subschemaDecoder = api.JSONSubSchemaFactory
+
 set_debug = config.set_debug
 set_warn_uninhabited = config.set_warn_uninhabited

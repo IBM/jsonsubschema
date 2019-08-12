@@ -7,7 +7,7 @@ import unittest
 
 from jsonschema.exceptions import SchemaError
 
-from jsonsubschema.api import isSubschema
+from jsonsubschema import isSubschema
 
 
 class TestIntegerSubtype(unittest.TestCase):
