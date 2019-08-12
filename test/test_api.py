@@ -15,6 +15,7 @@ s2 = {"type": "integer"}
 s_1 = '{"type": "number"}'
 s_2 = '{"type": "integer"}'
 
+
 class TestAPI(unittest.TestCase):
 
     def test_decoder_and_api(self):
@@ -28,19 +29,19 @@ class TestAPI(unittest.TestCase):
         #
         with self.subTest():
             self.assertEqual(s1.meet(s1), s1)
-        
+
         with self.subTest():
             self.assertEqual(s2.meet(s2), s2)
-        
+
         with self.subTest():
             self.assertEqual(s1.meet(s2), s2.meet(s1), c.JSONTypeInteger({}))
         #
         with self.subTest():
             self.assertEqual(s1.join(s1), joinSchemas(s1, s1), s1)
-        
+
         with self.subTest():
             self.assertEqual(s2.join(s2), joinSchemas(s2, s2), s2)
-        
+
         with self.subTest():
             self.assertEqual(s1.join(s2), s2.join(s1))
         #
@@ -61,21 +62,26 @@ class TestAPI(unittest.TestCase):
             self.assertFalse(isSubschema(s1, s2))
         with self.subTest():
             self.assertTrue(isSubschema(s2, s1))
-        
-        with self.subTest():
-            self.assertTrue(isSubschema(joinSchemas(s1, s2), joinSchemas(s2, s1)))
-        with self.subTest():
-            self.assertTrue(isSubschema(meetSchemas(s1, s2), meetSchemas(s2, s1)))
 
         with self.subTest():
-            self.assertTrue(isSubschema(meetSchemas(s1, s2), joinSchemas(s2, s1)))
+            self.assertTrue(isSubschema(
+                joinSchemas(s1, s2), joinSchemas(s2, s1)))
         with self.subTest():
-            self.assertFalse(isSubschema(joinSchemas(s1, s2), meetSchemas(s2, s1)))
+            self.assertTrue(isSubschema(
+                meetSchemas(s1, s2), meetSchemas(s2, s1)))
+
+        with self.subTest():
+            self.assertTrue(isSubschema(
+                meetSchemas(s1, s2), joinSchemas(s2, s1)))
+        with self.subTest():
+            self.assertFalse(isSubschema(
+                joinSchemas(s1, s2), meetSchemas(s2, s1)))
 
     def test_api_meet(self):
         with self.subTest():
-            self.assertEqual(meetSchemas(s1, s2), meetSchemas(s2, s1), c.JSONTypeInteger({}))
-        
+            self.assertEqual(meetSchemas(s1, s2), meetSchemas(
+                s2, s1), c.JSONTypeInteger({}))
+
         with self.subTest():
             self.assertEqual(meetSchemas(s1, s1), s1)
         with self.subTest():
@@ -84,8 +90,8 @@ class TestAPI(unittest.TestCase):
     def test_api_join(self):
         with self.subTest():
             self.assertEqual(joinSchemas(s1, s2), joinSchemas(s2, s1))
-        
-        # with self.subTest():
-        #     self.assertEqual(joinSchemas(s1, s1), s1)
-        # with self.subTest():
-        #     self.assertEqual(joinSchemas(s2, s2), s2)
+
+        with self.subTest():
+            self.assertEqual(joinSchemas(s1, s1), s1)
+        with self.subTest():
+            self.assertEqual(joinSchemas(s2, s2), s2)
