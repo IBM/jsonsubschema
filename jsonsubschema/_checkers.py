@@ -40,7 +40,7 @@ class JSONschema(dict, metaclass=UninhabitedMeta):
         # we also validate that the actual parameter after
         # being build into a normal dict, is a valid schema.
         utils.validate_schema(self)
-        
+
         # Instead of adding enum at every child constructor,
         # do it here once and fir all.
         if "enum" in self:
@@ -424,14 +424,30 @@ class JSONTypeInteger(JSONschema):
         self.multipleOf = self.get("multipleOf", None)
 
     def build_interval_draft4(self):
-        if self.exclusiveMinimum and self.exclusiveMaximum:
-            self.interval = I.closed(self.minimum+1, self.maximum-1)
-        elif self.exclusiveMinimum:
-            self.interval = I.closed(self.minimum+1, self.maximum)
-        elif self.exclusiveMaximum:
-            self.interval = I.closed(self.minimum, self.maximum-1)
-        else:
-            self.interval = I.closed(self.minimum, self.maximum)
+        # min, max, and interval attributes handle
+        # exclusive min/max as well as float values
+        # of min/max.
+        # All type operations such as meet, join,
+        # and subtype should rely only on interval
+        # and min/max attributes.
+
+        if self.exclusiveMinimum:
+            if utils.is_int_equiv(self.minimum):
+                self.minimum = self.minimum + 1
+            else:
+                self.minimum = math.ceil(self.minimum)
+        elif utils.is_num(self.minimum):
+            self.minimum = math.ceil(self.minimum)
+
+        if self.exclusiveMaximum:
+            if utils.is_int_equiv(self.maximum):
+                self.maximum = self.maximum - 1
+            else:
+                self.maximum = math.floor(self.maximum)
+        elif utils.is_num(self.maximum):
+            self.maximum = math.floor(self.maximum)
+
+        self.interval = I.closed(self.minimum, self.maximum)
 
     def _isUninhabited(self):
         return isNumericUninhabited(self)
