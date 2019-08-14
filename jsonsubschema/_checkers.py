@@ -34,6 +34,13 @@ class JSONschema(dict, metaclass=UninhabitedMeta):
     def __init__(self, *args, **kwargs):
 
         super().__init__(*args, **kwargs)
+
+        # Since one might call the below constructor directly
+        # with a jsonschema as the constructor parameter,
+        # we also validate that the actual parameter after
+        # being build into a normal dict, is a valid schema.
+        utils.validate_schema(self)
+        
         # Instead of adding enum at every child constructor,
         # do it here once and fir all.
         if "enum" in self:
