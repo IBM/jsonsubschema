@@ -185,6 +185,104 @@ class TestIntegerSubtype(unittest.TestCase):
         with self.subTest():
             self.assertFalse(isSubschema(s2, s1))
 
+    def test_join1(self):
+        s1 = {"anyOf": [{"type": "integer", "minimum": 5,
+                         "maximum": 10}, {"type": "integer", }]}
+        s2 = {"type": "integer"}
+        with self.subTest():
+            self.assertTrue(isSubschema(s1, s2))
+        with self.subTest():
+            self.assertTrue(isSubschema(s2, s1))
+
+    def test_join2(self):
+        s1 = {"anyOf": [{"type": "integer", "minimum": 5, "maximum": 10},
+                        {"type": "integer", "minimum": 0}]}
+        s2 = {"type": "integer"}
+        with self.subTest():
+            self.assertTrue(isSubschema(s1, s2))
+        with self.subTest():
+            self.assertFalse(isSubschema(s2, s1))
+
+    def test_join3(self):
+        s1 = {"anyOf": [{"type": "integer", "minimum": 5, "maximum": 10},
+                        {"type": "integer", "minimum": 0, "maximum": 3}]}
+        s2 = {"type": "integer", "minimum": -1}
+        with self.subTest():
+            self.assertTrue(isSubschema(s1, s2))
+        with self.subTest():
+            self.assertFalse(isSubschema(s2, s1))
+
+    def test_join4(self):
+        s1 = {"anyOf": [{"type": "integer", "minimum": 5, "maximum": 10},
+                        {"type": "integer", "minimum": 0, "maximum": 4}]}
+        s2 = {"type": "integer", "minimum": 1, "maximum": 8}
+        with self.subTest():
+            self.assertFalse(isSubschema(s1, s2))
+        with self.subTest():
+            self.assertTrue(isSubschema(s2, s1))
+
+    def test_join5(self):
+        s1 = {"anyOf": [{"type": "integer", "minimum": 5, "exclusiveMinimum": True, "maximum": 10},
+                        {"type": "integer", "minimum": 0, "maximum": 4}]}
+        s2 = {"type": "integer", "minimum": 1, "maximum": 8}
+        with self.subTest():
+            self.assertFalse(isSubschema(s1, s2))
+        with self.subTest():
+            self.assertFalse(isSubschema(s2, s1))
+
+    def test_join_mulof1(self):
+        s1 = {"anyOf": [{"type": "integer", "multipleOf": 5},
+                        {"type": "integer"}]}
+        s2 = {"type": "integer"}
+        with self.subTest():
+            self.assertTrue(isSubschema(s1, s2))
+        with self.subTest():
+            self.assertTrue(isSubschema(s2, s1))
+
+    def test_join_mulof2(self):
+        s1 = {"anyOf": [{"type": "integer", "multipleOf": 5},
+                        {"type": "integer", "multipleOf": 7}]}
+        s2 = {"type": "integer"}
+        with self.subTest():
+            self.assertTrue(isSubschema(s1, s2))
+        with self.subTest():
+            self.assertTrue(isSubschema(s2, s1))
+
+    def test_join_mulof3(self):
+        s1 = {"anyOf": [{"type": "integer", "multipleOf": 5},
+                        {"type": "integer", "multipleOf": 7}]}
+        s2 = {"type": "integer", "multipleOf": 35}
+        with self.subTest():
+            self.assertFalse(isSubschema(s1, s2))
+        with self.subTest():
+            self.assertTrue(isSubschema(s2, s1))
+
+    def test_join_mulof4(self):
+        s1 = {"anyOf": [{"type": "integer", "multipleOf": 5},
+                        {"type": "integer", "multipleOf": 7}]}
+        s2 = {"type": "integer", "multipleOf": 5}
+        with self.subTest():
+            self.assertFalse(isSubschema(s1, s2))
+        with self.subTest():
+            self.assertTrue(isSubschema(s2, s1))
+
+    def test_join_mulof5(self):
+        s1 = {"anyOf": [{"type": "integer", "multipleOf": 3},
+                        {"type": "integer", "multipleOf": 6}]}
+        s2 = {"type": "integer", "multipleOf": 3}
+        with self.subTest():
+            self.assertTrue(isSubschema(s1, s2))
+        with self.subTest():
+            self.assertTrue(isSubschema(s2, s1))
+
+    def test_join_mulof6(self):
+        s1 = {"anyOf": [{"type": "integer", "multipleOf": 12},
+                        {"type": "integer", "multipleOf": 9}]}
+        s2 = {"type": "integer", "multipleOf": 3}
+        with self.subTest():
+            self.assertTrue(isSubschema(s1, s2))
+        with self.subTest():
+            self.assertFalse(isSubschema(s2, s1))
 
 class TestNumberSubtype(unittest.TestCase):
 

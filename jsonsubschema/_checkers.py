@@ -460,8 +460,9 @@ class JSONTypeInteger(JSONschema):
         def _joinInteger(s1, s2):
             if s2.type in definitions.Jnumeric:
                 ret = {}
-                overlap = s1.interval & s2.interval
-                if not overlap.is_empty():
+                if s1.interval.overlaps(s2.interval) \
+                        or s1.interval.lower - s2.interval.upper == 1 \
+                        or s2.interval.lower - s1.interval.upper == 1:
                     joined_interval = s1.interval | s2.interval
                     if utils.is_num(joined_interval.lower):
                         ret["minimum"] = joined_interval.lower
@@ -471,6 +472,10 @@ class JSONTypeInteger(JSONschema):
                         ret["maximum"] = joined_interval.upper
                         if not joined_interval.right:
                             ret["exclusiveMaximum"] = True
+                    gcd = utils.gcd(s1.multipleOf, s2.multipleOf)
+                    if utils.is_num(gcd) and gcd != 1:
+                        ret["multipleOf"] = gcd
+
                 else:
                     return JSONanyOf({"anyOf": [s1, s2]})
 
@@ -613,8 +618,7 @@ class JSONTypeNumber(JSONschema):
         def _joinNumber(s1, s2):
             if s2.type in definitions.Jnumeric:
                 ret = {}
-                overlap = s1.interval & s2.interval
-                if not overlap.is_empty():
+                if s1.interval.overlaps(s2.interval):
                     joined_interval = s1.interval | s2.interval
                     if utils.is_num(joined_interval.lower):
                         ret["minimum"] = joined_interval.lower
@@ -624,6 +628,9 @@ class JSONTypeNumber(JSONschema):
                         ret["maximum"] = joined_interval.upper
                         if not joined_interval.right:
                             ret["exclusiveMaximum"] = True
+                    gcd = utils.gcd(s1.multipleOf, s2.multipleOf)
+                    if utils.is_num(gcd) and gcd != 1:
+                        ret["multipleOf"] = gcd
                 else:
                     return JSONanyOf({"anyOf": [s1, s2]})
 

@@ -214,7 +214,7 @@ def complement_of_string_pattern(s):
 
 
 def lcm(x, y):
-    bad_values = [I.inf, -I.inf, None]
+    bad_values = [None, ]#I.inf, -I.inf]
     if x in bad_values:
         if y in bad_values:
             return None
@@ -230,3 +230,21 @@ def lcm(x, y):
             # with warnings.catch_warnings():
             #     warnings.filterwarnings("ignore", category=DeprecationWarning)
             return x * y / frac.gcd(x, y)
+
+def gcd(x, y):
+    bad_values = [None, ]#I.inf, -I.inf, None]
+    if x in bad_values:
+        if y in bad_values:
+            return None
+        else:
+            return None
+    elif y in bad_values:
+        return None
+    else:
+        if is_int(x) and is_int(y):
+            return math.gcd(int(x), int(y))
+        else:
+            # import warnings
+            # with warnings.catch_warnings():
+            #     warnings.filterwarnings("ignore", category=DeprecationWarning)
+            return frac.gcd(x, y)
