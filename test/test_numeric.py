@@ -246,7 +246,7 @@ class TestIntegerSubtype(unittest.TestCase):
         with self.subTest():
             self.assertTrue(isSubschema(s1, s2))
         with self.subTest():
-            self.assertTrue(isSubschema(s2, s1))
+            self.assertFalse(isSubschema(s2, s1))
 
     def test_join_mulof3(self):
         s1 = {"anyOf": [{"type": "integer", "multipleOf": 5},
