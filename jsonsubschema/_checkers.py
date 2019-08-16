@@ -406,8 +406,7 @@ class JSONTypeString(JSONschema):
 
 def isNumericUninhabited(s):
     return s.interval.is_empty()  \
-        or (s.multipleOf != None and s.multipleOf not in s.interval
-            and s.interval.lower != -I.inf and s.interval.upper != I.inf)
+        or utils.is_num(s.multipleOf) and s.multipleOf > s.maximum
 
 
 class JSONTypeInteger(JSONschema):
