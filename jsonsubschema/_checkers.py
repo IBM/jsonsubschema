@@ -1161,14 +1161,14 @@ class JSONTypeObject(JSONschema):
                     that key schema has to match all corresponding patterns schemas.
                 '''
                 if k in s.properties.keys():
-                    return [k.properties[k]]
+                    return [s.properties[k]]
                 else:
                     ret = []
                     for k_ in s.patternProperties.keys():
                         if utils.regex_matches_string(k_, k):
                             # in case a key has to be checked against patternProperties,
                             # it has to adhere to all schemas which have pattern matching the key.
-                            ret.append(k.patternProperties[k_])
+                            ret.append(s.patternProperties[k_])
                     if ret:
                         return ret
 

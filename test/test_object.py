@@ -465,3 +465,41 @@ class TestObjectSubtype(unittest.TestCase):
             self.assertTrue(isSubschema(s1, s2))
         with self.subTest():
             self.assertFalse(isSubschema(s2, s1))
+
+    def test_required_with_real_schema(self):
+        s1 = {'additionalProperties': False,
+              'properties': {'X': {'$schema': 'http://json-schema.org/draft-04/schema#',
+                                   'items': {'items': {'type': 'number'},
+                                             'maxItems': 4,
+                                             'minItems': 4,
+                                             'type': 'array'},
+                                   'maxItems': 150,
+                                   'minItems': 150,
+                                   'type': 'array'},
+                             'y': {'$schema': 'http://json-schema.org/draft-04/schema#',
+                                   'items': {'type': 'integer'},
+                                   'maxItems': 150,
+                                   'minItems': 150,
+                                   'type': 'array'}},
+              'required': ['X', 'y'],
+              'type': 'object'}
+
+        s2 = {'$schema': 'http://json-schema.org/draft-04/schema#',
+              'additionalProperties': False,
+              'description': 'Input data schema for training.',
+              'properties': {'X': {'description': 'Features; the outer array is '
+                                   'over samples.',
+                                   'items': {'items': {'type': 'number'},
+                                             'type': 'array'},
+                                   'type': 'array'},
+                             'y': {'description': 'Target class labels; the array '
+                                   'is over samples.',
+                                   'items': {'type': 'number'},
+                                   'type': 'array'}},
+              'required': ['X', 'y'],
+              'type': 'object'}
+
+        with self.subTest():
+            self.assertTrue(isSubschema(s1, s2))
+        with self.subTest():
+            self.assertFalse(isSubschema(s2, s1))
