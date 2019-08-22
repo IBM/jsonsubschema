@@ -822,6 +822,8 @@ class JSONTypeArray(JSONschema):
     def updateInternalState(self):
         self.compute_actual_maxItems()
         self.interval = I.closed(self.minItems, self.maxItems)
+        if utils.is_list(self.items_) and len(self.items_) == self.maxItems:
+            self.additionalItems = False
 
     def _meet(self, s):
 
@@ -1136,6 +1138,10 @@ class JSONTypeObject(JSONschema):
     def updateInternalState(self):
         self.compute_actual_min_max_Properties()
         self.interval = I.closed(self.minProperties, self.maxProperties)
+        if len(self.properties) == self.maxProperties \
+                or len(self.patternProperties) == self.maxProperties \
+                or (len(self.properties) + len(self.patternProperties)) == self.maxProperties:
+            self.additionalProperties = False
         #
         # if self.patternProperties != self.kw_defaults["patternProperties"]:
         #     p = {}
