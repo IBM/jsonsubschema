@@ -637,11 +637,32 @@ class JSONTypeNumber(JSONschema):
 
     @staticmethod
     def neg(s):
-        # for k, default in JSONTypeNumber.kw_defaults.items():
-        #     if s.__getattr__(k) != default:
-        #         break
-        # else:
-        return None
+        negated_numbers = []
+        non_numbers = boolToConstructor.get("anyOf")(
+            {"anyOf": get_default_types_except("number", "integer")})
+
+        if "minimum" in s:
+            if "exclusiveMinimum":
+                negated_numbers.append(
+                    JSONTypeNumber({"maximum": s["minimum"]}))
+            else:
+                negated_numbers.append(JSONTypeNumber(
+                    {"maximum": s["minimum"], "exclusiveMaximum": True}))
+        if "maximum" in s:
+            if "exclusiveMaximum":
+                negated_numbers.append(
+                    JSONTypeNumber({"minimum": s["maximum"]}))
+            else:
+                negated_numbers.append(JSONTypeNumber(
+                    {"minimum": s["maximum"], "exclusiveMinimum": True}))
+        # TODO: No handling of multipleOf at the moment.
+
+        if len(negated_numbers) == 0:
+            return non_numbers
+        else:
+            joined_numbers = boolToConstructor.get(
+                "anyOf")({"anyOf": negated_numbers})
+            return non_numbers.join(joined_numbers)
 
 
 class JSONTypeBoolean(JSONschema):

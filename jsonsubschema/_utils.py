@@ -5,11 +5,13 @@ Created on May 24, 2019
 
 
 import copy
+import fractions
 import math
 import numbers
 import re
+import sys
+
 import jsonschema
-import fractions as frac
 import intervals as I
 from greenery.lego import parse
 
@@ -229,4 +231,18 @@ def lcm(x, y):
             # import warnings
             # with warnings.catch_warnings():
             #     warnings.filterwarnings("ignore", category=DeprecationWarning)
-            return x * y / frac.gcd(x, y)
+            return x * y / fractions.gcd(x, y)
+
+
+# def decrementFloat(f):
+#     if f == 0.0:
+#         return sys.float_info.min
+#     m, e = math.frexp(f)
+#     return math.ldexp(m - sys.float_info.epsilon / 2, e)
+
+
+# def incrementFloat(f):
+#     if f == 0.0:
+#         return sys.float_info.min
+#     m, e = math.frexp(f)
+#     return math.ldexp(m + sys.float_info.epsilon / 2, e)

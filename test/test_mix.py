@@ -144,6 +144,15 @@ class TestMixedTypes(unittest.TestCase):
             self.assertFalse(isSubschema(s2, s1))
         set_warn_uninhabited(False)
 
+    def test_not_number(self):
+        s1 = {"description": "checking_status", "enum": [
+            "<0", "0<=X<200", ">=200", "no checking"]}
+        s2 = {"not": {"type": "number"}}
+        with self.subTest():
+            self.assertTrue(isSubschema(s1, s2))
+        with self.subTest():
+            self.assertFalse(isSubschema(s2, s1))
+
 
 class TestBooleans(unittest.TestCase):
 
