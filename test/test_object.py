@@ -503,3 +503,50 @@ class TestObjectSubtype(unittest.TestCase):
             self.assertTrue(isSubschema(s1, s2))
         with self.subTest():
             self.assertFalse(isSubschema(s2, s1))
+
+
+    def test_real_object_schema(self):
+        s1 = {'additionalProperties': False,
+              'properties': {'X': {'$schema': 'http://json-schema.org/draft-04/schema#',
+                                   'items': {'items': [
+                                                        {'description': 'sepal length (cm)',
+                                                        'type': 'number'},
+                                                       {'description': 'sepal width (cm)',
+                                                        'type': 'number'},
+                                                       {'description': 'petal length (cm)',
+                                                        'type': 'number'},
+                                                       {'description': 'petal width (cm)',
+                                                        'type': 'number'}
+                                                        ],
+                                             'maxItems': 4,
+                                             'minItems': 4,
+                                             'type': 'array'},
+                                   'maxItems': 120,
+                                   'minItems': 120,
+                                   'type': 'array'},
+                             'y': {'$schema': 'http://json-schema.org/draft-04/schema#',
+                                   'items': {'description': 'target',
+                                             'type': 'integer'},
+                                   'maxItems': 120,
+                                   'minItems': 120,
+                                   'type': 'array'}},
+              'required': ['X', 'y'],
+              'type': 'object'}
+
+        s2 = {'$schema': 'http://json-schema.org/draft-04/schema#',
+              'additionalProperties': False,
+              'description': 'Input data schema for training.',
+              'properties': {'X': {'description': 'Features; the outer array is over samples.',
+                                   'items': {'items': {'type': 'number'},
+                                             'type': 'array'},
+                                   'type': 'array'},
+                             'y': {'description': 'Target class labels; the array is over samples.',
+                                   'items': {'type': 'number'},
+                                   'type': 'array'}},
+              'required': ['X', 'y'],
+              'type': 'object'}
+
+        with self.subTest():
+            self.assertTrue(isSubschema(s1, s2))
+        with self.subTest():
+            self.assertFalse(isSubschema(s2, s1))
