@@ -1150,18 +1150,18 @@ class JSONTypeObject(JSONschema):
                 print_db("__00__")
                 return False
             #
-            else:
-                # If ranges are ok, check another trivial case of almost identical objects.
-                # This is some sort of performance heuristic.
-                if set(s1.required).issuperset(s2.required) \
-                    and s1.properties == s2.properties \
-                    and s1.patternProperties == s2.patternProperties \
-                    and (s1.additionalProperties == s2.additionalProperties
-                         or (utils.is_dict(s1.additionalProperties)
-                             and s1.additionalProperties.isSubtype(s2.additionalProperties))):
-                    print_db("__01__")
-                    return True
-            #
+            # else:
+            #     # If ranges are ok, check another trivial case of almost identical objects.
+            #     # This is some sort of performance heuristic.
+            #     if set(s1.required).issuperset(s2.required) \
+            #         and s1.properties == s2.properties \
+            #         and s1.patternProperties == s2.patternProperties \
+            #         and (s1.additionalProperties == s2.additionalProperties
+            #              or (utils.is_dict(s1.additionalProperties)
+            #                  and s1.additionalProperties.isSubtype(s2.additionalProperties))):
+            #         print_db("__01__")
+            #         return True
+            # #
 
             def get_schema_for_key(k, s):
                 ''' Searches for matching key and get the corresponding schema(s).
