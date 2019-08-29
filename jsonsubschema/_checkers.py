@@ -534,49 +534,30 @@ class JSONTypeInteger(JSONschema):
 
     @staticmethod
     def neg(s):
-        negated_int = []
-        # We will always ignore setting exclusiveMin/Max and
-        # instead, capture it in the min/max value directly.
-        # for k, default in JSONTypeInteger.kw_defaults.items():
-        #     if s.__getattr__(k) != default:
-        # if k == "minimum":
-        #     if s.__getattr__("exclusiveMinimum"):
-        #         negated_int.append(JSONTypeInteger({"maximum": s.__getattr__(k)}))
-        #         negated_int.append(JSONTypeNumber({"maximum": s.__getattr__(k)}))
-        #         negated_int.append(JSONTypeNumber({"minimum": s.__getattr__(k), "multipleOf": 1, "exclusiveMinimum": True}))
+        negated_ints = []
+        non_ints = boolToConstructor.get("anyOf")(
+            {"anyOf": get_default_types_except("number", "integer")})
 
-        #     else:
-        #         negated_int.append(JSONTypeInteger({"maximum": s.__getattr__(k) - 1}))
-        #         negated_int.append(JSONTypeNumber({"maximum": s.__getattr__(k), "multipleOf": 1}))
-        #         negated_int.append(JSONTypeNumber({"minimum": s.__getattr__(k), "multipleOf": 1}))
-        #
-        #
-        # if k == "minimum":
-        #     if s.__getattr__("exclusiveMinimum"):
-        #         negated_int.append({"type": "integer", "maximum": s.__getattr__(k)})
-        #         negated_int.append({"type": "number", "maximum": s.__getattr__(k)})
-        #         negated_int.append({"allOf": [{"type": "number"} ,{"not": {"type": "number", "minimum": s.__getattr__(k), "multipleOf": 1, "exclusiveMinimum": True}}]})
+        if "minimum" in s:
+            # if "exclusiveMinimum":
+            negated_ints.append(JSONTypeInteger({"maximum": s["minimum"] - 1}))
+            # else:
+            #     negated_numbers.append(JSONTypeNumber(
+            #         {"maximum": s["minimum"], "exclusiveMaximum": True}))
+        if "maximum" in s:
+            # if "exclusiveMaximum":
+            negated_ints.append(JSONTypeNumber({"minimum": s["maximum"] + 1}))
+            # else:
+            #     negated_numbers.append(JSONTypeNumber(
+            #         {"minimum": s["maximum"], "exclusiveMinimum": True}))
+        # TODO: No handling of multipleOf at the moment.
 
-        #     else:
-        #         negated_int.append({"type": "integer", "maximum": s.__getattr__(k) - 1})
-        #         negated_int.append({"type": "number", "maximum": s.__getattr__(k), "exclusiveMinimum": True})
-        #         negated_int.append({"allOf": [{"type": "number"} ,{"not": {"type": "number", "minimum": s.__getattr__(k), "multipleOf": 1, "exclusiveMinimum": False}}]})
-        # elif k == "maximum":
-        #     if s.__getattr__("exclusiveMaximum"):
-        #         negated_int.append(JSONTypeInteger({"minimum": s.__getattr__(k)}))
-        #         negated_int.append(JSONTypeNumber({"minimum": s.__getattr__(k), "multipleOf": 1}))
-        #     else:
-        #         negated_int.append(JSONTypeInteger({"minimum": s.__getattr__(k) + 1}))
-        #         negated_int.append(JSONTypeNumber({"minimum": s.__getattr__(k) + 1, "multipleOf": 1}))
-
-        # if len(negated_int) == 0:
-        #     return JSONTypeNumber({"not": {"multipleOf": 1}})
-        # else:
-        #     return JSONanyOf({"anyOf": negated_int})
-        # import jsonsubschema._canonicalization as c
-        # return c.canonicalize_connectors({"andOf": negated_int})
-
-        return None
+        if len(negated_ints) == 0:
+            return non_ints
+        else:
+            joined_ints = boolToConstructor.get(
+                "anyOf")({"anyOf": negated_ints})
+            return non_ints.join(joined_ints)
 
 
 class JSONTypeNumber(JSONschema):
