@@ -93,7 +93,10 @@ def get_valid_enum_vals(enum, s):
 def get_typed_enum_vals(enum, t):
     if t is "integer":
         enum = filter(lambda i: not isinstance(i, bool), enum)
-    return sorted(filter(lambda i: isinstance(i, definitions.JtypesToPyTypes[t]), enum))
+    try:
+        return sorted(filter(lambda i: isinstance(i, definitions.JtypesToPyTypes[t]), enum))
+    except TypeError:
+        return list(filter(lambda i: isinstance(i, definitions.JtypesToPyTypes[t]), enum))
 
 
 def print_db(*args):
@@ -216,7 +219,7 @@ def complement_of_string_pattern(s):
 
 
 def lcm(x, y):
-    bad_values = [None, ]#I.inf, -I.inf]
+    bad_values = [None, ]  # I.inf, -I.inf]
     if x in bad_values:
         if y in bad_values:
             return None
@@ -233,8 +236,9 @@ def lcm(x, y):
             #     warnings.filterwarnings("ignore", category=DeprecationWarning)
             return x * y / fractions.gcd(x, y)
 
+
 def gcd(x, y):
-    bad_values = [None, ]#I.inf, -I.inf, None]
+    bad_values = [None, ]  # I.inf, -I.inf, None]
     if x in bad_values:
         if y in bad_values:
             return None
@@ -264,3 +268,40 @@ def gcd(x, y):
 #         return sys.float_info.min
 #     m, e = math.frexp(f)
 #     return math.ldexp(m + sys.float_info.epsilon / 2, e)
+
+
+def generate_range_with_multipleOf_or(range_, pos_mul_of):
+    for i in range_:
+        if any(i % k == 0 for k in pos_mul_of):
+            yield i
+
+
+def generate_range_with_not_multipleOf_and(range_, neg_mul_of):
+    for i in range_:
+        if all(i % k != 0 for k in neg_mul_of):
+            yield i
+
+
+def generate_range_with_multipleof(range_, pos, neg):
+    return generate_range_with_not_multipleOf_and(
+        generate_range_with_multipleOf_or(range_, pos),
+        neg)
+
+
+def get_new_min_max_with_mulof(mn, mx, mulof):
+    #
+    # At the moment, this is part of an enumerative solution
+    # for multipleOf integer.
+    # Is there a more efficient way to find, for  x <= n <= y, 
+    # what is the smallest x_min > x s.t. x_min % f = 0 
+    # and the largest y_max < y s.t. x_max % f = 0
+    # for some factor f. 
+    #
+    if is_num(mulof) and mulof < mx:
+        if is_num(mn):
+            while mn % mulof != 0:
+                mn = mn + 1
+        if is_num(mx):
+            while mx % mulof != 0:
+                mx = mx - 1
+    return mn, mx
