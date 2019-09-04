@@ -444,6 +444,9 @@ class JSONTypeInteger(JSONschema):
         elif utils.is_num(self.maximum):
             self.maximum = math.floor(self.maximum)
 
+        self.minimum, self.maximum = utils.get_new_min_max_with_mulof(
+            self.minimum, self.maximum, self.multipleOf)
+
         self.interval = I.closed(self.minimum, self.maximum)
 
     def _isUninhabited(self):
