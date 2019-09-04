@@ -83,7 +83,7 @@ class JSONschema(dict, metaclass=UninhabitedMeta):
         if self.hasEnum() or s.hasEnum():
             enum = JSONschema.meet_enum(self, s)
             if enum:
-                ret.enum = ret["enum"] = list(enum)
+                ret.enum = ret["enum"] = enum
                 # ret["enum"] = list(enum)
                 # ret.enum = ret["enum"]
             # instead of returning uninhabited type, return bot
@@ -97,7 +97,8 @@ class JSONschema(dict, metaclass=UninhabitedMeta):
         enum = set(s1.get("enum", [])) | set(s2.get("enum", []))
         valid_enum1 = utils.get_valid_enum_vals(enum, s1)
         valid_enum2 = utils.get_valid_enum_vals(enum, s2)
-        return set(valid_enum1) & set(valid_enum2)
+        # return set(valid_enum1) & set(valid_enum2)
+        return list(valid_enum1) + list(valid_enum2)
 
     def meet_handle_rhs(self, s, meet_cb):
 
@@ -140,8 +141,11 @@ class JSONschema(dict, metaclass=UninhabitedMeta):
     @staticmethod
     def join_enum(s1, s2):
         if s1.type == s2.type:
-            return set(s1.enum) | set(s2.enum)
-
+            try:
+                return sorted(set(s1.enum) | set(s2.enum))
+            except:
+                return s1.enum + s2.enum
+                
     def isSubtype(self, s):
         #
         # if self == s or is_bot(self) or is_top(s):
@@ -345,9 +349,7 @@ class JSONTypeString(JSONschema):
                     ret["pattern"] = "^" + s2_new_pattern + "$"
                 return JSONTypeString(ret)
             else:
-                ret = {"anyOf": [self, s]}
-                return JSONanyOf(ret)
-                # return boolToConstructor.get("anyOf")({"anyOf": [self, s]})
+                return JSONanyOf({"anyOf": [s1, s2]})
 
         return _joinString(self, s)
 
@@ -408,8 +410,7 @@ class JSONTypeString(JSONschema):
 
 def isNumericUninhabited(s):
     return s.interval.is_empty()  \
-        or (s.multipleOf != None and s.multipleOf not in s.interval
-            and s.interval.lower != -I.inf and s.interval.upper != I.inf)
+        or utils.is_num(s.multipleOf) and s.multipleOf > s.maximum
 
 
 class JSONTypeInteger(JSONschema):
@@ -447,6 +448,9 @@ class JSONTypeInteger(JSONschema):
         elif utils.is_num(self.maximum):
             self.maximum = math.floor(self.maximum)
 
+        self.minimum, self.maximum = utils.get_new_min_max_with_mulof(
+            self.minimum, self.maximum, self.multipleOf)
+
         self.interval = I.closed(self.minimum, self.maximum)
 
     def _isUninhabited(self):
@@ -479,6 +483,34 @@ class JSONTypeInteger(JSONschema):
                 return JSONbot()
 
         return super().meet_handle_rhs(s, _meetInteger)
+
+    def _join(self, s):
+
+        def _joinInteger(s1, s2):
+            if s2.type in definitions.Jnumeric:
+                ret = {}
+                if s1.interval.overlaps(s2.interval) \
+                        or (utils.is_num(s1.interval.lower) and utils.is_num(s2.interval.upper) and s1.interval.lower - s2.interval.upper == 1) \
+                        or (utils.is_num(s2.interval.lower) and utils.is_num(s1.interval.upper) and s2.interval.lower - s1.interval.upper == 1):
+                        if not s1.multipleOf and not s2.multipleOf:
+                            joined_interval = s1.interval | s2.interval
+                            if utils.is_num(joined_interval.lower):
+                                ret["minimum"] = joined_interval.lower
+                                if not joined_interval.left:
+                                    ret["exclusiveMinimum"] = True
+                            if utils.is_num(joined_interval.upper):
+                                ret["maximum"] = joined_interval.upper
+                                if not joined_interval.right:
+                                    ret["exclusiveMaximum"] = True
+
+                            ret = JSONTypeInteger(ret)
+                            if s2.type == "number":
+                                return JSONanyOf({"anyOf": [ret, s2]})
+                            else:
+                                return ret
+            return JSONanyOf({"anyOf": [s1, s2]})
+
+        return _joinInteger(self, s)
 
     def _isSubtype(self, s):
 
@@ -584,6 +616,37 @@ class JSONTypeNumber(JSONschema):
                 return JSONbot()
 
         return super().meet_handle_rhs(s, _meetNumber)
+
+    def _join(self, s):
+
+        def _joinNumber(s1, s2):
+            if s2.type in definitions.Jnumeric:
+                ret = {}
+                if s1.interval.overlaps(s2.interval):
+                    joined_interval = s1.interval | s2.interval
+                    if utils.is_num(joined_interval.lower):
+                        ret["minimum"] = joined_interval.lower
+                        if not joined_interval.left:
+                            ret["exclusiveMinimum"] = True
+                    if utils.is_num(joined_interval.upper):
+                        ret["maximum"] = joined_interval.upper
+                        if not joined_interval.right:
+                            ret["exclusiveMaximum"] = True
+                    gcd = utils.gcd(s1.multipleOf, s2.multipleOf)
+                    if utils.is_num(gcd) and gcd != 1:
+                        ret["multipleOf"] = gcd
+                else:
+                    return JSONanyOf({"anyOf": [s1, s2]})
+
+                if s2.type == "integer":
+                    ret = JSONTypeInteger(ret)
+                    return JSONanyOf({"anyOf": [s1, ret]})
+                else:
+                    return JSONTypeNumber(ret)
+            else:
+                return JSONanyOf({"anyOf": [s1, s2]})
+
+        return _joinNumber(self, s)
 
     def _isSubtype(self, s):
 
@@ -1432,15 +1495,15 @@ def JSONallOfFactory(s):
     return ret
 
 
-def JSONnotFactory(s):
-    t = s.type
-    if t in definitions.Jtypes:
-        anyofs = []
-        for t_i in definitions.Jtypes - set([t]):
-            anyofs.append(typeToConstructor.get(t_i)({"type": t_i}))
-        anyofs.append(negTypeToConstructor.get(t)(s))
-        return boolToConstructor.get("anyOf")({"anyOf": anyofs})
-        # return JSONanyOf({"anyOf": anyofs})
+# def JSONnotFactory(s):
+#     t = s.type
+#     if t in definitions.Jtypes:
+#         anyofs = []
+#         for t_i in definitions.Jtypes - set([t]):
+#             anyofs.append(typeToConstructor.get(t_i)({"type": t_i}))
+#         anyofs.append(negTypeToConstructor.get(t)(s))
+#         return boolToConstructor.get("anyOf")({"anyOf": anyofs})
+    # return JSONanyOf({"anyOf": anyofs})
 
 
 typeToConstructor = {

@@ -78,22 +78,26 @@ def get_valid_enum_vals(enum, s):
     # 1- we need to modify a different copy from what we iterate on
     # 2- hashing elements into set and back to list will guarantee
     # the list is ordered and hence JSONschema __eq__ with enums should work.
-    vals = set(enum)
+    vals = copy.deepcopy(enum)
     for i in enum:
         try:
             jsonschema.validate(instance=i, schema=s)
         except jsonschema.ValidationError:
             vals.remove(i)
-    try:
-        return sorted(vals)
-    except TypeError:
-        return list(vals)
-
+    # try:
+    #     return sorted(vals)
+    # except TypeError:
+        # return list(vals)
+    return vals
 
 def get_typed_enum_vals(enum, t):
     if t is "integer":
         enum = filter(lambda i: not isinstance(i, bool), enum)
-    return sorted(filter(lambda i: isinstance(i, definitions.JtypesToPyTypes[t]), enum))
+    # try:
+    #     return sorted(filter(lambda i: isinstance(i, definitions.JtypesToPyTypes[t]), enum))
+    # except TypeError:
+    #     return list(filter(lambda i: isinstance(i, definitions.JtypesToPyTypes[t]), enum))
+    return list(filter(lambda i: isinstance(i, definitions.JtypesToPyTypes[t]), enum))
 
 
 def print_db(*args):
@@ -216,7 +220,7 @@ def complement_of_string_pattern(s):
 
 
 def lcm(x, y):
-    bad_values = [I.inf, -I.inf, None]
+    bad_values = [None, ]  # I.inf, -I.inf]
     if x in bad_values:
         if y in bad_values:
             return None
@@ -234,6 +238,25 @@ def lcm(x, y):
             return x * y / fractions.gcd(x, y)
 
 
+def gcd(x, y):
+    bad_values = [None, ]  # I.inf, -I.inf, None]
+    if x in bad_values:
+        if y in bad_values:
+            return None
+        else:
+            return None
+    elif y in bad_values:
+        return None
+    else:
+        if is_int(x) and is_int(y):
+            return math.gcd(int(x), int(y))
+        else:
+            # import warnings
+            # with warnings.catch_warnings():
+            #     warnings.filterwarnings("ignore", category=DeprecationWarning)
+            return fractions.gcd(x, y)
+
+          
 # def decrementFloat(f):
 #     if f == 0.0:
 #         return sys.float_info.min
@@ -246,3 +269,40 @@ def lcm(x, y):
 #         return sys.float_info.min
 #     m, e = math.frexp(f)
 #     return math.ldexp(m + sys.float_info.epsilon / 2, e)
+
+
+def generate_range_with_multipleOf_or(range_, pos_mul_of):
+    for i in range_:
+        if any(i % k == 0 for k in pos_mul_of):
+            yield i
+
+
+def generate_range_with_not_multipleOf_and(range_, neg_mul_of):
+    for i in range_:
+        if all(i % k != 0 for k in neg_mul_of):
+            yield i
+
+
+def generate_range_with_multipleof(range_, pos, neg):
+    return generate_range_with_not_multipleOf_and(
+        generate_range_with_multipleOf_or(range_, pos),
+        neg)
+
+
+def get_new_min_max_with_mulof(mn, mx, mulof):
+    #
+    # At the moment, this is part of an enumerative solution
+    # for multipleOf integer.
+    # Is there a more efficient way to find, for  x <= n <= y, 
+    # what is the smallest x_min > x s.t. x_min % f = 0 
+    # and the largest y_max < y s.t. x_max % f = 0
+    # for some factor f. 
+    #
+    if is_num(mulof) and mulof < mx:
+        if is_num(mn):
+            while mn % mulof != 0:
+                mn = mn + 1
+        if is_num(mx):
+            while mx % mulof != 0:
+                mx = mx - 1
+    return mn, mx

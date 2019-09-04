@@ -126,7 +126,6 @@ def canonicalize_enum(d):
     actual_t = sorted(
         set(map(lambda i: definitions.PyTypesToJtypes.get(type(i)), d.get("enum"))))
     if "type" in d:
-        pass
         orig_t = d["type"]
         orig_t = set([orig_t]) if utils.is_str(orig_t) else set(orig_t)
         d["type"] = orig_t.intersection(actual_t)
