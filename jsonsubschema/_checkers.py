@@ -490,31 +490,25 @@ class JSONTypeInteger(JSONschema):
             if s2.type in definitions.Jnumeric:
                 ret = {}
                 if s1.interval.overlaps(s2.interval) \
-                        or s1.interval.lower - s2.interval.upper == 1 \
-                        or s2.interval.lower - s1.interval.upper == 1:
-                    joined_interval = s1.interval | s2.interval
-                    if utils.is_num(joined_interval.lower):
-                        ret["minimum"] = joined_interval.lower
-                        if not joined_interval.left:
-                            ret["exclusiveMinimum"] = True
-                    if utils.is_num(joined_interval.upper):
-                        ret["maximum"] = joined_interval.upper
-                        if not joined_interval.right:
-                            ret["exclusiveMaximum"] = True
-                    gcd = utils.gcd(s1.multipleOf, s2.multipleOf)
-                    if utils.is_num(gcd) and gcd != 1:
-                        ret["multipleOf"] = gcd
+                        or (utils.is_num(s1.interval.lower) and utils.is_num(s2.interval.upper) and s1.interval.lower - s2.interval.upper == 1) \
+                        or (utils.is_num(s2.interval.lower) and utils.is_num(s1.interval.upper) and s2.interval.lower - s1.interval.upper == 1):
+                        if not s1.multipleOf and not s2.multipleOf:
+                            joined_interval = s1.interval | s2.interval
+                            if utils.is_num(joined_interval.lower):
+                                ret["minimum"] = joined_interval.lower
+                                if not joined_interval.left:
+                                    ret["exclusiveMinimum"] = True
+                            if utils.is_num(joined_interval.upper):
+                                ret["maximum"] = joined_interval.upper
+                                if not joined_interval.right:
+                                    ret["exclusiveMaximum"] = True
 
-                else:
-                    return JSONanyOf({"anyOf": [s1, s2]})
-
-                ret = JSONTypeInteger(ret)
-                if s2.type == "number":
-                    return JSONanyOf({"anyOf": [ret, s2]})
-                else:
-                    return ret
-            else:
-                return JSONanyOf({"anyOf": [s1, s2]})
+                            ret = JSONTypeInteger(ret)
+                            if s2.type == "number":
+                                return JSONanyOf({"anyOf": [ret, s2]})
+                            else:
+                                return ret
+            return JSONanyOf({"anyOf": [s1, s2]})
 
         return _joinInteger(self, s)
 
