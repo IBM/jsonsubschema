@@ -83,7 +83,7 @@ class JSONschema(dict, metaclass=UninhabitedMeta):
         if self.hasEnum() or s.hasEnum():
             enum = JSONschema.meet_enum(self, s)
             if enum:
-                ret.enum = ret["enum"] = list(enum)
+                ret.enum = ret["enum"] = enum
                 # ret["enum"] = list(enum)
                 # ret.enum = ret["enum"]
             # instead of returning uninhabited type, return bot
@@ -97,7 +97,8 @@ class JSONschema(dict, metaclass=UninhabitedMeta):
         enum = set(s1.get("enum", [])) | set(s2.get("enum", []))
         valid_enum1 = utils.get_valid_enum_vals(enum, s1)
         valid_enum2 = utils.get_valid_enum_vals(enum, s2)
-        return set(valid_enum1) & set(valid_enum2)
+        # return set(valid_enum1) & set(valid_enum2)
+        return list(valid_enum1) + list(valid_enum2)
 
     def meet_handle_rhs(self, s, meet_cb):
 
@@ -140,8 +141,11 @@ class JSONschema(dict, metaclass=UninhabitedMeta):
     @staticmethod
     def join_enum(s1, s2):
         if s1.type == s2.type:
-            return set(s1.enum) | set(s2.enum)
-
+            try:
+                return sorted(set(s1.enum) | set(s2.enum))
+            except:
+                return s1.enum + s2.enum
+                
     def isSubtype(self, s):
         #
         # if self == s or is_bot(self) or is_top(s):

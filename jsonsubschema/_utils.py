@@ -78,25 +78,26 @@ def get_valid_enum_vals(enum, s):
     # 1- we need to modify a different copy from what we iterate on
     # 2- hashing elements into set and back to list will guarantee
     # the list is ordered and hence JSONschema __eq__ with enums should work.
-    vals = set(enum)
+    vals = copy.deepcopy(enum)
     for i in enum:
         try:
             jsonschema.validate(instance=i, schema=s)
         except jsonschema.ValidationError:
             vals.remove(i)
-    try:
-        return sorted(vals)
-    except TypeError:
-        return list(vals)
-
+    # try:
+    #     return sorted(vals)
+    # except TypeError:
+        # return list(vals)
+    return vals
 
 def get_typed_enum_vals(enum, t):
     if t is "integer":
         enum = filter(lambda i: not isinstance(i, bool), enum)
-    try:
-        return sorted(filter(lambda i: isinstance(i, definitions.JtypesToPyTypes[t]), enum))
-    except TypeError:
-        return list(filter(lambda i: isinstance(i, definitions.JtypesToPyTypes[t]), enum))
+    # try:
+    #     return sorted(filter(lambda i: isinstance(i, definitions.JtypesToPyTypes[t]), enum))
+    # except TypeError:
+    #     return list(filter(lambda i: isinstance(i, definitions.JtypesToPyTypes[t]), enum))
+    return list(filter(lambda i: isinstance(i, definitions.JtypesToPyTypes[t]), enum))
 
 
 def print_db(*args):
