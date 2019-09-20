@@ -146,3 +146,46 @@ class TestNotStringSubtype(unittest.TestCase):
         with self.subTest():
             self.assertFalse(isSubschema(s2, s1))
         set_debug(False)
+
+
+class TestStringEnumSubtype(unittest.TestCase):
+
+    def test_enum1(self):
+        s1 = {"type": "string", "enum": ["a"]}
+        s2 = {"enum": ["a"]}
+        with self.subTest():
+            self.assertTrue(isSubschema(s1, s2))
+        with self.subTest():
+            self.assertTrue(isSubschema(s2, s1))
+
+    def test_enum2(self):
+        s1 = {"type": "string", "enum": ["a"]}
+        s2 = {"enum": ["a", "b"]}
+        with self.subTest():
+            self.assertTrue(isSubschema(s1, s2))
+        with self.subTest():
+            self.assertFalse(isSubschema(s2, s1))
+
+    def test_enum3(self):
+        s1 = {"type": "string", "enum": ["a", ""]}
+        s2 = {"enum": ["a", "b"]}
+        with self.subTest():
+            self.assertFalse(isSubschema(s1, s2))
+        with self.subTest():
+            self.assertFalse(isSubschema(s2, s1))
+
+    def test_not_enum1(self):
+        s1 = {"type": "string", "not": {"enum": ["a"]}}
+        s2 = {"type": "string"}
+        with self.subTest():
+            self.assertTrue(isSubschema(s1, s2))
+        with self.subTest():
+            self.assertFalse(isSubschema(s2, s1))
+
+    def test_not_enum2(self):
+        s1 = {"type": "string", "not": {"enum": ["a", "b"]}}
+        s2 = {"type": "string", "enum": ["a", "b"]}
+        # with self.subTest():
+        #     self.assertFalse(isSubschema(s1, s2))
+        with self.subTest():
+            self.assertFalse(isSubschema(s2, s1))

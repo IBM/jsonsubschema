@@ -179,6 +179,10 @@ def canonicalize_not(d):
     negated_schema = d["not"]
 
     t = negated_schema.get("type")
+
+    if "enum" in negated_schema:
+        return canonicalize_negated_enum(negated_schema)
+
     if negated_schema == {} or t in definitions.Jtypes:
         return d
 
@@ -206,6 +210,18 @@ def canonicalize_not(d):
             return canonicalize_not({"not": canonicalize_connectors(negated_schema)})
     else:
         sys.exit(">>>>>> Ewwwww! Shouldn't be here during canonicalization. <<<<<<")
+
+
+def canonicalize_negated_enum(d):
+    t = d.get("type")
+    enum = d.get("enum")
+    assert t in definitions.Jtypes and enum != None, "Ewwwwwwwww canonicalize_negated_enum"
+
+    if t == "string":
+        pattern = "|".join(map(lambda x: "^"+str(x)+"$", enum))
+        ret = {"not": {"type": "string", "pattern": pattern}}
+
+    return canonicalize_dict(ret)
 
 
 def flatten_boolean_schema_with_one_operand(s):
