@@ -363,6 +363,8 @@ class JSONTypeString(JSONschema):
                 #
                 if s1.pattern == s2.pattern:
                     return True
+                elif s2.pattern == None:
+                        return True
                 else:
                     s1_range = utils.string_range_to_regex(
                         s1.minLength, s1.maxLength)
