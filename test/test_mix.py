@@ -173,3 +173,14 @@ class TestBooleans(unittest.TestCase):
             self.assertTrue(isSubschema(s1, s2))
         with self.subTest():
             self.assertTrue(isSubschema(s2, s1))
+
+
+class TestNull(unittest.TestCase):
+
+    def test_null1(self):
+        s1 = {"enum": [None]}
+        s2 = {"type": "null"}
+        with self.subTest():
+            self.assertTrue(isSubschema(s1, s2))
+        with self.subTest():
+            self.assertTrue(isSubschema(s2, s1))

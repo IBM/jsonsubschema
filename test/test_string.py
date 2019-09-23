@@ -27,7 +27,7 @@ class TestStringSubtype(unittest.TestCase):
         with self.subTest():
             self.assertTrue(isSubschema(s1, s2))
         with self.subTest():
-            self.assertTrue(isSubschema(s2, s1))
+            self.assertFalse(isSubschema(s2, s1))
 
     def test_regx_range1(self):
         s1 = {"type": "string", "maxLength": 5, "pattern": "(ab)*"}
@@ -185,7 +185,7 @@ class TestStringEnumSubtype(unittest.TestCase):
     def test_not_enum2(self):
         s1 = {"type": "string", "not": {"enum": ["a", "b"]}}
         s2 = {"type": "string", "enum": ["a", "b"]}
-        # with self.subTest():
-        #     self.assertFalse(isSubschema(s1, s2))
+        with self.subTest():
+            self.assertFalse(isSubschema(s1, s2))
         with self.subTest():
             self.assertFalse(isSubschema(s2, s1))

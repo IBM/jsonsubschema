@@ -301,6 +301,7 @@ class TestIntegerSubtype(unittest.TestCase):
             self.assertFalse(isSubschema(s1, s2))
         with self.subTest():
             self.assertFalse(isSubschema(s2, s1))
+
     @unittest.skip("TODO: join integer schemas")
     def test_join_mulof8(self):
         s1 = {"anyOf": [{"type": "integer", "minimum": 5, "maximum": 15, "multipleOf": 5},
@@ -321,6 +322,7 @@ class TestIntegerSubtype(unittest.TestCase):
             self.assertTrue(isSubschema(s1, s2))
         with self.subTest():
             self.assertFalse(isSubschema(s2, s1))
+
 
 class TestNumberSubtype(unittest.TestCase):
 
@@ -613,5 +615,37 @@ class TestCompositeNumericSubtype(unittest.TestCase):
               "allOf": [{"type": "integer"}, {"type": "number", "multipleOf": 3}]}  # ..., -30, -15, 15, 30, 45, ..
         with self.subTest():
             self.assertFalse(isSubschema(s1, s2))
+        with self.subTest():
+            self.assertFalse(isSubschema(s2, s1))
+
+    def test_enum1(self):
+        s1 = {"enum": [1, 2, 3]}
+        s2 = {"type": "number"}
+        with self.subTest():
+            self.assertTrue(isSubschema(s1, s2))
+        with self.subTest():
+            self.assertFalse(isSubschema(s2, s1))
+
+    def test_enum2(self):
+        s1 = {"enum": [1.0, 2, 3]}
+        s2 = {"enum": [1, 2.0]}
+        with self.subTest():
+            self.assertFalse(isSubschema(s1, s2))
+        with self.subTest():
+            self.assertTrue(isSubschema(s2, s1))
+
+    def test_enum3(self):
+        s1 = {"enum": [1, 2, 3]}
+        s2 = {"type": "integer"}
+        with self.subTest():
+            self.assertTrue(isSubschema(s1, s2))
+        with self.subTest():
+            self.assertFalse(isSubschema(s2, s1))
+
+    def test_enum4(self):
+        s1 = {"enum": [1, 2.0, 3]}
+        s2 = {"type": "integer"}
+        with self.subTest():
+            self.assertTrue(isSubschema(s1, s2))
         with self.subTest():
             self.assertFalse(isSubschema(s2, s1))
