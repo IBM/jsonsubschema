@@ -88,7 +88,10 @@ def canonicalize_single_type(d):
                 else:
                     # "list" must be operand of boolean connectors
                     d[k] = [canonicalize_dict(i) for i in v]
-        return d
+        if "enum" in d:
+            return rewrite_enum(d)
+        else:
+            return d
 
     else:
         # TODO: or just return?
@@ -180,8 +183,8 @@ def canonicalize_not(d):
 
     t = negated_schema.get("type")
 
-    if "enum" in negated_schema:
-        return canonicalize_negated_enum(negated_schema)
+    # if "enum" in negated_schema:
+    #     return canonicalize_negated_enum(negated_schema)
 
     if negated_schema == {} or t in definitions.Jtypes:
         return d
@@ -222,6 +225,43 @@ def canonicalize_negated_enum(d):
         ret = {"not": {"type": "string", "pattern": pattern}}
 
     return canonicalize_dict(ret)
+
+
+def rewrite_enum(d):
+    t = d.get("type")
+    enum = d.get("enum")
+    ret = None
+
+    if t == "string":
+        pattern = "|".join(map(lambda x: "^"+str(x)+"$", enum))
+        ret = {"type": "string", "pattern": pattern}
+
+    if t == "integer":
+        ret = {"anyOf": []}
+        for i in enum:
+            ret["anyOf"].append(
+                {"type": "integer", "minimum": i, "maximum": i})
+
+    if t == "number":
+        ret = {"anyOf": []}
+        for i in enum:
+            if utils.is_int_equiv(i):
+                ret["anyOf"].append(
+                    {"type": "integer", "minimum": i, "maximum": i})
+            else:
+                ret["anyOf"].append(
+                    {"type": "number", "minimum": i, "maximum": i})
+
+    if t == "boolean":
+        return d
+
+    if t == "null":
+        return {"type": "null"}
+
+    if ret:
+        return canonicalize_dict(ret)
+    else:
+        return d
 
 
 def flatten_boolean_schema_with_one_operand(s):
