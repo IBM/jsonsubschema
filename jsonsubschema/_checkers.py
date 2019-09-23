@@ -145,7 +145,7 @@ class JSONschema(dict, metaclass=UninhabitedMeta):
                 return sorted(set(s1.enum) | set(s2.enum))
             except:
                 return s1.enum + s2.enum
-                
+
     def isSubtype(self, s):
         #
         # if self == s or is_bot(self) or is_top(s):
@@ -364,7 +364,7 @@ class JSONTypeString(JSONschema):
                 if s1.pattern == s2.pattern:
                     return True
                 elif s2.pattern == None:
-                        return True
+                    return True
                 else:
                     if s1.minLength == 0 and s1.maxLength == I.inf:
                         pattern1 = s1.pattern
@@ -417,21 +417,57 @@ class JSONTypeString(JSONschema):
             return non_string.join(joined_string)
 
 
-def isNumericUninhabited(s):
-    return s.interval.is_empty()  \
-        or utils.is_num(s.multipleOf) and s.multipleOf > s.maximum
-
-
-class JSONTypeInteger(JSONschema):
+class JSONTypeNumeric(JSONschema):
 
     def __init__(self, s):
         super().__init__(s)
-        self.type = self["type"] = "integer"
         self.minimum = self.get("minimum", -I.inf)
         self.maximum = self.get("maximum", I.inf)
         self.exclusiveMinimum = self.get("exclusiveMinimum", False)
         self.exclusiveMaximum = self.get("exclusiveMaximum", False)
         self.multipleOf = self.get("multipleOf", None)
+
+    def _isUninhabited(self):
+        return self.interval.is_empty()  \
+            or utils.is_num(self.multipleOf) and self.multipleOf > self.maximum
+
+    def updateInternalState(self):
+        self.build_interval_draft4()
+
+    def _meet(self, s):
+
+        def _meetNumeric(s1, s2):
+            if s1.type in definitions.Jnumeric and s2.type in definitions.Jnumeric:
+                ret = {}
+
+                mn = max(s1.minimum, s2.minimum)
+                if utils.is_num(mn):
+                    ret["minimum"] = mn
+
+                mx = min(s1.maximum, s2.maximum)
+                if utils.is_num(mx):
+                    ret["maximum"] = mx
+
+                mulOf = utils.lcm(s1.multipleOf, s2.multipleOf)
+                if mulOf:
+                    ret["multipleOf"] = mulOf
+
+                if s1.type == s2.type == "number":
+                    return JSONTypeNumber(ret)
+                else:  # case one of them or both are integers
+                    return JSONTypeInteger(ret)
+
+            else:
+                return JSONbot()
+
+        return super().meet_handle_rhs(s, _meetNumeric)
+
+
+class JSONTypeInteger(JSONTypeNumeric):
+
+    def __init__(self, s):
+        super().__init__(s)
+        self.type = self["type"] = "integer"
 
     def build_interval_draft4(self):
         # min, max, and interval attributes handle
@@ -462,37 +498,6 @@ class JSONTypeInteger(JSONschema):
 
         self.interval = I.closed(self.minimum, self.maximum)
 
-    def _isUninhabited(self):
-        return isNumericUninhabited(self)
-
-    def updateInternalState(self):
-        self.build_interval_draft4()
-
-    def _meet(self, s):
-
-        def _meetInteger(s1, s2):
-            if s2.type in definitions.Jnumeric:
-                ret = {}
-                ret["type"] = "integer"
-
-                mn = max(s1.minimum, s2.minimum)
-                if utils.is_num(mn):
-                    ret["minimum"] = mn
-
-                mx = min(s1.maximum, s2.maximum)
-                if utils.is_num(mx):
-                    ret["maximum"] = mx
-
-                mulOf = utils.lcm(s1.multipleOf, s2.multipleOf)
-                if mulOf:
-                    ret["multipleOf"] = mulOf
-
-                return JSONTypeInteger(ret)
-            else:
-                return JSONbot()
-
-        return super().meet_handle_rhs(s, _meetInteger)
-
     def _join(self, s):
 
         def _joinInteger(s1, s2):
@@ -501,22 +506,22 @@ class JSONTypeInteger(JSONschema):
                 if s1.interval.overlaps(s2.interval) \
                         or (utils.is_num(s1.interval.lower) and utils.is_num(s2.interval.upper) and s1.interval.lower - s2.interval.upper == 1) \
                         or (utils.is_num(s2.interval.lower) and utils.is_num(s1.interval.upper) and s2.interval.lower - s1.interval.upper == 1):
-                        if not s1.multipleOf and not s2.multipleOf:
-                            joined_interval = s1.interval | s2.interval
-                            if utils.is_num(joined_interval.lower):
-                                ret["minimum"] = joined_interval.lower
-                                if not joined_interval.left:
-                                    ret["exclusiveMinimum"] = True
-                            if utils.is_num(joined_interval.upper):
-                                ret["maximum"] = joined_interval.upper
-                                if not joined_interval.right:
-                                    ret["exclusiveMaximum"] = True
+                    if not s1.multipleOf and not s2.multipleOf:
+                        joined_interval = s1.interval | s2.interval
+                        if utils.is_num(joined_interval.lower):
+                            ret["minimum"] = joined_interval.lower
+                            if not joined_interval.left:
+                                ret["exclusiveMinimum"] = True
+                        if utils.is_num(joined_interval.upper):
+                            ret["maximum"] = joined_interval.upper
+                            if not joined_interval.right:
+                                ret["exclusiveMaximum"] = True
 
-                            ret = JSONTypeInteger(ret)
-                            if s2.type == "number":
-                                return JSONanyOf({"anyOf": [ret, s2]})
-                            else:
-                                return ret
+                        ret = JSONTypeInteger(ret)
+                        if s2.type == "number":
+                            return JSONanyOf({"anyOf": [ret, s2]})
+                        else:
+                            return ret
             return JSONanyOf({"anyOf": [s1, s2]})
 
         return _joinInteger(self, s)
@@ -570,16 +575,11 @@ class JSONTypeInteger(JSONschema):
             return non_ints.join(joined_ints)
 
 
-class JSONTypeNumber(JSONschema):
+class JSONTypeNumber(JSONTypeNumeric):
 
     def __init__(self, s):
         super().__init__(s)
         self.type = self["type"] = "number"
-        self.minimum = self.get("minimum", -I.inf)
-        self.maximum = self.get("maximum", I.inf)
-        self.exclusiveMinimum = self.get("exclusiveMinimum", False)
-        self.exclusiveMaximum = self.get("exclusiveMaximum", False)
-        self.multipleOf = self.get("multipleOf", None)
 
     def build_interval_draft4(self):
         if self.exclusiveMinimum and self.exclusiveMaximum:
@@ -590,41 +590,6 @@ class JSONTypeNumber(JSONschema):
             self.interval = I.closedopen(self.minimum, self.maximum)
         else:
             self.interval = I.closed(self.minimum, self.maximum)
-
-    def _isUninhabited(self):
-        return isNumericUninhabited(self)
-
-    def updateInternalState(self):
-        self.build_interval_draft4()
-
-    def _meet(self, s):
-
-        def _meetNumber(s1, s2):
-            if s2.type in definitions.Jnumeric:
-                ret = {}
-
-                mn = max(s1.minimum, s2.minimum)
-                if utils.is_num(mn):
-                    ret["minimum"] = mn
-
-                mx = min(s1.maximum, s2.maximum)
-                if utils.is_num(mx):
-                    ret["maximum"] = mx
-
-                mulOf = utils.lcm(s1.multipleOf, s2.multipleOf)
-                if mulOf:
-                    ret["multipleOf"] = mulOf
-
-                if s2.type == "integer":
-                    ret["type"] = "integer"
-                    return JSONTypeInteger(ret)
-                else:
-                    ret["type"] = "number"
-                    return JSONTypeNumber(ret)
-            else:
-                return JSONbot()
-
-        return super().meet_handle_rhs(s, _meetNumber)
 
     def _join(self, s):
 
