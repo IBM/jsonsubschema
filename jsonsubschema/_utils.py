@@ -183,7 +183,12 @@ def regex_isSubset(s1, s2):
     if s1 and s2:
         s1 = parse(s1).reduce()
         s2 = parse(s2).reduce()
-        return s1.equivalent(s2) or (s1 & s2.everythingbut()).empty()
+        try:
+            s1.cardinality()
+            s2.cardinality()
+            return set(s1.strings()).issubset(s2.strings())
+        except OverflowError:
+            return s1.equivalent(s2) or (s1 & s2.everythingbut()).empty()
     elif s1:
         return True
     elif s2:

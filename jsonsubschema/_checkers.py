@@ -366,14 +366,21 @@ class JSONTypeString(JSONschema):
                 elif s2.pattern == None:
                         return True
                 else:
-                    s1_range = utils.string_range_to_regex(
-                        s1.minLength, s1.maxLength)
-                    s2_range = utils.string_range_to_regex(
-                        s2.minLength, s2.maxLength)
-                    # if utils.regex_isSubset(s1.pattern, s2.pattern):
-                    if utils.regex_isSubset(
-                            utils.regex_meet(s1_range, s1.pattern),
-                            utils.regex_meet(s2_range, s2.pattern)):
+                    if s1.minLength == 0 and s1.maxLength == I.inf:
+                        pattern1 = s1.pattern
+                    else:
+                        s1_range = utils.string_range_to_regex(
+                            s1.minLength, s1.maxLength)
+                        pattern1 = utils.regex_meet(s1_range, s1.pattern)
+
+                    if s2.minLength == 0 and s2.maxLength == I.inf:
+                        pattern2 = s2.pattern
+                    else:
+                        s2_range = utils.string_range_to_regex(
+                            s2.minLength, s2.maxLength)
+                        pattern2 = utils.regex_meet(s2_range, s2.pattern)
+
+                    if utils.regex_isSubset(pattern1, pattern2):
                         return True
                     else:
                         return False
