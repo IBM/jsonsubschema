@@ -65,3 +65,8 @@ def join(s1, s2):
     ''' Entry point for schema meet operation. '''
     s1, s2 = prepare_operands(s1, s2)
     return s1.join(s2)
+
+
+def isEquivalent(s1, s2):
+    ''' Entry point for schema equivalence check operation. '''
+    return isSubschema(s1, s2) and isSubschema(s2, s1)

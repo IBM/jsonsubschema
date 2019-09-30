@@ -11,6 +11,7 @@ from jsonsubschema import _canonicalization
 isSubschema = api.isSubschema
 meetSchemas = api.meet
 joinSchemas = api.join
+isEquivalent = api.isEquivalent
 
 subschemaDecoder = api.JSONSubSchemaFactory
 
