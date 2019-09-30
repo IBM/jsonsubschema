@@ -160,7 +160,6 @@ def canonicalize_connectors(d):
                                                          for j in d[c][i+1:]]
                 allofs = one + nots
                 anyofs.append({"allOf": allofs})
-            print(anyofs)
             return canonicalize_connectors({"anyOf": anyofs})
         else:
             d[c] = [canonicalize_dict(i) for i in d[c]]
