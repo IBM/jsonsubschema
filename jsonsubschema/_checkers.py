@@ -1409,52 +1409,31 @@ class JSONanyOf(JSONschema):
         else:
             return JSONbot()
 
-    # def _join(self, s):
-    #     # def flatten_anyof(l):
-    #     #     ret = []
-    #     #     for i in l:
-    #     #         if i.type != "anyOf":
-    #     #             ret.append(i)
-    #     #         else:
-    #     #             ret.extend(i.anyOf)
-
-    #     #     return JSONanyOf({"anyOf": ret})
-    #     ret = []
-    #     if s.type == "anyOf":
-    #         for i in self.anyOf:
-    #             i_inserted = False
-    #             for j in s.anyOf:
-    #                 if i.type == j.type:
-    #                     ret.append(i.join(j))
-    #                     i_inserted = True
-    #                 else:
-    #                     ret.append(j)
-    #             if not i_inserted:
-    #                 ret.append(i)
-
-    #     else:
-    #         s_inserted = False
-    #         for i in self.anyOf:
-    #             if i.type == s.type:
-    #                 ret.append(i.join(s))
-    #                 s_inserted = True
-    #             else:
-    #                 ret.append(i)
-    #         if not s_inserted:
-    #             ret.append(s)
-
-    #     # if len(ret) == 0:
-    #     #     JSONbot
-    #     if len(ret) == 1:
-    #         return ret.pop()
-    #     else:
-    #         return JSONanyOf({"anyOf": ret})
+    def _join(self, s):
+        ret = []
+        if s.type == "anyOf":
+            return JSONanyOfFactory({"anyOf": self.anyOf + s.anyOf})
+        else:
+            for i in self.anyOf:
+                if i.type == s.type:
+                    t = i.join(s)
+                    if t.type != "anyOf":
+                        # successful join, add new result and terminate
+                        self.anyOf.remove(i)
+                        self.anyOf.append(t)
+                        break
+            else:
+                # loop exited normally without breaking
+                # so add the single schema manually
+                self.anyOf.append(s)
+            return self
 
     def _isSubtype(self, s):
 
         def _isAnyofSubtype(s1, s2):
             for s in s1.anyOf:
                 if not s.isSubtype(s2):
+                    print_db("RHS in anyOf subtype", s2)
                     return False
             return True
 
