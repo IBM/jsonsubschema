@@ -1420,17 +1420,18 @@ class JSONanyOf(JSONschema):
         super().__init__(s)
         self.type = "anyOf"
         self.anyOf = self.get("anyOf")
+        self.nonTrivialJoin = False
 
-    def __eq__(self, other):
-        ''' This is some sort of hack to compare two anyOf schemas for equality
-            instead performing the proper subtype checks. It works for simple cases
-            where the schemas in anyOf are dicts with no nested lists/dicts... .
-            I think this should be avoided and should not be needed once we are done
-            with all cases of join. '''
-        if isinstance(other, JSONanyOf):
-            return set(tuple(sorted(d.items())) for d in self.anyOf) == set(tuple(sorted(d.items())) for d in other.anyOf)
-        else:
-            return super().__eq__(other)
+    # def __eq__(self, other):
+    #     ''' This is some sort of hack to compare two anyOf schemas for equality
+    #         instead performing the proper subtype checks. It works for simple cases
+    #         where the schemas in anyOf are dicts with no nested lists/dicts... .
+    #         I think this should be avoided and should not be needed once we are done
+    #         with all cases of join. '''
+    #     if isinstance(other, JSONanyOf):
+    #         return set(tuple(sorted(d.items())) for d in self.anyOf) == set(tuple(sorted(d.items())) for d in other.anyOf)
+    #     else:
+    #         return super().__eq__(other)
 
     def updateInternalState(self):
         for d_i in self.anyOf:
