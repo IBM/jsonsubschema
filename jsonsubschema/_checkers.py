@@ -158,6 +158,9 @@ class JSONschema(dict, metaclass=UninhabitedMeta):
         #
         return self.subtype_enum(s) and self._isSubtype(s)
 
+    def isSubtype_nonTrivial(self, s):
+        return self._isSubtype_nonTrivial(s)
+
     def subtype_enum(self, s):
         if self.hasEnum():
             valid_enum = utils.get_valid_enum_vals(self.enum, s)
@@ -173,19 +176,22 @@ class JSONschema(dict, metaclass=UninhabitedMeta):
     def isSubtype_handle_rhs(self, s, isSubtype_cb):
 
         if s.isBoolean():
-            # TODO revisit all of this. They are wrong.
             if s.type == "anyOf":
-                return any(isSubtype_cb(self, i) for i in s.anyOf)
-            elif s.type == "allOf":
-                return all(isSubtype_cb(self, i) for i in s.allOf)
-            elif s.type == "oneOf":
-                return utils.one(isSubtype_cb(self, i) for i in s.oneOf)
-            elif s.type == "not":
-                # TODO
-                print("No handling of 'not' on rhs yet.")
-                return None
-        else:
-            return isSubtype_cb(self, s)
+                if not s.nonTrivialJoin:
+                    return any(isSubtype_cb(self, i) for i in s.anyOf)
+                else:
+                    return self.isSubtype_nonTrivial(s)
+
+            # elif s.type == "allOf":
+            #     return all(isSubtype_cb(self, i) for i in s.allOf)
+            # elif s.type == "oneOf":
+            #     return utils.one(isSubtype_cb(self, i) for i in s.oneOf)
+            # elif s.type == "not":
+            #     # TODO
+            #     print("No handling of 'not' on rhs yet.")
+            #     return None
+        # else:
+        return isSubtype_cb(self, s)
 
 
 class JSONtop(JSONschema):
@@ -462,6 +468,10 @@ class JSONTypeNumeric(JSONschema):
 
         return super().meet_handle_rhs(s, _meetNumeric)
 
+    def _join(self, s):
+        # join integer with number
+        return JSONanyOf({"anyOf": [self, s]})
+
 
 class JSONTypeInteger(JSONTypeNumeric):
 
@@ -501,27 +511,30 @@ class JSONTypeInteger(JSONTypeNumeric):
     def _join(self, s):
 
         def _joinInteger(s1, s2):
-            if s2.type in definitions.Jnumeric:
+            print_db("Trying to joinInteger")
+            if s2.type == "integer":
                 ret = {}
-                if s1.interval.overlaps(s2.interval) \
-                        or (utils.is_num(s1.interval.lower) and utils.is_num(s2.interval.upper) and s1.interval.lower - s2.interval.upper == 1) \
-                        or (utils.is_num(s2.interval.lower) and utils.is_num(s1.interval.upper) and s2.interval.lower - s1.interval.upper == 1):
+                if utils.are_intervals_mergable(s1.interval, s2.interval):
                     if not s1.multipleOf and not s2.multipleOf:
                         joined_interval = s1.interval | s2.interval
                         if utils.is_num(joined_interval.lower):
                             ret["minimum"] = joined_interval.lower
-                            if not joined_interval.left:
-                                ret["exclusiveMinimum"] = True
                         if utils.is_num(joined_interval.upper):
                             ret["maximum"] = joined_interval.upper
-                            if not joined_interval.right:
-                                ret["exclusiveMaximum"] = True
+                        return JSONTypeInteger(ret)
+                    elif (s1.multipleOf and utils.is_interval_finite(s1.interval)) or \
+                            (s2.multipleOf and utils.is_interval_finite(s2.interval)):
+                        ret = JSONanyOf({"anyOf": [s1, s2]})
+                        ret.nonTrivialJoin = True
+                        return ret
+            # elif s2.type == "anyOf":
+            #     import copy
+            #     ret = copy.deepcopy(self)
+            #     for i in s2.anyOf:
+            #         ret = ret.join(i)
+            #     return ret
 
-                        ret = JSONTypeInteger(ret)
-                        if s2.type == "number":
-                            return JSONanyOf({"anyOf": [ret, s2]})
-                        else:
-                            return ret
+            print_db("NonTrivial is not set")
             return JSONanyOf({"anyOf": [s1, s2]})
 
         return _joinInteger(self, s)
@@ -542,10 +555,48 @@ class JSONTypeInteger(JSONTypeNumeric):
                         or (s1.multipleOf == None and s2.multipleOf == 1):
                     print_db("num__01")
                     return True
+            # elif s2.type == "anyOf":
+            #     return self._isSubtype_nonTrivial(s)
             else:
                 return False
 
         return super().isSubtype_handle_rhs(s, _isIntegerSubtype)
+
+    def _isSubtype_nonTrivial(self, s):
+        print_db("Nontrivial Integer subtype")
+        if s.type == "anyOf":
+            intervals = []
+            interval_to_mulofs = {}
+            for num_schema in s.anyOf:
+                if num_schema.interval not in interval_to_mulofs:
+                    interval_to_mulofs[num_schema.interval] = [
+                        num_schema.multipleOf] if num_schema.multipleOf else []
+                elif num_schema.multipleOf:
+                    interval_to_mulofs[num_schema.interval].append(
+                        num_schema.multipleOf)
+
+                added = False
+                for j in list(intervals):
+                    if utils.are_intervals_mergable(num_schema.interval, j):
+                        intervals.remove(j)
+                        intervals.append((num_schema.interval | j).to_atomic())
+                        added = True
+                if not added:
+                    intervals.append(num_schema.interval)
+
+            mulof = [self.multipleOf] if self.multipleOf else []
+            for x in utils.generate_range_with_multipleof(range(self.minimum, self.maximum+1), mulof, []):
+                for interv, m in interval_to_mulofs.items():
+                    if x in interv:
+                        if m:
+                            if any(x % i == 0 for i in m if i != None):
+                                break
+                        else:
+                            break
+                else:
+                    return False
+
+            return True
 
     @staticmethod
     def neg(s):

@@ -302,7 +302,6 @@ class TestIntegerSubtype(unittest.TestCase):
         with self.subTest():
             self.assertFalse(isSubschema(s2, s1))
 
-    @unittest.skip("TODO: join integer schemas")
     def test_join_mulof8(self):
         s1 = {"anyOf": [{"type": "integer", "minimum": 5, "maximum": 15, "multipleOf": 5},
                         {"type": "integer", "minimum": 5, "maximum": 15, "multipleOf": 3}]}
@@ -313,11 +312,19 @@ class TestIntegerSubtype(unittest.TestCase):
         with self.subTest():
             self.assertFalse(isSubschema(s2, s1))
 
-    @unittest.skip("TODO: join integer schemas")
     def test_join_mulof9(self):
         s1 = {"type": "integer", "minimum": -4, "maximum": 10, "multipleOf": 5}
         s2 = {"anyOf": [{"type": "integer", "minimum": 0, "maximum": 20, "multipleOf": 10},
                         {"type": "integer", "minimum": 1, "maximum": 10, "multipleOf": 5}]}
+        with self.subTest():
+            self.assertTrue(isSubschema(s1, s2))
+        with self.subTest():
+            self.assertFalse(isSubschema(s2, s1))
+
+    def test_join_mulof10(self):
+        s1 = {"enum": [1, 3, 5, 7, 9, 10]}
+        s2 = {"anyOf": [{"type": "integer", "minimum": 0, "maximum": 20, "multipleOf": 10}, {
+            "type": "integer", "minimum": 1, "maximum": 10, "multipleOf": 5}, {"enum": [1, 3, 7, 9]}]}
         with self.subTest():
             self.assertTrue(isSubschema(s1, s2))
         with self.subTest():

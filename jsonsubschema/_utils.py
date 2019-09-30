@@ -90,6 +90,7 @@ def get_valid_enum_vals(enum, s):
         # return list(vals)
     return vals
 
+
 def get_typed_enum_vals(enum, t):
     if t is "integer":
         enum = filter(lambda i: not isinstance(i, bool), enum)
@@ -261,7 +262,7 @@ def gcd(x, y):
             #     warnings.filterwarnings("ignore", category=DeprecationWarning)
             return fractions.gcd(x, y)
 
-          
+
 # def decrementFloat(f):
 #     if f == 0.0:
 #         return sys.float_info.min
@@ -277,14 +278,24 @@ def gcd(x, y):
 
 
 def generate_range_with_multipleOf_or(range_, pos_mul_of):
-    for i in range_:
-        if any(i % k == 0 for k in pos_mul_of):
+    print(pos_mul_of)
+    if pos_mul_of:
+        for i in range_:
+            if any(i % k == 0 for k in pos_mul_of):
+                yield i
+    else:
+        for i in range_:
+            # if any(i % k == 0 for k in pos_mul_of):
             yield i
 
 
 def generate_range_with_not_multipleOf_and(range_, neg_mul_of):
-    for i in range_:
-        if all(i % k != 0 for k in neg_mul_of):
+    if neg_mul_of:
+        for i in range_:
+            if all(i % k != 0 for k in neg_mul_of):
+                yield i
+    else:
+        for i in range_:
             yield i
 
 
@@ -298,10 +309,10 @@ def get_new_min_max_with_mulof(mn, mx, mulof):
     #
     # At the moment, this is part of an enumerative solution
     # for multipleOf integer.
-    # Is there a more efficient way to find, for  x <= n <= y, 
-    # what is the smallest x_min > x s.t. x_min % f = 0 
+    # Is there a more efficient way to find, for  x <= n <= y,
+    # what is the smallest x_min > x s.t. x_min % f = 0
     # and the largest y_max < y s.t. x_max % f = 0
-    # for some factor f. 
+    # for some factor f.
     #
     if is_num(mulof) and mulof < mx:
         if is_num(mn):
@@ -311,3 +322,13 @@ def get_new_min_max_with_mulof(mn, mx, mulof):
             while mx % mulof != 0:
                 mx = mx - 1
     return mn, mx
+
+
+def is_interval_finite(i):
+    return is_num(i.lower) and is_num(i.upper)
+
+
+def are_intervals_mergable(i1, i2):
+    return i1.overlaps(i2) \
+        or (is_num(i1.lower) and is_num(i2.upper) and i1.lower - i2.upper == 1) \
+        or (is_num(i2.lower) and is_num(i1.upper) and i2.lower - i1.upper == 1)
