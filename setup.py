@@ -5,16 +5,18 @@ Created on August 6, 2019
 
 from setuptools import setup
 
+with open("README.md", "r") as fh:
+    long_description = fh.read()
+    
 setup(
     name='jsonsubschema',
-    version='0.0.0',
+    version='0.0.1',
     author='Andrew Habib, Avraham Shinnar, Martin Hirzel',
     author_email='andrew.a.habib@gmail.com',
-    description="A tool to check whether a JSON schema is subschema of another JSON schema",
-    long_description='For two JSON schemas s1 and s2, s1 <: s2 (read s1 is subtype or subschema of s2) \
-                        if every instance that validates against s1 also validates against s2. \
-                        This tool checks if one JSON schema is subtype of another.',
-    url='https://github.com/IBM/json-subschema',
+    description="A tool to check whether a JSON schema is subset/subschema of another JSON schema",
+    long_description=long_description,
+    long_description_content_type="text/markdown",
+    url='https://github.com/IBM/jsonsubschema',
     packages=['jsonsubschema', ],
     license='Apache License 2.0',
     install_requires=['python-intervals', 'greenery', 'jsonschema'],
