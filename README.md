@@ -11,7 +11,7 @@ This project is still in its early stage.
 
 ## License
 
-json-subschema is distributed under the terms of the Apache 2.0
+jsonsubschema is distributed under the terms of the Apache 2.0
 License, see [LICENSE.txt](LICENSE.txt).
 
 ## Contributions
