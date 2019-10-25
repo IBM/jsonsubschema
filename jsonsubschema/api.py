@@ -4,6 +4,7 @@ Created on June 24, 2019
 '''
 
 import json
+import jsonref
 
 from jsonsubschema._canonicalization import (
     canonicalize_schema,
@@ -29,6 +30,12 @@ class JSONSubSchemaFactory(json.JSONDecoder):
 
 
 def prepare_operands(s1, s2):
+    # First, we reload schemas using jsonref to resolve $ref
+    # before starting canonicalization.
+    # At the moment, we will get undefined behaviour for recursive/circual refs.
+    s1 = jsonref.loads(json.dumps(s1))
+    s2 = jsonref.loads(json.dumps(s2))
+
     # Canonicalize and embed checkers for both lhs
     # and rhs schemas  before starting the subtype checking.
     # This also validates input schemas and canonicalized schemas.
