@@ -118,6 +118,14 @@ class TestMixedTypes(unittest.TestCase):
         with self.subTest():
             self.assertFalse(isSubschema(s2, s1))
 
+    def test_enum6(self):
+        s1 = {"enum": [3, 4, 5], "type": "string"}
+        s2 = {"enum": [4, 5, 3]}
+        with self.subTest():
+            self.assertTrue(isSubschema(s1, s2))
+        with self.subTest():
+            self.assertFalse(isSubschema(s2, s1))
+
     def test_top_nottop(self):
         s1 = {}
         s2 = {"type": "string"}
