@@ -33,8 +33,12 @@ def prepare_operands(s1, s2):
     # First, we reload schemas using jsonref to resolve $ref
     # before starting canonicalization.
     # At the moment, we will get undefined behaviour for recursive/circual refs.
-    s1 = jsonref.loads(json.dumps(s1))
-    s2 = jsonref.loads(json.dumps(s2))
+
+    # s1 = jsonref.loads(json.dumps(s1))
+    # s2 = jsonref.loads(json.dumps(s2))
+    # This is not very efficient, should be done lazily maybe?
+    s1 = jsonref.JsonRef.replace_refs(s1)
+    s2 = jsonref.JsonRef.replace_refs(s2)
 
     # Canonicalize and embed checkers for both lhs
     # and rhs schemas  before starting the subtype checking.

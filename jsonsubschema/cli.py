@@ -19,11 +19,11 @@ def main():
     s2_file = sys.argv[2]
 
     with open(s1_file, 'r') as f1:
-        # s1 = json.load(f1)
-        s1 = jsonref.load(f1)
+        s1 = json.load(f1)
+        # s1 = jsonref.load(f1)
     with open(s2_file, 'r') as f2:
-        # s2 = json.load(f2)
-        s2 = jsonref.load(f2)
+        s2 = json.load(f2)
+        # s2 = jsonref.load(f2)
 
     print("LHS <: RHS", isSubschema(s1, s2))
     print("RHS <: LHS", isSubschema(s2, s1))
