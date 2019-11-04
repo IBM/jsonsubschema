@@ -5,3 +5,8 @@ __pycache__
 *.txt
 .coverage
 htmlcov
+build
+dist
+*.egg-info
+*DCO*.pdf
+examples
