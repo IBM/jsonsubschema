@@ -291,7 +291,7 @@ class JSONTypeString(JSONschema):
             patrn = utils.regex_unanchor(s["pattern"])
             self.pattern = utils.prepare_pattern_for_greenry(patrn)
         else:
-            self.pattern = None
+            self.pattern = ""
 
     def _isUninhabited(self):
         return (self.minLength > self.maxLength)
@@ -364,12 +364,10 @@ class JSONTypeString(JSONschema):
         def _isStringSubtype(s1, s2):
             if s2.type == "string":
                 is_sub_interval = s1.interval in s2.interval
-                if not is_sub_interval:
+                if not is_sub_interval and not s1.pattern and not s2.pattern:
                     return False
                 #
                 if s1.pattern == s2.pattern:
-                    return True
-                elif s2.pattern == None:
                     return True
                 else:
                     if s1.minLength == 0 and s1.maxLength == I.inf:

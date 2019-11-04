@@ -8,7 +8,7 @@ import warnings
 
 from jsonschema.exceptions import SchemaError
 
-from jsonsubschema import isSubschema, set_debug
+from jsonsubschema import isSubschema, isEquivalent, set_debug
 
 
 class TestStringSubtype(unittest.TestCase):
@@ -27,7 +27,7 @@ class TestStringSubtype(unittest.TestCase):
         with self.subTest():
             self.assertTrue(isSubschema(s1, s2))
         with self.subTest():
-            self.assertFalse(isSubschema(s2, s1))
+            self.assertTrue(isSubschema(s2, s1))
 
     def test_regx_range1(self):
         s1 = {"type": "string", "maxLength": 5, "pattern": "(ab)*"}
@@ -146,6 +146,25 @@ class TestNotStringSubtype(unittest.TestCase):
         with self.subTest():
             self.assertFalse(isSubschema(s2, s1))
         set_debug(False)
+
+    def test_equiv_multiple_case(self):
+        s1 = {"type": ["string", "null"], "minLength":1}
+        s2 = {"anyOf": [{"type": "string", "minLength":1}, {"type": "null"}]}
+        s3 = {"anyOf": [{"type": "string", "minLength":1}, {"enum": [None]}]}
+        s4 = {"type": ["string", "null"], "pattern": ".{1,}"}
+
+        with self.subTest():
+            self.assertTrue(isEquivalent(s1, s2))
+        with self.subTest():
+            self.assertTrue(isEquivalent(s1, s3))
+        with self.subTest():
+            self.assertTrue(isEquivalent(s1, s4))
+        with self.subTest():
+            self.assertTrue(isEquivalent(s2, s3))
+        with self.subTest():
+            self.assertTrue(isEquivalent(s2, s4))
+        with self.subTest():
+            self.assertTrue(isEquivalent(s3, s4))
 
 
 class TestStringEnumSubtype(unittest.TestCase):
