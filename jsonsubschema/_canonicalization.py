@@ -54,10 +54,10 @@ def canonicalize_dict(d, outer_key=None):
     # Start canonicalization. Don't modify original dict.
     d = copy.deepcopy(d)
 
-    if "enum" in d.keys():
-        return canonicalize_enum(d)
-    elif has_connectors:
+    if has_connectors:
         return canonicalize_connectors(d)
+    elif "enum" in d.keys():
+        return canonicalize_enum(d)
     elif utils.is_str(t):
         return canonicalize_single_type(d)
     elif utils.is_list(t):
@@ -117,7 +117,7 @@ def canonicalize_list_of_types(d):
             print("Exiting...")
             sys.exit(1)
 
-    return flatten_boolean_schema_with_one_operand({"anyOf": anyofs})
+    return {"anyOf": anyofs}
 
 
 def canonicalize_enum(d):
@@ -163,7 +163,7 @@ def canonicalize_connectors(d):
             return canonicalize_connectors({"anyOf": anyofs})
         else:
             d[c] = [canonicalize_dict(i) for i in d[c]]
-            return flatten_boolean_schema_with_one_operand(d)
+            return d
 
     # Connector + other keywords. Combine them first.
     else:
@@ -172,8 +172,8 @@ def canonicalize_connectors(d):
             allofs.append(canonicalize_dict({c: d[c]}))
             del d[c]
         if lhs_kw_without_connectors:
-            allofs.append(canonicalize_dict(d))
-        return flatten_boolean_schema_with_one_operand({"allOf": allofs})
+            allofs.append(canonicalize_dict({k: d[k] for k in lhs_kw_without_connectors}))
+        return {"allOf": allofs}
 
 
 def canonicalize_not(d):
@@ -200,13 +200,13 @@ def canonicalize_not(d):
             allofs = []
             for i in negated_schema["anyOf"]:
                 allofs.append(canonicalize_not({"not": i}))
-            return flatten_boolean_schema_with_one_operand({"allOf": allofs})
+            return {"allOf": allofs}
 
         elif c == "allOf":
             anyofs = []
             for i in negated_schema["allOf"]:
                 anyofs.append(canonicalize_not({"not": i}))
-            return flatten_boolean_schema_with_one_operand({"anyOf": anyofs})
+            return {"anyOf": anyofs}
 
         elif c == "oneOf":
             return canonicalize_not({"not": canonicalize_connectors(negated_schema)})
@@ -240,6 +240,8 @@ def rewrite_enum(d):
                     {"type": "number", "minimum": i, "maximum": i})
 
     if t == "boolean":
+        # booleans are allowed to keep enums, 
+        # since there are only two values.
         return d
 
     if t == "null":
@@ -249,26 +251,6 @@ def rewrite_enum(d):
         return canonicalize_dict(ret)
     else:
         return d
-
-
-def flatten_boolean_schema_with_one_operand(s):
-    c = definitions.Jconnectors.difference(["not"]).intersection(s.keys())
-    assert len(
-        c) == 1, "Ewwwww. This should be called only if schema has one and only once connector that is not 'not'"
-    c = c.pop()
-    flat = []
-    for i in s[c]:
-        if c in i:
-            flat.extend(i[c])
-        else:
-            flat.append(i)
-
-    if len(flat) == 0:
-        return BOT
-    elif len(flat) == 1:
-        return flat.pop()
-    else:
-        return {c: flat}
 
 
 def simplify_schema_and_embed_checkers(s):
