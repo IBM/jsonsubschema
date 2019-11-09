@@ -737,6 +737,9 @@ class JSONTypeBoolean(JSONschema):
     def __init__(self, s):
         super().__init__(s)
         self.type = self["type"] = "boolean"
+        # _enum = self.get("enum")
+        # if _enum and len(_enum) == 2:
+        #     del self[_enum]
 
     def _isUninhabited(self):
         return False
@@ -745,7 +748,18 @@ class JSONTypeBoolean(JSONschema):
 
         def _meetBoolean(s1, s2):
             if s2.type == "boolean":
-                return s1
+                if s1.hasEnum() and s2.hasEnum():
+                    _overlap = set(s1.enum).intersection(s2.enum)
+                    if _overlap:
+                        return JSONTypeBoolean({"enum": list(_overlap)})
+                    else:
+                        return JSONbot()
+                elif s1.hasEnum():
+                    return JSONTypeBoolean({"enum": s1.enum})
+                elif s2.hasEnum():
+                    return JSONTypeBoolean({"enum": s2.enum})
+                else:
+                    return JSONTypeBoolean({})
             else:
                 return JSONbot()
 
@@ -763,7 +777,18 @@ class JSONTypeBoolean(JSONschema):
 
     @staticmethod
     def neg(s):
-        return None
+        negated_boolean = []
+        non_boolean = boolToConstructor.get("anyOf")(
+            {"anyOf": get_default_types_except("boolean")})
+        
+        # booleans are allowed to keep enums, so check if any
+        _enum = s.get("enum")
+        if _enum:
+            if len(_enum) == 1: # exactly negating one value, return the other
+                # negated_boolean.append(JSONTypeBoolean({"enum": [not _enum[0]]}))
+                return non_boolean.join(JSONTypeBoolean({"enum": [not _enum[0]]}))
+        
+        return non_boolean
 
 
 class JSONTypeNull(JSONschema):
