@@ -148,10 +148,11 @@ class TestNotStringSubtype(unittest.TestCase):
         set_debug(False)
 
     def test_equiv_multiple_case(self):
-        s1 = {"type": ["string", "null"], "minLength":1}
-        s2 = {"anyOf": [{"type": "string", "minLength":1}, {"type": "null"}]}
-        s3 = {"anyOf": [{"type": "string", "minLength":1}, {"enum": [None]}]}
+        s1 = {"type": ["string", "null"], "minLength": 1}
+        s2 = {"anyOf": [{"type": "string", "minLength": 1}, {"type": "null"}]}
+        s3 = {"anyOf": [{"type": "string", "pattern": ".+"}, {"enum": [None]}]}
         s4 = {"type": ["string", "null"], "pattern": ".{1,}"}
+        s5 = {"type": ["string", "null"], "not": {"enum": [""]}}
 
         with self.subTest():
             self.assertTrue(isEquivalent(s1, s2))
@@ -160,11 +161,29 @@ class TestNotStringSubtype(unittest.TestCase):
         with self.subTest():
             self.assertTrue(isEquivalent(s1, s4))
         with self.subTest():
+            self.assertTrue(isEquivalent(s1, s5))
+        with self.subTest():
             self.assertTrue(isEquivalent(s2, s3))
         with self.subTest():
             self.assertTrue(isEquivalent(s2, s4))
         with self.subTest():
+            self.assertTrue(isEquivalent(s2, s5))
+        with self.subTest():
             self.assertTrue(isEquivalent(s3, s4))
+        with self.subTest():
+            self.assertTrue(isEquivalent(s3, s5))
+        with self.subTest():
+            self.assertTrue(isEquivalent(s4, s5))
+
+        s6 = {"type": ["string", "null"], "pattern": ".{2,}"}
+        s7 = {"type": ["string", "null"], "minLength": 2}
+
+        with self.subTest():
+            self.assertTrue(isEquivalent(s6, s7))
+        with self.subTest():
+            self.assertTrue(isSubschema(s6, s1))
+        with self.subTest():
+            self.assertFalse(isSubschema(s1, s7))
 
 
 class TestStringEnumSubtype(unittest.TestCase):
