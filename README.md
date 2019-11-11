@@ -1,6 +1,16 @@
-# json-subschema checker
+=============
+jsonsubschema
+=============
 
-[![Build Status](https://travis-ci.com/IBM/jsonsubschema.svg?branch=master)](https://travis-ci.com/IBM/jsonsubschema)
+|Travis| |Codecov|
+
+.. |Travis| image:: https://travis-ci.com/IBM/jsonsubschema.svg?branch=master
+    :alt: Travis build status
+    :target: https://travis-ci.com/IBM/jsonsubschema
+
+.. |Codecov| image:: https://codecov.io/gh/IBM/jsonsubschema/branch/master/graph/badge.svg
+    :alt: Codecov code coverage
+    :target: https://codecov.io/gh/IBM/jsonsubschema
 
 This tool checks if one JSON schema is subtype of another.
 For two JSON schemas s1 and s2, s1 <: s2 (reads s1 is subtype/subset or subschema of s2) 
