@@ -8,6 +8,7 @@ install:
   - pip install coverage
 script:
   - echo -e "${ANSI_GREEN}Running Tests...${ANSI_RESET}" && echo -en 'travis_fold:start:tests\\r'
-  - coverage run -m unittest --v && echo -en 'travis_fold:end:tests\\r'
+  - coverage run -m unittest --v 
+  - echo -en 'travis_fold:end:tests\\r'
 after_success:
   - bash <(curl -s https://codecov.io/bash)
