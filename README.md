@@ -1,7 +1,6 @@
-=============
-jsonsubschema
-=============
+ # json-subschema checker
 
+ [![Travis build status](https://travis-ci.com/IBM/jsonsubschema.svg?branch=master)](https://travis-ci.com/IBM/jsonsubschema) [![Codecov code coverage](https://codecov.io/gh/IBM/jsonsubschema/branch/master/graph/badge.svg)](https://codecov.io/gh/IBM/jsonsubschema)
 |Travis| |Codecov|
 
 .. |Travis| image:: https://travis-ci.com/IBM/jsonsubschema.svg?branch=master
