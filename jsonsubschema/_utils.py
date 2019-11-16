@@ -10,6 +10,7 @@ import math
 import numbers
 import re
 import sys
+import json
 
 import jsonschema
 import intervals as I
@@ -332,3 +333,16 @@ def are_intervals_mergable(i1, i2):
     return i1.overlaps(i2) \
         or (is_num(i1.lower) and is_num(i2.upper) and i1.lower - i2.upper == 1) \
         or (is_num(i2.lower) and is_num(i1.upper) and i2.lower - i1.upper == 1)
+
+
+def load_json_file(path, msg=None):
+    with open(path, "r") as fh:
+        try:
+            return json.load(fh)
+        except Exception as e:
+            if msg:
+                print(msg, e)
+                sys.exit(1)
+            else:
+                print(e)
+                sys.exit(1)

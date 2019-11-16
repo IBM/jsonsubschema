@@ -3,10 +3,9 @@ Created on June 24, 2019
 @author: Andrew Habib
 '''
 
-import json
-import jsonref
 import sys
 
+from jsonsubschema._utils import load_json_file
 from jsonsubschema.api import isSubschema
 
 
@@ -18,12 +17,8 @@ def main():
     s1_file = sys.argv[1]
     s2_file = sys.argv[2]
 
-    with open(s1_file, 'r') as f1:
-        s1 = json.load(f1)
-        # s1 = jsonref.load(f1)
-    with open(s2_file, 'r') as f2:
-        s2 = json.load(f2)
-        # s2 = jsonref.load(f2)
+    s1 = load_json_file(s1_file, "LHS file:")
+    s2 = load_json_file(s2_file, "RHS file:")
 
     print("LHS <: RHS", isSubschema(s1, s2))
     print("RHS <: LHS", isSubschema(s2, s1))
