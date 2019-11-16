@@ -823,7 +823,8 @@ class JSONTypeNull(JSONschema):
 
     @staticmethod
     def neg(s):
-        return None
+        return boolToConstructor.get("anyOf")(
+            {"anyOf": get_default_types_except("null")})
 
 
 class JSONTypeArray(JSONschema):
