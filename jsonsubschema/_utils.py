@@ -189,7 +189,10 @@ def regex_isSubset(s1, s2):
             s1.cardinality()
             s2.cardinality()
             return set(s1.strings()).issubset(s2.strings())
-        except OverflowError:
+        except (OverflowError, Exception):
+            # catching a general exception thrown from greenery
+            # see https://github.com/qntm/greenery/blob/master/greenery/lego.py
+            # ... raise Exception("Please choose an 'otherchar'")
             return s1.equivalent(s2) or (s1 & s2.everythingbut()).empty()
     elif s1:
         return True
