@@ -194,6 +194,8 @@ def regex_isSubset(s1, s2):
             # see https://github.com/qntm/greenery/blob/master/greenery/lego.py
             # ... raise Exception("Please choose an 'otherchar'")
             return s1.equivalent(s2) or (s1 & s2.everythingbut()).empty()
+        except Exception as e:
+            exit_with_msg("regex failure from greenry", e)
     elif s1:
         return True
     elif s2:
@@ -343,9 +345,9 @@ def load_json_file(path, msg=None):
         try:
             return json.load(fh)
         except Exception as e:
-            if msg:
-                print(msg, e)
-                sys.exit(1)
-            else:
-                print(e)
-                sys.exit(1)
+            exit_with_msg(msg, e)
+
+
+def exit_with_msg(msg, e=None):
+    print("Message:", msg, ";", "Exception:", e)
+    sys.exit(1)
