@@ -56,7 +56,7 @@ class TestRefs(unittest.TestCase):
         with self.subTest():
             self.assertFalse(isSubschema(s2, s4))
 
-    @unittest.skip("Unsupported ecursive/circular $ref")
+    @unittest.skip("Unsupported recursive/circular $ref")
     def test_2(self):
         s1 = {"definitions": {"S": {"anyOf": [{"enum": [None]},
                                               {"allOf": [{"items": [{"$ref": "#/definitions/S"},
