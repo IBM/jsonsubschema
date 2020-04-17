@@ -25,10 +25,11 @@ Jconnectors = set(["anyOf", "allOf", "oneOf", "not"])
 
 Jcommonkw = Jconnectors.union(["enum", "type"])
 
-Jmeta = set(["$schema", "$id", "$ref", "definitions", "title", "description"])
+JNonValidation = set(["$schema", "$id", "definitions", "title", "description", "format"])
 
 Jkeywords = Jcommonkw.union(Jtypes,
-                            reduce(operator.add, JtypesToKeywords.values()))
+                            reduce(operator.add, JtypesToKeywords.values())).union(["$ref"])
+                            # .union(JNonValidation) # conflicts with canonicalize_connectors
 
 JtypesToPyTypes = {"integer": int, "number": float, "string": str,
                    "boolean": bool, "null": type(None), "array": list, "object": dict}

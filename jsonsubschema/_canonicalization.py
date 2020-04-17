@@ -36,6 +36,18 @@ def canonicalize_schema(obj):
 
 
 def canonicalize_dict(d, outer_key=None):
+    # not actually needed, but for testing
+    # canonicalization to work properly;
+    if d == {} or d == {"not": {}}:
+        return d
+
+    # Ignore (a.k.a drop) any other validatoin keyword 
+    # when there is a $ref
+    if d.get("$ref"):
+        for k in list(d.keys()):
+            if k != "$ref" and k not in definitions.JNonValidation:
+                del d[k]
+
     # Skip normal dict canonicalization
     # for object.properties/patternProperties
     # because these should be usual dict containers.
@@ -72,7 +84,7 @@ def canonicalize_single_type(d):
     if t in definitions.Jtypes:
         # Remove irrelevant keywords
         for k, v in list(d.items()):
-            if k not in definitions.Jcommonkw and k not in definitions.JtypesToKeywords.get(t):
+            if k not in definitions.Jcommonkw and k not in definitions.JtypesToKeywords.get(t) and k not in definitions.JNonValidation:
                 d.pop(k)
             elif utils.is_dict(v):
                 d[k] = canonicalize_dict(v, k)
@@ -257,10 +269,15 @@ def simplify_schema_and_embed_checkers(s):
     ''' This function assumes the schema s is already canonicalized. 
         So it must be a dict '''
     #
-    if s == {}:
-        return JSONtop()
-    if s == {"not": {}}:
-        return JSONbot()
+    if s == {} or not definitions.Jkeywords.intersection(s.keys()):
+        top = JSONtop()
+        # top.update(s)
+        return top
+    if "not" in s.keys() and s["not"] == {}:
+        bot = JSONbot()
+        # del s["not"]
+        # bot.update(s)
+        return bot
 
     # json.array specific
     if "items" in s:

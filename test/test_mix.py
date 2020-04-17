@@ -182,6 +182,39 @@ class TestBooleans(unittest.TestCase):
         with self.subTest():
             self.assertTrue(isSubschema(s2, s1))
 
+class TestBottomAndTop(unittest.TestCase):
+
+    def test_bot1(self):
+        s1 = {"not": {}}
+        s2 = {"type": "string"}
+        with self.subTest():
+            self.assertTrue(isSubschema(s1,s2))
+        with self.subTest():
+            self.assertFalse(isSubschema(s2, s1))
+    
+    def test_bot2(self):
+        s1 = {"description": "bottom", "not": {}}
+        s2 = {"type": "string"}
+        with self.subTest():
+            self.assertTrue(isSubschema(s1,s2))
+        with self.subTest():
+            self.assertFalse(isSubschema(s2, s1))
+
+    def test_top1(self):
+        s1 = {}
+        s2 = {"type": "string"}
+        with self.subTest():
+            self.assertFalse(isSubschema(s1, s2))
+        with self.subTest():
+            self.assertTrue(isSubschema(s2, s1))
+    
+    def test_top2(self):
+        s1 = {"description": "top"}
+        s2 = {}
+        with self.subTest():
+            self.assertTrue(isSubschema(s1, s2))
+        with self.subTest():
+            self.assertTrue(isSubschema(s2, s1))
 
 class TestNull(unittest.TestCase):
 

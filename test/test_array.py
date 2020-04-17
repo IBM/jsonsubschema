@@ -129,3 +129,35 @@ class TestArraySubtype(unittest.TestCase):
             self.assertFalse(isSubschema(s1, s2))
         with self.subTest():
             self.assertTrue(isSubschema(s2, s1))
+
+
+class TestNestedArray(unittest.TestCase):
+
+    def test_1(self):
+        s1 = {
+            '$schema': 'http://json-schema.org/draft-04/schema#',
+            'type': 'array',
+            'minItems': 150,
+            'maxItems': 150,
+            'items': {
+                    'type': 'array',
+                    'minItems': 4,
+                    'maxItems': 4,
+                    'items': {
+                        'type': 'number'}}}
+
+        s2 = {
+            'description': 'Features; the outer array is over samples.',
+            'anyOf': [{
+                'type': 'array',
+                'items': {
+                        'type': 'string'}}, {
+                'type': 'array',
+                'items': {
+                        'type': 'array',
+                        'minItems': 1,
+                        'maxItems': 1,
+                        'items': {
+                            'type': 'string'}}}]}
+
+        self.assertFalse(isSubschema(s1, s2))
