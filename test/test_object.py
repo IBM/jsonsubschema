@@ -550,3 +550,14 @@ class TestObjectSubtype(unittest.TestCase):
             self.assertTrue(isSubschema(s1, s2))
         with self.subTest():
             self.assertFalse(isSubschema(s2, s1))
+
+class TestDependency(unittest.TestCase):
+
+    def test_1(self):
+        s1 = {'type': 'object', 'dependencies': {'foo': {'type':'string'}}}
+        s2 = {'type': 'object'}
+
+        with self.subTest('LHS < RHS'):
+            self.assertTrue(isSubschema(s1, s2))
+        # with self.subTest('"dependencies" not yet supported.'):
+        #     self.assertFalse(isSubschema(s2, s2))

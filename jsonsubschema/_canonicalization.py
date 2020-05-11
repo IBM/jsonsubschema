@@ -6,6 +6,7 @@ Created on June 24, 2019
 import copy
 import jsonschema
 import numbers
+import numpy
 import sys
 
 import jsonsubschema._constants as definitions
@@ -16,6 +17,7 @@ from jsonsubschema._checkers import (
     JSONtop,
     JSONbot
 )
+from jsonsubschema.exceptions import UnexpectedCanonicalization
 
 TOP = {}
 BOT = {"not": {}}
@@ -23,7 +25,7 @@ BOT = {"not": {}}
 
 def canonicalize_schema(obj):
     # First, make sure the given json is a valid json schema.
-    utils.validate_schema(obj)
+    utils.validate_schema(obj) # should throw jsonschema.SchemaError on unknown types
 
     # Second, canonicalize the schema.
     if utils.is_dict(obj):
@@ -41,24 +43,33 @@ def canonicalize_dict(d, outer_key=None):
     if d == {} or d == {"not": {}}:
         return d
 
-    # Ignore (a.k.a drop) any other validatoin keyword 
-    # when there is a $ref
-    if d.get("$ref"):
-        for k in list(d.keys()):
-            if k != "$ref" and k not in definitions.JNonValidation:
-                del d[k]
+    # Ignore (drop) any other validatoin keyword when there is a $ref
+    # Currently, jsonref handles this case properly,
+    # We might need to handle it again on out own when 
+    # we handle recursive $ref independently from jsonref.
+    # if d.get("$ref"):
+    #     for k in list(d.keys()):
+    #         if k != "$ref" and k not in definitions.JNonValidation:
+    #             del d[k]
 
     # Skip normal dict canonicalization
-    # for object.properties/patternProperties
+    # for object.properties; 
+    #   patternProperties;
+    #   dependencies
     # because these should be usual dict containers.
     if outer_key in ["properties", "patternProperties"]:
         for k, v in d.items():
             d[k] = canonicalize_dict(v)
         return d
+    if outer_key == "dependencies":
+        for k, v in d.items():
+            if utils.is_dict(v):
+                d[k] = canonicalize_dict(v)
+        return d
 
     # here, start dict canonicalization
     if not definitions.Jkeywords.intersection(d.keys()):
-        return TOP
+        return d
 
     t = d.get("type")
     has_connectors = definitions.Jconnectors.intersection(d.keys())
@@ -91,10 +102,10 @@ def canonicalize_single_type(d):
             elif utils.is_list(v):
                 if k == "enum":
                     v = utils.get_typed_enum_vals(v, t)
-                    if not v:
-                        return BOT
-                    else:
-                        d[k] = v
+                    # if not v:
+                    #     return BOT
+                    # else:
+                    d[k] = v
                 elif k == "required":
                     d[k] = sorted(set(v))
                 else:
@@ -104,13 +115,14 @@ def canonicalize_single_type(d):
             return rewrite_enum(d)
         else:
             return d
-
-    else:
-        # TODO: or just return?
-        print("Unknown schema type {} at:".format(t))
-        print(d)
-        print("Exiting...")
-        sys.exit(1)
+    
+    # jsonschema validation in the begining prevents 
+    # reaching this case. So we don't need this.
+    # else:
+    #     print("Unknown schema type {} at:".format(t))
+    #     print(d)
+    #     print("Exiting...")
+    #     sys.exit(1)
 
 
 def canonicalize_list_of_types(d):
@@ -122,13 +134,18 @@ def canonicalize_list_of_types(d):
             s_i["type"] = t_i
             s_i = canonicalize_single_type(s_i)
             anyofs.append(s_i)
-        else:
-            # TODO: or just return?
-            print("Unknown schema type {} at: {}".format(t_i, t))
-            print(d)
-            print("Exiting...")
-            sys.exit(1)
+    
+        # jsonschema validation in the begining prevents 
+        # reaching this case. So we don't need this.
+        # else:
+            # print("Unknown schema type {} at: {}".format(t_i, t))
+            # print(d)
+            # print("Exiting...")
+            # sys.exit(1)
 
+    # if len(anyofs) == 1:
+    #     return anyofs[0]
+    # elif len(anyofs) > 1:
     return {"anyOf": anyofs}
 
 

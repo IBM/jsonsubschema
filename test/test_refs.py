@@ -1,11 +1,44 @@
-"""
+'''
 Created on Oct. 25, 2019
 @author: Andrew Habib
-"""
+'''
 
 import unittest
 
 from jsonsubschema import isSubschema
+
+
+class TestSimpleRefs(unittest.TestCase):
+
+    def test_1(self):
+        s1 = {'definitions': {'bom': {'type': 'string'},
+                              'tak': {'type': 'integer'}},
+              'type': 'object', 'properties':
+              {'foo': {'$ref': '#/definitions/bom',
+                       'type': 'integer'}}}
+        s2 = {'type': 'object',
+              'properties': {
+                  'foo': {'type': 'string'}}}
+
+        with self.subTest():
+            self.assertTrue(isSubschema(s1, s2))
+        with self.subTest():
+            self.assertTrue(isSubschema(s2, s1))
+
+    def test_2(self):
+        s1 = {'definitions': {'bom': {'type': 'string'},
+                              'tak': {'type': 'integer'}},
+              'type': 'object', 'properties':
+              {'foo': {'$ref': '#/definitions/bom',
+                       'type': 'integer'}}}
+        s2 = {'type': 'object',
+              'properties': {
+                  'foo': {'type': 'string', 'pattern': 'a'}}}
+
+        with self.subTest():
+            self.assertFalse(isSubschema(s1, s2))
+        with self.subTest():
+            self.assertTrue(isSubschema(s2, s1))
 
 
 class TestRefs(unittest.TestCase):
@@ -66,12 +99,12 @@ class TestRefs(unittest.TestCase):
                                                           "type": "array"},
                                                          {"not": {"type": "array",
                                                                   "uniqueItems": True}}
-                                                        ]
+                                                         ]
                                                }
                                               ]
                                     }
                               },
-                "$ref": "#/definitions/S"
+              "$ref": "#/definitions/S"
               }
 
         s2 = {"enum": [None]}

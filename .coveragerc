@@ -1,4 +1,4 @@
 [run]
 branch = True
 source = jsonsubschema
-omit = */jsonsubschema/cli.py,*/jsonsubschema/dircmp.py
+omit = */jsonsubschema/cli.py,*/jsonsubschema/exp_*, */jsonsubschema/test_*

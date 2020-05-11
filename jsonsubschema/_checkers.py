@@ -1266,6 +1266,8 @@ class JSONTypeObject(JSONschema):
             # Check properties range
             is_sub_interval = s1.interval in s2.interval
             if not is_sub_interval:
+                print_db(s1.interval, s1)
+                print_db(s2.interval, s2)
                 print_db("__00__")
                 return False
             #
@@ -1318,7 +1320,8 @@ class JSONTypeObject(JSONschema):
                             if lhs_:
                                 if rhs_:
                                     if not lhs_.isSubtype(rhs_):
-                                        print_db("__03__")
+                                        print_db(k, "LHS", lhs_, "RHS", rhs_)
+                                        print_db("!!__03__")
                                         return False
                                 else:
                                     print_db("__04__")
@@ -1330,15 +1333,26 @@ class JSONTypeObject(JSONschema):
                 for k_ in s1.patternProperties.keys():
                     if utils.regex_matches_string(k_, k):
                         extra_keys_on_rhs.remove(k)
-            if extra_keys_on_rhs:
-                if not s1.additionalProperties:
-                    print_db("__05__")
+            # if extra_keys_on_rhs:
+                # if not s1.additionalProperties:
+                #     print_db("?__05__")
+                #     return False
+                # else:
+            for k in extra_keys_on_rhs:
+                if is_bot(s1.additionalProperties):
+                    continue
+                elif is_top(s1.additionalProperties):
+                    print_db("__06__")
                     return False
-                else:
-                    for k in extra_keys_on_rhs:
-                        if not s1.additionalProperties.isSubtype(s2.properties[k]):
-                            print_db("__06__")
-                            return False
+                # for s in get_schema_for_key(k, s1):
+                #     if not is_bot(s):
+                #         continue
+                #     elif is_bot(s2.):
+                #         return False
+                    # print("-->", s)
+                    # if is_top(s) and not is_top(s2.properties[k]) or not s.isSubtype(s2.properties[k]):
+                    #     print_db("__06__")
+                    #     return False
 
             extra_patterns_on_rhs = set(s2.patternProperties.keys()).difference(
                 s1.patternProperties.keys())
