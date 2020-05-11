@@ -239,6 +239,7 @@ def rewrite_enum(d):
         ret = {"anyOf": []}
         for i in enum:
             ret["anyOf"].append(
+                # {"type": "number", "minimum": i, "maximum": i, "multipleOf": 1}) # check test_numeric/test_join_mulof10
                 {"type": "integer", "minimum": i, "maximum": i})
 
     if t == "number":
@@ -247,6 +248,8 @@ def rewrite_enum(d):
             if utils.is_int_equiv(i):
                 ret["anyOf"].append(
                     {"type": "integer", "minimum": i, "maximum": i})
+            elif numpy.isnan(i):
+                ret["anyOf"].append({"type": "number", "enum":[numpy.NaN]})
             else:
                 ret["anyOf"].append(
                     {"type": "number", "minimum": i, "maximum": i})
@@ -257,12 +260,18 @@ def rewrite_enum(d):
         return d
 
     if t == "null":
+        # null schema should be rewritten without enum
+        # it is a single value anyways.
         return {"type": "null"}
 
     if ret:
-        return canonicalize_dict(ret)
-    else:
-        return d
+        ret["enum"] = enum
+        return ret
+        # return canonicalize_dict(ret)
+
+    # Unsupported cases of rewriting enums
+    elif t == 'array' or t == 'object':
+        raise UnexpectedCanonicalization(msg='Rewriting the following enum is not supported.', tau=t, schema=d)
 
 
 def simplify_schema_and_embed_checkers(s):

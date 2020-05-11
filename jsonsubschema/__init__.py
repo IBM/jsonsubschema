@@ -6,6 +6,7 @@ Created on August 6, 2019
 
 from jsonsubschema import api
 from jsonsubschema import config
+from jsonsubschema import exceptions
 from jsonsubschema import _canonicalization
 
 isSubschema = api.isSubschema

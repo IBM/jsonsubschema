@@ -80,25 +80,25 @@ class JSONschema(dict, metaclass=UninhabitedMeta):
         #
         ret = self._meet(s)
         #
-        if self.hasEnum() or s.hasEnum():
-            enum = JSONschema.meet_enum(self, s)
-            if enum:
-                ret.enum = ret["enum"] = enum
-                # ret["enum"] = list(enum)
-                # ret.enum = ret["enum"]
-            # instead of returning uninhabited type, return bot
-            else:
-                return JSONbot()
+        # if self.hasEnum() or s.hasEnum():
+        #     enum = JSONschema.meet_enum(self, s)
+        #     if enum:
+        #         ret.enum = ret["enum"] = enum
+        #         # ret["enum"] = list(enum)
+        #         # ret.enum = ret["enum"]
+        #     # instead of returning uninhabited type, return bot
+        #     else:
+        #         return JSONbot()
         #
         return ret
 
-    @staticmethod
-    def meet_enum(s1, s2):
-        enum = set(s1.get("enum", [])) | set(s2.get("enum", []))
-        valid_enum1 = utils.get_valid_enum_vals(enum, s1)
-        valid_enum2 = utils.get_valid_enum_vals(enum, s2)
+    # @staticmethod
+    # def meet_enum(s1, s2):
+        # enum = set(s1.get("enum", [])) | set(s2.get("enum", []))
+        # valid_enum1 = utils.get_valid_enum_vals(enum, s1)
+        # valid_enum2 = utils.get_valid_enum_vals(enum, s2)
         # return set(valid_enum1) & set(valid_enum2)
-        return list(valid_enum1) + list(valid_enum2)
+        # return list(valid_enum1) + list(valid_enum2)
 
     def meet_handle_rhs(self, s, meet_cb):
 
@@ -369,6 +369,8 @@ class JSONTypeString(JSONschema):
                 #
                 if s1.pattern == s2.pattern:
                     return True
+                elif s1.hasEnum():
+                    return super(JSONTypeString, s1).subtype_enum(s2)
                 else:
                     if s1.minLength == 0 and s1.maxLength == I.inf:
                         pattern1 = s1.pattern
@@ -541,6 +543,8 @@ class JSONTypeInteger(JSONTypeNumeric):
 
         def _isIntegerSubtype(s1, s2):
             if s2.type in definitions.Jnumeric:
+                if s1.hasEnum():
+                    return super(JSONTypeInteger, s1).subtype_enum(s2)
                 #
                 is_sub_interval = s1.interval in s2.interval
                 if not is_sub_interval:
@@ -675,6 +679,8 @@ class JSONTypeNumber(JSONTypeNumeric):
 
         def _isNumberSubtype(s1, s2):
             if s2.type == "number":
+                if s1.hasEnum():
+                    return super(JSONTypeNumber, s1).subtype_enum(s2)
                 is_sub_interval = s1.interval in s2.interval
                 if not is_sub_interval:
                     print_db("num__00")
@@ -1255,7 +1261,8 @@ class JSONTypeObject(JSONschema):
             '''
             if s2.type != "object":
                 return False
-
+            if s1.hasEnum():
+                return super(JSONTypeObject, s1).subtype_enum(s2)
             # Check properties range
             is_sub_interval = s1.interval in s2.interval
             if not is_sub_interval:
