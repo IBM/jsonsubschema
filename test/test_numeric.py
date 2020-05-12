@@ -547,6 +547,28 @@ class TestNumericSubtype(unittest.TestCase):
         with self.subTest():
             self.assertTrue(isSubschema(s2, s1))
 
+    def test_decimal1(self):
+        s1 = {'maximum': 10.}
+        s2 = {'maximum': 10}
+
+        with self.subTest('LHS < RHS'):
+            self.assertTrue(isSubschema(s1, s2))
+        with self.subTest('RHS > LHS'):
+            self.assertTrue(isSubschema(s2, s1))
+
+    def test_not1(self):
+        
+        s1 = {'not': {'type': 'integer', 'minimum': 10, 'maximum': 20}}
+        s2 = {'not': {'minimum': 10, 'maximum': 20}}
+
+        s1_ = {'anyOf': [{'type': 'boolean'}, {'type': 'object'}, {'type': 'null'}, {'type': 'array'}, {'type': 'string'}, {'maximum': 9, 'type': 'integer'}, {'minimum': 21, 'type': 'integer'}, {
+            'type': 'number', 'maximum': 9}, {'type': 'number', 'minimum': 21}, {'allOf': [{'type': 'number', 'minimum': 10, 'maximum': 20}, {'not': {'type': 'integer'}}]}]}
+
+        # with self.subTest('LHS < RHS'):
+        #     self.assertFalse(isSubschema(s1, s1))
+        # with self.subTest('RHS > LHS'):
+        #     self.assertTrue(isSubschema(s2, s1))
+
 
 class TestCompositeNumericSubtype(unittest.TestCase):
 

@@ -25,7 +25,8 @@ BOT = {"not": {}}
 
 def canonicalize_schema(obj):
     # First, make sure the given json is a valid json schema.
-    utils.validate_schema(obj) # should throw jsonschema.SchemaError on unknown types
+    # should throw jsonschema.SchemaError on unknown types
+    utils.validate_schema(obj)
 
     # Second, canonicalize the schema.
     if utils.is_dict(obj):
@@ -45,7 +46,7 @@ def canonicalize_dict(d, outer_key=None):
 
     # Ignore (drop) any other validatoin keyword when there is a $ref
     # Currently, jsonref handles this case properly,
-    # We might need to handle it again on out own when 
+    # We might need to handle it again on out own when
     # we handle recursive $ref independently from jsonref.
     # if d.get("$ref"):
     #     for k in list(d.keys()):
@@ -53,7 +54,7 @@ def canonicalize_dict(d, outer_key=None):
     #             del d[k]
 
     # Skip normal dict canonicalization
-    # for object.properties; 
+    # for object.properties;
     #   patternProperties;
     #   dependencies
     # because these should be usual dict containers.
@@ -115,8 +116,8 @@ def canonicalize_single_type(d):
             return rewrite_enum(d)
         else:
             return d
-    
-    # jsonschema validation in the begining prevents 
+
+    # jsonschema validation in the begining prevents
     # reaching this case. So we don't need this.
     # else:
     #     print("Unknown schema type {} at:".format(t))
@@ -134,8 +135,8 @@ def canonicalize_list_of_types(d):
             s_i["type"] = t_i
             s_i = canonicalize_single_type(s_i)
             anyofs.append(s_i)
-    
-        # jsonschema validation in the begining prevents 
+
+        # jsonschema validation in the begining prevents
         # reaching this case. So we don't need this.
         # else:
             # print("Unknown schema type {} at: {}".format(t_i, t))
@@ -190,9 +191,14 @@ def canonicalize_connectors(d):
                 allofs = one + nots
                 anyofs.append({"allOf": allofs})
             return canonicalize_connectors({"anyOf": anyofs})
+
+        # Here, the connector is either allOf or oneOf
+        # So we better simplify them before proceeding more.
         else:
             d[c] = [canonicalize_dict(i) for i in d[c]]
-            return d
+            # return d
+            simplified = simplify_schema_and_embed_checkers(d)
+            return simplified
 
     # Connector + other keywords. Combine them first.
     else:
@@ -201,8 +207,10 @@ def canonicalize_connectors(d):
             allofs.append(canonicalize_dict({c: d[c]}))
             del d[c]
         if lhs_kw_without_connectors:
-            allofs.append(canonicalize_dict({k: d[k] for k in lhs_kw_without_connectors}))
+            allofs.append(canonicalize_dict(
+                {k: d[k] for k in lhs_kw_without_connectors}))
         return {"allOf": allofs}
+        # return simplify_schema_and_embed_checkers({"allOf": allofs})
 
 
 def canonicalize_not(d):
@@ -225,7 +233,7 @@ def canonicalize_not(d):
         if c == "not":
             return negated_schema["not"]
 
-        if c == "anyOf":
+        elif c == "anyOf":
             allofs = []
             for i in negated_schema["anyOf"]:
                 allofs.append(canonicalize_not({"not": i}))
@@ -272,7 +280,7 @@ def rewrite_enum(d):
                     {"type": "number", "minimum": i, "maximum": i})
 
     if t == "boolean":
-        # booleans are allowed to keep enums, 
+        # booleans are allowed to keep enums,
         # since there are only two values.
         return d
 
