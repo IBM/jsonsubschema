@@ -4,7 +4,7 @@ import unittest
 import json
 
 import jsonsubschema
-from jsonsubschema.exp_dircmp import run_issubset
+# from jsonsubschema.exp_dircmp import run_issubset
 
 class TestAIExamples(unittest.TestCase):
 
