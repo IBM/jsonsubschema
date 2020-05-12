@@ -239,14 +239,19 @@ def canonicalize_not(d):
                 allofs.append(canonicalize_not({"not": i}))
             return {"allOf": allofs}
 
+        # Should not reach here. Should be canonicalized and
+        # simplified by now.
         elif c == "allOf":
-            anyofs = []
-            for i in negated_schema["allOf"]:
-                anyofs.append(canonicalize_not({"not": i}))
-            return {"anyOf": anyofs}
+            # anyofs = []
+            # for i in negated_schema["allOf"]:
+            #     anyofs.append(canonicalize_not({"not": i}))
+            # return {"anyOf": anyofs}
+            return canonicalize_not({'not': canonicalize_connectors(negated_schema)})
 
-        elif c == "oneOf":
-            return canonicalize_not({"not": canonicalize_connectors(negated_schema)})
+                #     anyofs.append(canonicalize_not({"not": i}))
+        # Should not reach here. Should be canonicalized by now.
+        # elif c == "oneOf":
+        #     return canonicalize_not({"not": canonicalize_connectors(negated_schema)})
     else:
         sys.exit(">>>>>> Ewwwww! Shouldn't be here during canonicalization. <<<<<<")
 
@@ -296,7 +301,8 @@ def rewrite_enum(d):
 
     # Unsupported cases of rewriting enums
     elif t == 'array' or t == 'object':
-        raise UnexpectedCanonicalization(msg='Rewriting the following enum is not supported.', tau=t, schema=d)
+        raise UnexpectedCanonicalization(
+            msg='Rewriting the following enum is not supported.', tau=t, schema=d)
 
 
 def simplify_schema_and_embed_checkers(s):
