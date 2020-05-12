@@ -274,7 +274,7 @@ def rewrite_enum(d):
                 ret["anyOf"].append(
                     {"type": "integer", "minimum": i, "maximum": i})
             elif numpy.isnan(i):
-                ret["anyOf"].append({"type": "number", "enum":[numpy.NaN]})
+                ret["anyOf"].append({"type": "number", "enum": [numpy.NaN]})
             else:
                 ret["anyOf"].append(
                     {"type": "number", "minimum": i, "maximum": i})
