@@ -111,6 +111,7 @@ class JSONschema(dict, metaclass=UninhabitedMeta):
         ''' Place holder in case a subclass does not implement its own join.
             Should be removed once we are done fully implementing join '''
         ret = {"anyOf": [self, s]}
+        # print("Eww! Using abstract _join :: running into corner case!")
         return JSONanyOf(ret)
 
     def join(self, s):
@@ -990,6 +991,8 @@ class JSONTypeArray(JSONschema):
         def _isArraySubtype(s1, s2):
             if s2.type != "array":
                 return False
+            if s1.hasEnum():
+                return super(JSONTypeArray, s1).subtype_enum(s2)
             #
             # -- minItems and maxItems
             is_sub_interval = s1.interval in s2.interval
