@@ -6,7 +6,6 @@ Created on June 24, 2019
 import copy
 import json
 import math
-import numbers
 import sys
 
 import intervals as I
@@ -614,7 +613,7 @@ class JSONTypeInteger(JSONTypeNumeric):
             #         {"maximum": s["minimum"], "exclusiveMaximum": True}))
         if "maximum" in s:
             # if "exclusiveMaximum":
-            negated_ints.append(JSONTypeNumber({"minimum": s["maximum"] + 1}))
+            negated_ints.append(JSONTypeInteger({"minimum": s["maximum"] + 1}))
             # else:
             #     negated_numbers.append(JSONTypeNumber(
             #         {"minimum": s["maximum"], "exclusiveMinimum": True}))
