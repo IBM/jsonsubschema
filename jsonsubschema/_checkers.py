@@ -581,7 +581,7 @@ class JSONTypeInteger(JSONTypeNumeric):
                 for j in list(intervals):
                     if utils.are_intervals_mergable(num_schema.interval, j):
                         intervals.remove(j)
-                        intervals.append((num_schema.interval | j).to_atomic())
+                        intervals.append((num_schema.interval | j).enclosure)
                         added = True
                 if not added:
                     intervals.append(num_schema.interval)
