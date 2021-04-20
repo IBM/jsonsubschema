@@ -13,7 +13,7 @@ import sys
 import json
 
 import jsonschema
-import intervals as I
+import portion as I
 from greenery.lego import parse
 
 import jsonsubschema.config as config

@@ -8,7 +8,7 @@ import json
 import math
 import sys
 
-import intervals as I
+import portion as I
 from greenery.lego import parse
 
 import jsonsubschema.config as config
