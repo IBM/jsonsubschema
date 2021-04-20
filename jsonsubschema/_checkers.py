@@ -434,7 +434,7 @@ class JSONTypeNumeric(JSONschema):
         self.multipleOf = self.get("multipleOf", None)
 
     def _isUninhabited(self):
-        return self.interval.is_empty()  \
+        return self.interval.empty()  \
             or utils.is_num(self.multipleOf) and self.multipleOf > self.maximum
 
     def updateInternalState(self):
