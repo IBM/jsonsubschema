@@ -14,8 +14,6 @@ meetSchemas = api.meet
 joinSchemas = api.join
 isEquivalent = api.isEquivalent
 
-subschemaDecoder = api.JSONSubSchemaFactory
-
 canonicalizeSchema = _canonicalization.canonicalize_schema
 
 set_debug = config.set_debug

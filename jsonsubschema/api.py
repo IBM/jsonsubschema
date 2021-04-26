@@ -3,7 +3,7 @@ Created on June 24, 2019
 @author: Andrew Habib
 '''
 
-import json
+
 import jsonref
 
 from jsonsubschema._canonicalization import (
@@ -14,19 +14,6 @@ from jsonsubschema._utils import (
     validate_schema,
     print_db
 )
-
-
-class JSONSubSchemaFactory(json.JSONDecoder):
-    ''' A json decoder which embeds subtype checking into the json object.
-        This is experimental at the moment. '''
-
-    def __init__(self, *args, **kwargs):
-        json.JSONDecoder.__init__(
-            self, object_hook=self.object_hook, *args, **kwargs)
-
-    def object_hook(self, d):
-        return simplify_schema_and_embed_checkers(
-            canonicalize_schema(d))
 
 
 def prepare_operands(s1, s2):
