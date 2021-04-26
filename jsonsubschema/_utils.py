@@ -93,7 +93,7 @@ def get_valid_enum_vals(enum, s):
 
 
 def get_typed_enum_vals(enum, t):
-    if t is "integer":
+    if t == "integer":
         enum = filter(lambda i: not isinstance(i, bool), enum)
     # try:
     #     return sorted(filter(lambda i: isinstance(i, definitions.JtypesToPyTypes[t]), enum))
