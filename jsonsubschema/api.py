@@ -3,7 +3,8 @@ Created on June 24, 2019
 @author: Andrew Habib
 '''
 
-
+import sys
+# sys.setrecursionlimit(20)
 import jsonref
 
 from jsonsubschema._canonicalization import (
@@ -15,11 +16,12 @@ from jsonsubschema._utils import (
     print_db
 )
 
+from jsonsubschema.exceptions import UnsupportedRecursiveRef
+
 
 def prepare_operands(s1, s2):
     # First, we reload schemas using jsonref to resolve $ref
     # before starting canonicalization.
-    # At the moment, we will get undefined behaviour for recursive/circual refs.
 
     # s1 = jsonref.loads(json.dumps(s1))
     # s2 = jsonref.loads(json.dumps(s2))
@@ -31,20 +33,23 @@ def prepare_operands(s1, s2):
     # and rhs schemas  before starting the subtype checking.
     # This also validates input schemas and canonicalized schemas.
 
-    print_db("LHS", s1)
-    print_db()
-    s1 = simplify_schema_and_embed_checkers(
-        canonicalize_schema(s1))
-    print_db("LHS_canonical", s1)
-    print_db()
+    # At the moment, recursive/circual refs are not supported and hence, canonicalization
+    # throws a RecursionError.
+    try:
+        _s1 = simplify_schema_and_embed_checkers(
+            canonicalize_schema(s1))
+    except RecursionError:
+        # avoid cluttering output by unchaining the recursion error
+        raise UnsupportedRecursiveRef(s1, 'LHS') from None
 
-    print_db("RHS", s2)
-    print_db()
-    s2 = simplify_schema_and_embed_checkers(
-        canonicalize_schema(s2))
-    print_db("RHS_canonical", s2)
-    print_db()
-    return s1, s2
+    try:
+        _s2 = simplify_schema_and_embed_checkers(
+            canonicalize_schema(s2))
+    except RecursionError:
+        # avoid cluttering output by unchaining the recursion error
+        raise UnsupportedRecursiveRef(s2, 'RHS') from None
+
+    return _s1, _s2
 
 
 def isSubschema(s1, s2):

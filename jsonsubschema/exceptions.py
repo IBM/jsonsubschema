@@ -8,6 +8,15 @@ class _Error(Exception):
     pass
 
 
+class UnsupportedRecursiveRef(_Error):
+    def __init__(self, schema, which_side):
+        self.schema = schema
+        self.which_side = which_side
+
+    def __str__(self):
+        return f'Recursive schemas are not supported. {self.which_side} is recursive.'
+
+
 class UnexpectedCanonicalization(_Error):
 
     def __init__(self, msg, tau, schema):
