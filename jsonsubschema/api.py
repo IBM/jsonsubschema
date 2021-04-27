@@ -4,7 +4,6 @@ Created on June 24, 2019
 '''
 
 import sys
-# sys.setrecursionlimit(20)
 import jsonref
 
 from jsonsubschema._canonicalization import (
@@ -20,7 +19,7 @@ from jsonsubschema.exceptions import UnsupportedRecursiveRef
 
 
 def prepare_operands(s1, s2):
-    # First, we reload schemas using jsonref to resolve $ref
+    # First, we load schemas using jsonref to resolve $ref
     # before starting canonicalization.
 
     # s1 = jsonref.loads(json.dumps(s1))
