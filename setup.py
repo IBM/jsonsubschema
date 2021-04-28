@@ -19,7 +19,7 @@ setup(
     url='https://github.com/IBM/jsonsubschema',
     packages=['jsonsubschema', ],
     license='Apache License 2.0',
-    install_requires=['portion', 'greenery', 'jsonschema', 'jsonref'],
+    install_requires=['portion', 'greenery', 'jsonschema', 'jsonref', 'numpy'],
     entry_points={
         'console_scripts': 'jsonsubschema=jsonsubschema.cli:main'
     }
