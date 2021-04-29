@@ -16,6 +16,10 @@ import jsonsubschema.config as config
 import jsonsubschema._constants as definitions
 import jsonsubschema._utils as utils
 from jsonsubschema._utils import print_db
+from jsonsubschema.exceptions import (
+    UnsupportedNegatedArray,
+    UnsupportedNegatedObject
+)
 
 
 class UninhabitedMeta(type):
@@ -1121,7 +1125,11 @@ class JSONTypeArray(JSONschema):
         #     if s.__getattr__(k) != default:
         #         break
         # else:
-        return None
+        if s.keys() & definitions.JtypesToKeywords['array']:
+            raise UnsupportedNegatedArray(schema=s)
+        else: 
+             return boolToConstructor.get("anyOf")(
+            {"anyOf": get_default_types_except("array")})
 
 
 class JSONTypeObject(JSONschema):

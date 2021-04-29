@@ -17,7 +17,7 @@ from jsonsubschema._checkers import (
     JSONtop,
     JSONbot
 )
-from jsonsubschema.exceptions import UnexpectedCanonicalization
+from jsonsubschema.exceptions import UnsupportedEnumCanonicalization
 
 TOP = {}
 BOT = {"not": {}}
