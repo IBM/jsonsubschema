@@ -4,11 +4,19 @@ Created on May 11, 2020
 '''
 
 
-class _Error(Exception):
+class _UnsupportedCase(Exception):
     pass
 
 
-class UnsupportedRecursiveRef(_Error):
+class _CanonicalizationError(_UnsupportedCase):
+    pass
+
+
+class _SubtypeCheckError(_UnsupportedCase):
+    pass
+
+
+class UnsupportedRecursiveRef(_CanonicalizationError):
     def __init__(self, schema, which_side):
         self.schema = schema
         self.which_side = which_side
@@ -17,16 +25,32 @@ class UnsupportedRecursiveRef(_Error):
         return f'Recursive schemas are not supported. {self.which_side} is recursive.'
 
 
-class UnexpectedCanonicalization(_Error):
+class UnsupportedEnumCanonicalization(_CanonicalizationError):
 
-    def __init__(self, msg, tau, schema):
-        self.msg = msg
+    def __init__(self, tau, schema):
         self.tau = tau
         self.schema = schema
 
     def __str__(self):
-        return '{}\n"type": {} \n"schema": {}'.format(self.msg, self.tau, self.schema)
+        return f'Canonicalizing an enum schema of type {self.tau} is not supported.'
 
+
+class UnsupportedNegatedObject(_SubtypeCheckError):
+
+    def __init__(self, schema):
+        self.schema = schema
+
+    def __str__(self):
+        return f'Object negation at {self.schema} is not supported.'
+
+
+class UnsupportedNegatedArray(_SubtypeCheckError):
+
+    def __init__(self, schema):
+        self.schema = schema
+
+    def __str__(self):
+        return f'Array negation at {self.schema} is not supported.'
 
 # class UnsupportedSchemaType(_Error):
 #     '''

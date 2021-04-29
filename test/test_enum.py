@@ -6,7 +6,7 @@ Created on June 3, 2019
 import unittest
 
 from jsonsubschema import isSubschema
-from jsonsubschema.exceptions import UnexpectedCanonicalization
+from jsonsubschema.exceptions import UnsupportedEnumCanonicalization
 
 
 class TestEnum(unittest.TestCase):
@@ -91,10 +91,11 @@ class TestEnumNotSupported(unittest.TestCase):
         s2 = {'type': 'array'}
 
         with self.subTest():
-            self.assertRaises(UnexpectedCanonicalization, isSubschema, s1, s2)
+            self.assertRaises(UnsupportedEnumCanonicalization,
+                              isSubschema, s1, s2)
 
-        with self.subTest(): # To test prining the exception msg
-            with self.assertRaises(UnexpectedCanonicalization) as ctxt:
+        with self.subTest():  # To test prining the exception msg
+            with self.assertRaises(UnsupportedEnumCanonicalization) as ctxt:
                 isSubschema(s2, s1)
             print(ctxt.exception)
 
@@ -103,9 +104,10 @@ class TestEnumNotSupported(unittest.TestCase):
         s2 = {'type': 'object'}
 
         with self.subTest():
-            self.assertRaises(UnexpectedCanonicalization, isSubschema, s1, s2)
+            self.assertRaises(UnsupportedEnumCanonicalization,
+                              isSubschema, s1, s2)
 
-        with self.subTest(): # To test prining the exception msg
-            with self.assertRaises(UnexpectedCanonicalization) as ctxt:
+        with self.subTest():  # To test prining the exception msg
+            with self.assertRaises(UnsupportedEnumCanonicalization) as ctxt:
                 isSubschema(s2, s1)
             print(ctxt.exception)

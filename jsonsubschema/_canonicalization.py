@@ -301,8 +301,7 @@ def rewrite_enum(d):
 
     # Unsupported cases of rewriting enums
     elif t == 'array' or t == 'object':
-        raise UnexpectedCanonicalization(
-            msg='Rewriting the following enum is not supported.', tau=t, schema=d)
+        raise UnsupportedEnumCanonicalization(tau=t, schema=d)
 
 
 def simplify_schema_and_embed_checkers(s):

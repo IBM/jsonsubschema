@@ -1450,7 +1450,12 @@ class JSONTypeObject(JSONschema):
         #     if s.__getattr__(k) != default:
         #         break
         # else:
-        return None
+        if s.keys() & definitions.JtypesToKeywords['object']:
+            raise UnsupportedNegatedObject(schema=s)
+        else: 
+             return boolToConstructor.get("anyOf")(
+            {"anyOf": get_default_types_except("object")})
+
 
 
 def JSONanyOfFactory(s):

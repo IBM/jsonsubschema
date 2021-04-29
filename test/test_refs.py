@@ -6,6 +6,7 @@ Created on Oct. 25, 2019
 import unittest
 
 from jsonsubschema import isSubschema
+from jsonsubschema.exceptions import UnsupportedRecursiveRef
 
 
 class TestSimpleRefs(unittest.TestCase):
@@ -89,7 +90,7 @@ class TestRefs(unittest.TestCase):
         with self.subTest():
             self.assertFalse(isSubschema(s2, s4))
 
-    @unittest.skip("Unsupported recursive/circular $ref")
+    @unittest.skip("Recursive schema; fails due to jsonschema failure case, not us")
     def test_2(self):
         s1 = {"definitions": {"S": {"anyOf": [{"enum": [None]},
                                               {"allOf": [{"items": [{"$ref": "#/definitions/S"},
@@ -110,4 +111,34 @@ class TestRefs(unittest.TestCase):
         s2 = {"enum": [None]}
 
         with self.subTest():
-            self.assertTrue(isSubschema(s2, s1))
+            with self.assertRaises(UnsupportedRecursiveRef) as ctxt:
+                isSubschema(s2, s1)
+            print(ctxt.exception)
+
+    def test_3(self):
+        s1 = {
+            "definitions": {
+                "person": {
+                    "type": "object",
+                    "properties": {
+                        "name": {"type": "string"},
+                        "children": {
+                            "type": "array",
+                            "items": {"$ref": "#/definitions/person"},
+                            "default": []
+                        }
+                    }
+                }
+            },
+            "type": "object",
+            "properties": {
+                "person": {"$ref": "#/definitions/person"}
+            }
+        }
+
+        s2 = {"enum": [None]}
+
+        with self.subTest():
+            with self.assertRaises(UnsupportedRecursiveRef) as ctxt:
+                isSubschema(s2, s1)
+            print(ctxt.exception)
