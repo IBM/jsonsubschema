@@ -10,7 +10,7 @@ with open("README.md", "r") as fh:
     
 setup(
     name='jsonsubschema',
-    version='0.0.2',
+    version='0.0.3',
     author='Andrew Habib, Avraham Shinnar, Martin Hirzel',
     author_email='andrew.a.habib@gmail.com',
     description="A tool to check whether a JSON schema is subset/subschema of another JSON schema",
