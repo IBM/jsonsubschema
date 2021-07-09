@@ -1,14 +1,83 @@
- # jsonsubschema
+ # jsonsubschema #
 
  [![Travis build status](https://travis-ci.com/IBM/jsonsubschema.svg?branch=master)](https://travis-ci.com/IBM/jsonsubschema) [![Codecov code coverage](https://codecov.io/gh/IBM/jsonsubschema/branch/master/graph/badge.svg)](https://codecov.io/gh/IBM/jsonsubschema)
 
+**JSON subschema** checks if one JSON schema is a subschema (subtype) of another.
 
-This tool checks if one JSON schema is subtype of another.
-For two JSON schemas s1 and s2, s1 <: s2 (reads s1 is subtype/subset or subschema of s2) 
-is every instance that validates against s1 also validates against s2.
+For any two JSON schemas s1 and s2, s1 <: s2 (reads s1 is subschema/subtype of s2) 
+if every JSON document instance that validates against s1 also validates against s2.
+
+JSON subschema is very useful in analysing schema evolution and ensuring that newer schema versions are backward compatible.
+subschema also enables static type checking on different components of a system that uses JSON schema to describe data 
+interfaces among the system's different components.
+
+The details of JSON subschema are covered in our [**ISSTA 2021** paper](https://andrewhabib.org/publications/issta21-paper-JSONSubschema.pdf): 
+
+```
+@InProceedings{issta21JSONsubschema,
+  author    = {Andrew Habib, Avraham Shinnar, Martin Hirzel, Michael Pradel},
+  title     = {Finding Data Compatibility Bugs with JSON Subschema Checking},
+  booktitle = {The ACM SIGSOFT International Symposium on Software Testing and Analysis (ISSTA)},
+  year      = {2021},
+}
+```
 
 
-This project is still in its early stage.
+## I) Obtaining the tool ##
+
+### Requirements ###
+
+* python 3.8.*
+* Other python dependencies will be installed during the below setup process
+
+You can either install subschema from the source code from github or the pypy package.
+
+### A) Install from github source code ###
+Execute the following:
+```
+git clone https://github.com/IBM/jsonsubschema.git 
+cd jsonsubschema
+python setup.py install
+cd ..
+```
+
+### B) Install from pypy ###
+Execute the following:
+```
+pip install jsonsubschema
+```
+
+## II) Running  subschema ##
+
+JSON subschema provides two usage interfaces:
+
+### A) CLI interface ###
+1. Create two JSON schema examples by executing the following:
+```
+echo '{"type": ["null", "string"]}' > s1.json
+echo '{"type": ["string", "null"], "not": {"enum": [""]}}' > s2.json
+```
+
+2. Invoke the CLI by executing:
+```
+python -m jsonsubschema.cli s2.json s1.json
+```
+
+### B) python API ###
+```
+from jsonsubschema import isSubschema
+
+def main():
+	s1 = {'type': "integer"}
+	s2 = {'type': ["integer", "string"]}
+	
+	print(f'LHS <: RHS {isSubschema(s1, s2)}')
+
+if __name__ == "__main__":
+	main()
+```
+
+
 
 ## License
 
