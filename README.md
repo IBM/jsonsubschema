@@ -2,23 +2,26 @@
 
  [![Travis build status](https://travis-ci.com/IBM/jsonsubschema.svg?branch=master)](https://travis-ci.com/IBM/jsonsubschema) [![Codecov code coverage](https://codecov.io/gh/IBM/jsonsubschema/branch/master/graph/badge.svg)](https://codecov.io/gh/IBM/jsonsubschema)
 
-**JSON subschema** checks if one JSON schema is a subschema (subtype) of another.
+**jsonsubschema** checks if one JSON schema is a subschema (subtype) of another.
 
 For any two JSON schemas s1 and s2, s1 <: s2 (reads s1 is subschema/subtype of s2) 
 if every JSON document instance that validates against s1 also validates against s2.
 
-JSON subschema is very useful in analysing schema evolution and ensuring that newer schema versions are backward compatible.
-subschema also enables static type checking on different components of a system that uses JSON schema to describe data 
+jsonsubschema is very useful in analysing schema evolution and ensuring that newer schema versions are backward compatible.
+jsonsubschema also enables static type checking on different components of a system that uses JSON schema to describe data 
 interfaces among the system's different components.
 
-The details of JSON subschema are covered in our [**ISSTA 2021** paper](https://andrewhabib.org/publications/issta21-paper-JSONSubschema.pdf): 
+The details of JSON subschema are covered in our [**ISSTA 2021** paper](https://andrewhabib.org/publications/issta21-paper-JSONSubschema.pdf),
+which received a [Distinguished Artifact Award](https://conf.researchr.org/details/issta-2021/issta-2021-technical-papers/2/Finding-Data-Compatibility-Bugs-with-JSON-Subschema-Checking): 
 
 ```
 @InProceedings{issta21JSONsubschema,
-  author    = {Andrew Habib, Avraham Shinnar, Martin Hirzel, Michael Pradel},
+  author    = {Habib, Andrew and Shinnar, Avraham and Hirzel, Martin and Pradel, Michael},
   title     = {Finding Data Compatibility Bugs with JSON Subschema Checking},
   booktitle = {The ACM SIGSOFT International Symposium on Software Testing and Analysis (ISSTA)},
   year      = {2021},
+  pages     = {620--632},
+  url       = {https://doi.org/10.1145/3460319.3464796},
 }
 ```
 
