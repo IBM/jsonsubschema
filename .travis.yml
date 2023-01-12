@@ -1,9 +1,10 @@
 dist: xenial
 language: python
 python:
-  - "3.10"
+  - "3.7"
   - "3.6"
 install:
+  - pip install importlib-metadata>=0.21
   - pip install .
   - pip install coverage
 script:
