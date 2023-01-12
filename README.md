@@ -11,7 +11,7 @@ jsonsubschema is very useful in analysing schema evolution and ensuring that new
 jsonsubschema also enables static type checking on different components of a system that uses JSON schema to describe data 
 interfaces among the system's different components.
 
-The details of JSON subschema are covered in our [**ISSTA 2021** paper](https://andrewhabib.org/publications/issta21-paper-JSONSubschema.pdf),
+The details of JSON subschema are covered in our [**ISSTA 2021** paper](https://dl.acm.org/doi/10.1145/3460319.3464796),
 which received a [Distinguished Artifact Award](https://conf.researchr.org/details/issta-2021/issta-2021-technical-papers/2/Finding-Data-Compatibility-Bugs-with-JSON-Subschema-Checking): 
 
 ```
