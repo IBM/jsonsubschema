@@ -4,8 +4,6 @@ Created on June 24, 2019
 '''
 
 import copy
-import jsonschema
-import numbers
 import numpy
 import sys
 
