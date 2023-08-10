@@ -1340,6 +1340,9 @@ class JSONTypeObject(JSONschema):
             extra_keys_on_rhs = set(s2.properties.keys()).difference(
                 s1.properties.keys())
             for k in extra_keys_on_rhs.copy():
+                if all(map(is_top, get_schema_for_key(k, s2))):
+                    extra_keys_on_rhs.remove(k)
+                    continue
                 for k_ in s1.patternProperties.keys():
                     if utils.regex_matches_string(k_, k):
                         extra_keys_on_rhs.remove(k)
