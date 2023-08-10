@@ -11,6 +11,8 @@ Jnumeric = set(["integer", "number"])
 
 Jtypes = Jnumeric.union(["string", "boolean", "null", "array", "object"])
 
+JallTypes = Jnumeric.union(Jtypes)
+
 JtypesToKeywords = {
     "string": ["minLength", "maxLength", "pattern"],
     "number": ["minimum", "maximum", "exclusiveMinimum", "exclusiveMaximum", "multipleOf"],
@@ -21,14 +23,16 @@ JtypesToKeywords = {
     "object": ["properties", "additionalProperties", "required", "minProperties", "maxProperties", "dependencies", "patternProperties"]
 }
 
+JtypesRestrictionKeywords = reduce(operator.add, JtypesToKeywords.values())
+
 Jconnectors = set(["anyOf", "allOf", "oneOf", "not"])
 
 Jcommonkw = Jconnectors.union(["enum", "type"])
 
 JNonValidation = set(["$schema", "$id", "definitions", "title", "description", "format"])
 
-Jkeywords = Jcommonkw.union(Jtypes,
-                            reduce(operator.add, JtypesToKeywords.values())).union(["$ref"])
+# Jkeywords = Jcommonkw.union(Jtypes, reduce(operator.add, JtypesToKeywords.values())).union(["$ref"])
+Jkeywords = Jcommonkw.union(Jtypes, JtypesRestrictionKeywords, ["$ref"])
                             # .union(JNonValidation) # conflicts with canonicalize_connectors
 
 JtypesToPyTypes = {"integer": int, "number": float, "string": str,
