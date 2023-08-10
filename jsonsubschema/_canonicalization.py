@@ -127,7 +127,11 @@ def canonicalize_single_type(d):
 
 
 def canonicalize_list_of_types(d):
-    t = sorted(d.get("type"))
+    t = set(d.get("type"))
+    if t == definitions.JallTypes and \
+        not set(d.keys()).intersection(definitions.JtypesRestrictionKeywords):
+        return JSONtop()
+    
     anyofs = []
     for t_i in t:
         if t_i in definitions.Jtypes:
