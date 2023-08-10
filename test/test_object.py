@@ -504,7 +504,6 @@ class TestObjectSubtype(unittest.TestCase):
         with self.subTest():
             self.assertFalse(isSubschema(s2, s1))
 
-
     def test_real_object_schema(self):
         s1 = {'additionalProperties': False,
               'properties': {'X': {'$schema': 'http://json-schema.org/draft-04/schema#',
@@ -550,6 +549,33 @@ class TestObjectSubtype(unittest.TestCase):
             self.assertTrue(isSubschema(s1, s2))
         with self.subTest():
             self.assertFalse(isSubschema(s2, s1))
+
+    def test_property_top1(self):
+        s1 = {"type":"object",
+              "properties": {"name":{},
+                             "age": {"type": "integer"}}}
+        s2 = {"type":"object",
+              "properties": {"age": {"type": "integer"}}}
+        
+        with self.subTest():
+            self.assertTrue(isSubschema(s1, s2))
+
+        with self.subTest():
+            self.assertTrue(isSubschema(s2, s1))
+
+    def test_property_top2(self):
+        s1 = {"type":"object",
+              "properties": {"name":{"type": ["number","integer", "string", "boolean","object","array", "null"]},
+                             "age": {"type": "integer"}}}
+        s2 = {"type":"object",
+              "properties": {"age": {"type": "integer"},
+                             "name": {}}}
+        
+        with self.subTest():
+            self.assertTrue(isSubschema(s1, s2))
+
+        with self.subTest():
+            self.assertTrue(isSubschema(s2, s1))
 
 class TestDependency(unittest.TestCase):
 
