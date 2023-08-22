@@ -1,5 +1,4 @@
 
-import numpy
 import unittest
 import json
 
@@ -313,7 +312,7 @@ class TestAIExamples(unittest.TestCase):
                     'maxItems': 5,
                     'items': [
                         {'description': 'drugName', 'type': 'string'},
-                        {'description': 'condition', 'anyOf': [{'type': 'string'}, {'enum': [numpy.NaN]}]},
+                        {'description': 'condition', 'anyOf': [{'type': 'string'}, {'enum': [float("nan")]}]},
                         {'description': 'review', 'type': 'string'},
                         {'description': 'date', 'type': 'string'},
                         {'description': 'usefulCount', 'type': 'integer', 'minimum': 0}]},
