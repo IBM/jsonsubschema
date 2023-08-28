@@ -4,7 +4,9 @@ Created on June 24, 2019
 '''
 
 import copy
-import numpy
+import jsonschema
+import numbers
+import math
 import sys
 
 import jsonsubschema._constants as definitions
@@ -17,6 +19,7 @@ from jsonsubschema._checkers import (
 )
 from jsonsubschema.exceptions import UnsupportedEnumCanonicalization
 
+_nan = float("nan")
 TOP = {}
 BOT = {"not": {}}
 
@@ -280,8 +283,8 @@ def rewrite_enum(d):
             if utils.is_int_equiv(i):
                 ret["anyOf"].append(
                     {"type": "integer", "minimum": i, "maximum": i})
-            elif numpy.isnan(i):
-                ret["anyOf"].append({"type": "number", "enum": [numpy.NaN]})
+            elif math.isnan(i):
+                ret["anyOf"].append({"type": "number", "enum": [_nan]})
             else:
                 ret["anyOf"].append(
                     {"type": "number", "minimum": i, "maximum": i})
