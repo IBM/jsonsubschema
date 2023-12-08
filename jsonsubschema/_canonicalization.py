@@ -83,6 +83,8 @@ def canonicalize_dict(d, outer_key=None):
         return canonicalize_connectors(d)
     elif "enum" in d.keys():
         return canonicalize_enum(d)
+    elif "const" in d.keys():
+        return canonicalize_const(d)
     elif utils.is_str(t):
         return canonicalize_single_type(d)
     elif utils.is_list(t):
@@ -171,6 +173,9 @@ def canonicalize_enum(d):
         d["type"] = actual_t
     return canonicalize_list_of_types(d)
 
+def canonicalize_const(d):
+    d["enum"] = [d.pop("const")]
+    return canonicalize_enum(d)
 
 def canonicalize_connectors(d):
     connectors = definitions.Jconnectors.intersection(d.keys())

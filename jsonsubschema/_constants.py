@@ -27,7 +27,7 @@ JtypesRestrictionKeywords = reduce(operator.add, JtypesToKeywords.values())
 
 Jconnectors = set(["anyOf", "allOf", "oneOf", "not"])
 
-Jcommonkw = Jconnectors.union(["enum", "type"])
+Jcommonkw = Jconnectors.union(["enum", "type", "const"])
 
 JNonValidation = set(["$schema", "$id", "definitions", "title", "description", "format"])
 
