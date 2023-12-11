@@ -48,9 +48,6 @@ class JSONschema(dict, metaclass=UninhabitedMeta):
         # do it here once and fir all.
         if "enum" in self:
             self.enum = self["enum"]
-        # const is just an enum with a single value
-        elif "const" in self:
-            self.enum = [self["const"]]
 
     def updateInternalState(self):
         pass
