@@ -1,6 +1,6 @@
  # jsonsubschema #
 
- [![Travis build status](https://travis-ci.com/IBM/jsonsubschema.svg?branch=master)](https://travis-ci.com/IBM/jsonsubschema) [![Codecov code coverage](https://codecov.io/gh/IBM/jsonsubschema/branch/master/graph/badge.svg)](https://codecov.io/gh/IBM/jsonsubschema)
+[![CI](https://github.com/IBM/jsonsubschema/actions/workflows/ci.yml/badge.svg)](https://github.com/IBM/jsonsubschema/actions/workflows/ci.yml)
 
 **jsonsubschema** checks if one JSON schema is a subschema (subtype) of another.
 
