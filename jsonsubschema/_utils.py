@@ -14,7 +14,7 @@ import json
 
 import jsonschema
 import portion as I
-from greenery.lego import parse
+from greenery import parse
 
 import jsonsubschema.config as config
 import jsonsubschema._constants as definitions

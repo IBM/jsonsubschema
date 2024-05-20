@@ -9,7 +9,7 @@ import math
 import sys
 
 import portion as I
-from greenery.lego import parse
+from greenery import parse
 
 import jsonsubschema.config as config
 
