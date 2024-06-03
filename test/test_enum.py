@@ -85,6 +85,15 @@ class TestEnum(unittest.TestCase):
         with self.subTest('LHS > RHS'):
             self.assertTrue(isSubschema(s2, s1))
 
+    def test_enum_regex_string(self):
+        s1 = {'enum': ['^*']}
+        s2 = {'enum': ['^^']}
+
+        with self.subTest('LHS < RHS'):
+            self.assertFalse(isSubschema(s1, s2))
+        with self.subTest('LHS > RHS'):
+            self.assertFalse(isSubschema(s2, s1))
+
 
 class TestEnumNotSupported(unittest.TestCase):
 

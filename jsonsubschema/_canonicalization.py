@@ -7,6 +7,7 @@ import copy
 import jsonschema
 import numbers
 import math
+import re
 import sys
 
 import jsonsubschema._constants as definitions
@@ -272,7 +273,7 @@ def rewrite_enum(d):
     ret = None
 
     if t == "string":
-        pattern = "|".join(map(lambda x: "^"+str(x)+"$", enum))
+        pattern = "|".join(map(lambda x: "^"+str(re.escape(x))+"$", enum))
         ret = {"type": "string", "pattern": pattern}
 
     if t == "integer":
