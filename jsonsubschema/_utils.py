@@ -199,7 +199,7 @@ def regex_isSubset(s1, s2):
     elif s1:
         return True
     elif s2:
-        return False
+        return parse(s2).equivalent(parse(".*"))
 
 
 # def regex_isProperSubset(s1, s2):
