@@ -212,6 +212,11 @@ class TestStringEnumSubtype(unittest.TestCase):
         with self.subTest():
             self.assertFalse(isSubschema(s2, s1))
 
+    def test_enum4(self):
+        s1 = {"anyOf": [{"enum": ["a", "b", "c"]}, {"type": "string"}]}
+        s2 = {"type": "string"}
+        self.assertTrue(isEquivalent(s1, s2))
+
     def test_not_enum1(self):
         s1 = {"type": "string", "not": {"enum": ["a"]}}
         s2 = {"type": "string"}
