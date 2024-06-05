@@ -359,10 +359,6 @@ class JSONTypeString(JSONschema):
                 if s1_new_pattern and s2_new_pattern:
                     ret["pattern"] = "^" + s1_new_pattern + \
                         "$|^" + s2_new_pattern + "$"
-                elif s1_new_pattern:
-                    ret["pattern"] = "^" + s1_new_pattern + "$"
-                elif s2_new_pattern:
-                    ret["pattern"] = "^" + s2_new_pattern + "$"
                 return JSONTypeString(ret)
             else:
                 return JSONanyOf({"anyOf": [s1, s2]})
