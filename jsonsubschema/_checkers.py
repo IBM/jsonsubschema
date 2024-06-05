@@ -344,10 +344,16 @@ class JSONTypeString(JSONschema):
                 mx = max(s1.maxLength, s2.maxLength)
                 if utils.is_num(mx):
                     ret["maxLength"] = mx
-                s1_range = utils.string_range_to_regex(
-                    s1.minLength, s1.maxLength)
-                s2_range = utils.string_range_to_regex(
-                    s2.minLength, s2.maxLength)
+                if s1.minLength == 0 and s1.maxLength == I.inf:
+                    s1_range = None
+                else:
+                    s1_range = utils.string_range_to_regex(
+                        s1.minLength, s1.maxLength)
+                if s2.minLength == 0 and s2.maxLength == I.inf:
+                    s2_range = None
+                else:
+                    s2_range = utils.string_range_to_regex(
+                        s2.minLength, s2.maxLength)
                 s1_new_pattern = utils.regex_meet(s1_range, s1.pattern)
                 s2_new_pattern = utils.regex_meet(s2_range, s2.pattern)
                 if s1_new_pattern and s2_new_pattern:
