@@ -1598,6 +1598,6 @@ boolToConstructor = {
 
 def get_default_types_except(*args):
     ret = []
-    for t in set(typeToConstructor.keys()).difference(args):
+    for t in sorted(set(typeToConstructor.keys()).difference(args)):
         ret.append(typeToConstructor[t]({}))
     return ret
