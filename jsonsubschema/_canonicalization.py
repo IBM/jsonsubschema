@@ -91,7 +91,7 @@ def canonicalize_dict(d, outer_key=None):
     elif utils.is_list(t):
         return canonicalize_list_of_types(d)
     else:
-        d["type"] = definitions.Jtypes
+        d["type"] = sorted(definitions.Jtypes)
         return canonicalize_list_of_types(d)
 
 
