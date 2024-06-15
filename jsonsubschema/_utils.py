@@ -247,7 +247,7 @@ def lcm(x, y):
             # import warnings
             # with warnings.catch_warnings():
             #     warnings.filterwarnings("ignore", category=DeprecationWarning)
-            return x * y / fractions.gcd(x, y)
+            return x * y / float_gcd(x, y)
 
 
 def gcd(x, y):
@@ -266,7 +266,20 @@ def gcd(x, y):
             # import warnings
             # with warnings.catch_warnings():
             #     warnings.filterwarnings("ignore", category=DeprecationWarning)
-            return fractions.gcd(x, y)
+            return float_gcd(x, y)
+
+
+def float_gcd(a, b):
+    # fractions.gcd used to kind-of-work but was removed in Python 3.9.
+    # math.gcd still exists but only for integers.
+    # This reuses the fractions.gcd logic but refines it by re-interpreting
+    # the floats as fractions.
+    # This is far from perfect but gives the expected result in more cases.
+    fa = fractions.Fraction(str(a))
+    fb = fractions.Fraction(str(b))
+    while fb:
+        fa, fb = fb, fa % fb
+    return float(fa)
 
 
 # def decrementFloat(f):
