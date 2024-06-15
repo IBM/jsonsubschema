@@ -8,6 +8,7 @@ import unittest
 from jsonschema.exceptions import SchemaError
 
 from jsonsubschema import isSubschema
+from jsonsubschema._utils import float_gcd
 
 
 class TestIntegerSubtype(unittest.TestCase):
@@ -679,3 +680,8 @@ class TestCompositeNumericSubtype(unittest.TestCase):
             self.assertTrue(isSubschema(s1, s2))
         with self.subTest():
             self.assertFalse(isSubschema(s2, s1))
+
+
+class TestNumericUtils(unittest.TestCase):
+    def test_float_gcd(self):
+        assert float_gcd(0.6, 0.4) == 0.2
