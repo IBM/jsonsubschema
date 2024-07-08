@@ -235,7 +235,7 @@ class JSONtop(JSONschema):
 
 
 def is_top(obj):
-    return obj == True or obj == {} or isinstance(obj, JSONtop)
+    return obj is True or obj == {} or isinstance(obj, JSONtop)
 
 
 class JSONbot(JSONschema):
@@ -275,7 +275,7 @@ class JSONbot(JSONschema):
 
 
 def is_bot(obj):
-    return obj == False \
+    return obj is False \
         or (utils.is_dict(obj) and obj.get("not") == {}) \
         or isinstance(obj, JSONbot) \
         or (isinstance(obj, JSONschema) and obj.isUninhabited())
