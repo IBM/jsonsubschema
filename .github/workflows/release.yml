@@ -8,6 +8,12 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    environment:
+      name: release
+      url: https://pypi.org/p/jsonsubschema
+    permissions:
+      id-token: write
+      contents: read
     strategy:
       matrix:
         python-version: ["3.12"]
@@ -23,5 +29,3 @@ jobs:
       run: python -m build
     - name: Publish package to PyPi
       uses: pypa/gh-action-pypi-publish@v1.12.2
-      with:
-        password: ${{ secrets.pypi_password }}
