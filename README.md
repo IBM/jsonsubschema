@@ -30,24 +30,28 @@ which received a [Distinguished Artifact Award](https://conf.researchr.org/detai
 
 ### Requirements ###
 
-* python 3.8.*
-* Other python dependencies will be installed during the below setup process
+* Python 3.8 or higher
+* Other python dependencies will be installed during the installation process
 
-You can either install subschema from the source code from github or the pypy package.
+You can either install jsonsubschema from PyPI or from the source code on GitHub.
 
-### A) Install from github source code ###
+### A) Install from PyPI ###
 Execute the following:
-```
-git clone https://github.com/IBM/jsonsubschema.git 
-cd jsonsubschema
-python setup.py install
-cd ..
-```
-
-### B) Install from pypy ###
-Execute the following:
-```
+```bash
 pip install jsonsubschema
+```
+
+### B) Install from GitHub source code ###
+Execute the following:
+```bash
+git clone https://github.com/IBM/jsonsubschema.git
+cd jsonsubschema
+pip install .
+```
+
+For development installation (editable mode):
+```bash
+pip install -e .
 ```
 
 ## II) Running  subschema ##

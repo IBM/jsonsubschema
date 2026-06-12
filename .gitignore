@@ -3,7 +3,6 @@ __pycache__
 *.pyc
 *.json
 *.txt
-!requirements.txt
 .coverage
 htmlcov
 build
