@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "jsonsubschema"
-version = "0.0.7"
+version = "0.0.8"
 description = "A tool to check whether a JSON schema is subset/subschema of another JSON schema"
 readme = "README.md"
 license = "Apache-2.0"
