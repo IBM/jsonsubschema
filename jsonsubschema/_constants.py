@@ -19,7 +19,7 @@ JtypesToKeywords = {
     "integer": ["minimum", "maximum", "exclusiveMinimum", "exclusiveMaximum", "multipleOf"],
     "boolean": [],
     "null": [],
-    "array": ["minItems", "maxItems", "items", "additionalItems", "uniqueItems"],
+    "array": ["minItems", "maxItems", "items", "additionalItems", "uniqueItems", "contains"],
     "object": ["properties", "additionalProperties", "required", "minProperties", "maxProperties", "dependencies", "patternProperties"]
 }
 
@@ -27,7 +27,9 @@ JtypesRestrictionKeywords = reduce(operator.add, JtypesToKeywords.values())
 
 Jconnectors = set(["anyOf", "allOf", "oneOf", "not"])
 
-Jcommonkw = Jconnectors.union(["enum", "type", "const"])
+Jconditional = set(["if", "then", "else"])
+
+Jcommonkw = Jconnectors.union(["enum", "type", "const"]).union(Jconditional)
 
 JNonValidation = set(["$schema", "$id", "definitions", "title", "description", "format"])
 

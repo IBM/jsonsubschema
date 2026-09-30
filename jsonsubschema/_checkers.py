@@ -612,19 +612,67 @@ class JSONTypeInteger(JSONTypeNumeric):
         non_ints = boolToConstructor.get("anyOf")(
             {"anyOf": get_default_types_except("number", "integer")})
 
-        if "minimum" in s:
-            # if "exclusiveMinimum":
+        has_min = "minimum" in s
+        has_max = "maximum" in s
+        has_mulof = "multipleOf" in s and s["multipleOf"] is not None
+
+        if has_min:
             negated_ints.append(JSONTypeInteger({"maximum": s["minimum"] - 1}))
-            # else:
-            #     negated_numbers.append(JSONTypeNumber(
-            #         {"maximum": s["minimum"], "exclusiveMaximum": True}))
-        if "maximum" in s:
-            # if "exclusiveMaximum":
+        if has_max:
             negated_ints.append(JSONTypeInteger({"minimum": s["maximum"] + 1}))
-            # else:
-            #     negated_numbers.append(JSONTypeNumber(
-            #         {"minimum": s["maximum"], "exclusiveMinimum": True}))
-        # TODO: No handling of multipleOf at the moment.
+
+        if has_mulof:
+            mulof = s["multipleOf"]
+            mn = s.get("minimum")
+            mx = s.get("maximum")
+
+            # Adjust min/max to first/last multiple within range
+            if utils.is_num(mn):
+                adj_min = mn + (-mn % mulof) if mn % mulof != 0 else mn
+            else:
+                adj_min = None
+            if utils.is_num(mx):
+                adj_max = mx - (mx % mulof)
+            else:
+                adj_max = None
+
+            if adj_min is not None and adj_max is not None:
+                # Bounded case: compute gap ranges between consecutive multiples
+                gap_ranges = []
+                current = adj_min
+                # Also include integers between original min and first multiple
+                if mn is not None and mn < current:
+                    gap_ranges.append(
+                        JSONTypeInteger({"minimum": mn, "maximum": current - 1}))
+                while current <= adj_max:
+                    next_mul = current + mulof
+                    if current + 1 <= min(next_mul - 1, adj_max if adj_max is not None else next_mul - 1):
+                        gap_ranges.append(
+                            JSONTypeInteger({"minimum": current + 1,
+                                             "maximum": min(next_mul - 1, mx if utils.is_num(mx) else next_mul - 1)}))
+                    current = next_mul
+                # Include integers between last multiple and original max
+                if mx is not None and adj_max < mx:
+                    gap_ranges.append(
+                        JSONTypeInteger({"minimum": adj_max + 1, "maximum": mx}))
+                negated_ints.extend(gap_ranges)
+            elif adj_min is not None:
+                # Has minimum but no maximum: add integers in [min, first_multiple-1]
+                if mn is not None and mn < adj_min:
+                    negated_ints.append(
+                        JSONTypeInteger({"minimum": mn, "maximum": adj_min - 1}))
+                # For the unbounded upper part, we add integers above adj_min
+                # that skip multiples of mulof. We approximate by including
+                # ranges between consecutive multiples up to a reasonable bound,
+                # but for truly unbounded ranges, we cannot perfectly express
+                # "not multipleOf" — this is a known limitation.
+            elif adj_max is not None:
+                # Has maximum but no minimum: add integers in [last_multiple+1, max]
+                if mx is not None and adj_max < mx:
+                    negated_ints.append(
+                        JSONTypeInteger({"minimum": adj_max + 1, "maximum": mx}))
+            # else: no bounds at all with multipleOf — cannot express complement
+            # of "all multiples of M" in JSON schema. Known limitation.
 
         if len(negated_ints) == 0:
             return non_ints
@@ -720,21 +768,71 @@ class JSONTypeNumber(JSONTypeNumeric):
         non_numbers = boolToConstructor.get("anyOf")(
             {"anyOf": get_default_types_except("number", "integer")})
 
-        if "minimum" in s:
-            if "exclusiveMinimum":
+        has_min = "minimum" in s
+        has_max = "maximum" in s
+        has_mulof = "multipleOf" in s and s["multipleOf"] is not None
+        excl_min = s.get("exclusiveMinimum", False)
+        excl_max = s.get("exclusiveMaximum", False)
+
+        if has_min:
+            if excl_min:
                 negated_numbers.append(
                     JSONTypeNumber({"maximum": s["minimum"]}))
             else:
                 negated_numbers.append(JSONTypeNumber(
                     {"maximum": s["minimum"], "exclusiveMaximum": True}))
-        if "maximum" in s:
-            if "exclusiveMaximum":
+        if has_max:
+            if excl_max:
                 negated_numbers.append(
                     JSONTypeNumber({"minimum": s["maximum"]}))
             else:
                 negated_numbers.append(JSONTypeNumber(
                     {"minimum": s["maximum"], "exclusiveMinimum": True}))
-        # TODO: No handling of multipleOf at the moment.
+
+        if has_mulof:
+            mulof = s["multipleOf"]
+            mn = s.get("minimum")
+            mx = s.get("maximum")
+
+            if utils.is_num(mn) and utils.is_num(mx):
+                # Bounded case: compute gap intervals between consecutive
+                # multiples of mulof within [mn, mx].
+                # Adjust to first/last multiple in range.
+                if mn % mulof != 0:
+                    adj_min = mn + (mulof - mn % mulof) if mn >= 0 else mn - (mn % mulof)
+                else:
+                    adj_min = mn
+                # For numbers, adjust to actual multiples
+                adj_min = math.ceil(mn / mulof) * mulof
+                adj_max = math.floor(mx / mulof) * mulof
+
+                if adj_min <= adj_max:
+                    gap_ranges = []
+                    current = adj_min
+                    # Gap before first multiple (if min is not itself a multiple)
+                    if mn < current or (mn == current and not excl_min):
+                        # Numbers in [mn, first_multiple) — exclusive of the multiple
+                        if mn < current:
+                            gap_ranges.append(JSONTypeNumber(
+                                {"minimum": mn, "maximum": current,
+                                 "exclusiveMinimum": excl_min, "exclusiveMaximum": True}))
+                    # Gaps between consecutive multiples
+                    while current + mulof <= adj_max:
+                        next_mul = current + mulof
+                        gap_ranges.append(JSONTypeNumber(
+                            {"minimum": current, "maximum": next_mul,
+                             "exclusiveMinimum": True, "exclusiveMaximum": True}))
+                        current = next_mul
+                    # Gap after last multiple
+                    if adj_max < mx or (adj_max == mx and not excl_max):
+                        if adj_max < mx:
+                            gap_ranges.append(JSONTypeNumber(
+                                {"minimum": adj_max, "maximum": mx,
+                                 "exclusiveMinimum": True, "exclusiveMaximum": excl_max}))
+                    negated_numbers.extend(gap_ranges)
+            # For unbounded cases with multipleOf, the complement of
+            # "all multiples of M" in the reals cannot be expressed as
+            # a finite union of intervals. Known limitation.
 
         if len(negated_numbers) == 0:
             return non_numbers
@@ -849,6 +947,7 @@ class JSONTypeArray(JSONschema):
         self.items_ = self.get("items", JSONtop())
         self.additionalItems = self.get("additionalItems", True)
         self.uniqueItems = self.get("uniqueItems", False)
+        self.contains = self.get("contains", None)
 
     def compute_actual_maxItems(self):
         if utils.is_list(self.items_) and is_bot(self.additionalItems):
@@ -1012,6 +1111,25 @@ class JSONTypeArray(JSONschema):
                 print_db("__02__")
                 return False
             #
+            # -- contains
+            if s2.contains is not None:
+                if s1.contains is not None:
+                    if not s1.contains.isSubtype(s2.contains):
+                        print_db("contains__01")
+                        return False
+                else:
+                    # LHS has no contains, RHS requires contains.
+                    # Check if all items of LHS are subtypes of RHS.contains
+                    if utils.is_dict(s1.items_):
+                        if not s1.items_.isSubtype(s2.contains):
+                            print_db("contains__02")
+                            return False
+                    elif utils.is_list(s1.items_):
+                        if not any(item.isSubtype(s2.contains)
+                                   for item in s1.items_):
+                            print_db("contains__03")
+                            return False
+            #
             # -- items = {not empty}
             # no need to check additionalItems
             if utils.is_dict(s1.items_):
@@ -1123,15 +1241,30 @@ class JSONTypeArray(JSONschema):
 
     @staticmethod
     def neg(s):
-        # for k, default in JSONTypeArray.kw_defaults.items():
-        #     if s.__getattr__(k) != default:
-        #         break
-        # else:
-        if s.keys() & definitions.JtypesToKeywords['array']:
-            raise UnsupportedNegatedArray(schema=s)
-        else: 
-             return boolToConstructor.get("anyOf")(
+        array_kws = s.keys() & set(definitions.JtypesToKeywords['array'])
+        non_arrays = boolToConstructor.get("anyOf")(
             {"anyOf": get_default_types_except("array")})
+
+        if not array_kws:
+            return non_arrays
+
+        # Handle negation of minItems/maxItems-only constraints
+        simple_kws = array_kws - {"items", "additionalItems", "uniqueItems"}
+        if array_kws == simple_kws:
+            # Only minItems/maxItems — complement is expressible
+            negated_arrays = []
+            if "minItems" in s:
+                negated_arrays.append(
+                    JSONTypeArray({"type": "array", "maxItems": s["minItems"] - 1}))
+            if "maxItems" in s:
+                negated_arrays.append(
+                    JSONTypeArray({"type": "array", "minItems": s["maxItems"] + 1}))
+            if not negated_arrays:
+                return non_arrays
+            joined = boolToConstructor.get("anyOf")({"anyOf": negated_arrays})
+            return non_arrays.join(joined)
+
+        raise UnsupportedNegatedArray(schema=s)
 
 
 class JSONTypeObject(JSONschema):
@@ -1383,7 +1516,7 @@ class JSONTypeObject(JSONschema):
                     for k in extra_patterns_on_rhs:
                         if not s1.additionalProperties.isSubtype(s2.patternProperties[k]):
                             try:  # means regex k is infinite
-                                parse(k).cardinality()
+                                utils._cached_parse(k).cardinality()
                             except OverflowError:
                                 print_db("__08__")
                                 return False
@@ -1459,15 +1592,32 @@ class JSONTypeObject(JSONschema):
 
     @staticmethod
     def neg(s):
-        # for k, default in JSONTypeObject.kw_defaults.items():
-        #     if s.__getattr__(k) != default:
-        #         break
-        # else:
-        if s.keys() & definitions.JtypesToKeywords['object']:
-            raise UnsupportedNegatedObject(schema=s)
-        else: 
-             return boolToConstructor.get("anyOf")(
+        obj_kws = s.keys() & set(definitions.JtypesToKeywords['object'])
+        non_objects = boolToConstructor.get("anyOf")(
             {"anyOf": get_default_types_except("object")})
+
+        if not obj_kws:
+            return non_objects
+
+        # Handle negation of minProperties/maxProperties-only constraints
+        simple_kws = obj_kws - {"properties", "additionalProperties",
+                                "patternProperties", "required", "dependencies"}
+        if obj_kws == simple_kws:
+            negated_objects = []
+            if "minProperties" in s:
+                negated_objects.append(
+                    JSONTypeObject({"type": "object",
+                                    "maxProperties": s["minProperties"] - 1}))
+            if "maxProperties" in s:
+                negated_objects.append(
+                    JSONTypeObject({"type": "object",
+                                    "minProperties": s["maxProperties"] + 1}))
+            if not negated_objects:
+                return non_objects
+            joined = boolToConstructor.get("anyOf")({"anyOf": negated_objects})
+            return non_objects.join(joined)
+
+        raise UnsupportedNegatedObject(schema=s)
 
 
 

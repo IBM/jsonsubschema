@@ -682,6 +682,51 @@ class TestCompositeNumericSubtype(unittest.TestCase):
             self.assertFalse(isSubschema(s2, s1))
 
 
+class TestMultipleOfNegation(unittest.TestCase):
+    """Tests for multipleOf handling in negation (not schemas)."""
+
+    def test_not_integer_multipleOf_bounded(self):
+        """not({integer, min:0, max:10, multipleOf:3}) should accept 1,2,4,5,7,8,10"""
+        s1 = {"type": "integer", "minimum": 1, "maximum": 2}
+        s2 = {"not": {"type": "integer", "minimum": 0, "maximum": 10, "multipleOf": 3}}
+        # {1,2} are not multiples of 3, so they should be accepted by not(multiples of 3 in [0,10])
+        self.assertTrue(isSubschema(s1, s2))
+
+    def test_not_integer_multipleOf_bounded_reject(self):
+        """A multiple of 3 in [0,10] should NOT be a subtype of not(that)."""
+        s1 = {"type": "integer", "minimum": 6, "maximum": 6}
+        s2 = {"not": {"type": "integer", "minimum": 0, "maximum": 10, "multipleOf": 3}}
+        # 6 IS a multiple of 3 in [0,10], so it should NOT be accepted
+        self.assertFalse(isSubschema(s1, s2))
+
+    def test_not_integer_multipleOf_only_bounds(self):
+        """not({integer, min:0, max:5, multipleOf:2}) — complement includes odd numbers."""
+        s1 = {"type": "integer", "minimum": 1, "maximum": 1}
+        s2 = {"not": {"type": "integer", "minimum": 0, "maximum": 5, "multipleOf": 2}}
+        # 1 is not a multiple of 2, so should be accepted
+        self.assertTrue(isSubschema(s1, s2))
+
+    def test_not_number_multipleOf_bounded(self):
+        """not({number, min:0, max:10, multipleOf:5}) — complement includes non-multiples."""
+        s1 = {"type": "number", "minimum": 1, "maximum": 4}
+        s2 = {"not": {"type": "number", "minimum": 0, "maximum": 10, "multipleOf": 5}}
+        # (1,4) contains no multiples of 5, so should be subtype
+        self.assertTrue(isSubschema(s1, s2))
+
+    def test_not_number_multipleOf_bounded_reject(self):
+        """A range containing a multiple of 5 should NOT be subtype of not(that)."""
+        s1 = {"type": "number", "minimum": 4, "maximum": 6}
+        s2 = {"not": {"type": "number", "minimum": 0, "maximum": 10, "multipleOf": 5}}
+        # [4,6] contains 5 which is a multiple of 5
+        self.assertFalse(isSubschema(s1, s2))
+
+    def test_not_integer_multipleOf_string_is_subtype(self):
+        """A string type is always subtype of not(integer)."""
+        s1 = {"type": "string"}
+        s2 = {"not": {"type": "integer", "multipleOf": 3}}
+        self.assertTrue(isSubschema(s1, s2))
+
+
 class TestNumericUtils(unittest.TestCase):
     def test_float_gcd(self):
         assert float_gcd(0.6, 0.4) == 0.2

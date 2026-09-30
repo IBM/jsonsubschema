@@ -1,11 +1,11 @@
-'''
+"""
 Created on May 24, 2019
 @author: Andrew Habib
-'''
-
+"""
 
 import copy
 import fractions
+import functools
 import math
 import numbers
 import re
@@ -88,7 +88,7 @@ def get_valid_enum_vals(enum, s):
     # try:
     #     return sorted(vals)
     # except TypeError:
-        # return list(vals)
+    # return list(vals)
     return vals
 
 
@@ -109,6 +109,14 @@ def print_db(*args):
         else:
             print()
 
+    from jsonsubschema._explain import ExplainContext
+
+    ctx = ExplainContext.get_current()
+    if ctx and args:
+        code = str(args[0]) if args else "unknown"
+        message = " ".join(str(a) for a in args[1:]) if len(args) > 1 else ""
+        ctx.add_reason(code, message)
+
 
 # def one(iterable):
 #     for i in range(len(iterable)):
@@ -124,19 +132,26 @@ def print_db(*args):
 #
 
 
-def prepare_pattern_for_greenry(s):
-    ''' The greenery library we use for regex intersection assumes 
-        patterns are unanchored by default. Anchoring chars ^ and $ are
-        treated as literals by greenery.
-        So basically strip any non-escaped ^ and $ when using greenery.
-        Moreover, for any escaped ^ or $, we remove the \ to adhere to 
-        greenery syntax (when they are escaped, they are literals). '''
+@functools.lru_cache(maxsize=1024)
+def _cached_parse(pattern):
+    """Cache greenery parse() results — FSM construction is expensive."""
+    return parse(pattern)
 
-    s = re.sub(r'(?<!\\|\[)((?:\\{2})*)\^', r'\g<1>',
-               s)  # strip non-escaped ^ that is not inside []
-    s = re.sub(r'(?<!\\)((?:\\{2})*)\$', r'\g<1>', s)  # strip non-escaped $
-    s = re.sub(r'(?<!\\)((?:\\{1})*)\\\^', r'\g<1>^', s)  # strip \ before ^
-    s = re.sub(r'(?<!\\)((?:\\{1})*)\\\$', r'\g<1>$', s)  # strip \ before $
+
+def prepare_pattern_for_greenry(s):
+    """The greenery library we use for regex intersection assumes
+    patterns are unanchored by default. Anchoring chars ^ and $ are
+    treated as literals by greenery.
+    So basically strip any non-escaped ^ and $ when using greenery.
+    Moreover, for any escaped ^ or $, we remove the \ to adhere to
+    greenery syntax (when they are escaped, they are literals)."""
+
+    s = re.sub(
+        r"(?<!\\|\[)((?:\\{2})*)\^", r"\g<1>", s
+    )  # strip non-escaped ^ that is not inside []
+    s = re.sub(r"(?<!\\)((?:\\{2})*)\$", r"\g<1>", s)  # strip non-escaped $
+    s = re.sub(r"(?<!\\)((?:\\{1})*)\\\^", r"\g<1>^", s)  # strip \ before ^
+    s = re.sub(r"(?<!\\)((?:\\{1})*)\\\$", r"\g<1>$", s)  # strip \ before $
 
     return s
 
@@ -162,14 +177,14 @@ def regex_unanchor(p):
 
 def regex_matches_string(regex=None, s=None):
     if regex:
-        return parse(regex).matches(s)
+        return _cached_parse(regex).matches(s)
     else:
         return True
 
 
 def regex_meet(s1, s2):
     if s1 and s2:
-        ret = parse(s1) & parse(s2)
+        ret = _cached_parse(s1) & _cached_parse(s2)
         return str(ret.reduce()) if not ret.empty() else None
     elif s1:
         return s1
@@ -180,11 +195,11 @@ def regex_meet(s1, s2):
 
 
 def regex_isSubset(s1, s2):
-    ''' regex subset is quite expensive to compute
-        especially for complex patterns. '''
+    """regex subset is quite expensive to compute
+    especially for complex patterns."""
     if s1 and s2:
-        s1 = parse(s1).reduce()
-        s2 = parse(s2).reduce()
+        s1 = _cached_parse(s1).reduce()
+        s2 = _cached_parse(s2).reduce()
         try:
             s1.cardinality()
             s2.cardinality()
@@ -199,7 +214,7 @@ def regex_isSubset(s1, s2):
     elif s1:
         return True
     elif s2:
-        return parse(s2).equivalent(parse(".*"))
+        return _cached_parse(s2).equivalent(_cached_parse(".*"))
 
 
 # def regex_isProperSubset(s1, s2):
@@ -218,9 +233,9 @@ def regex_isSubset(s1, s2):
 def string_range_to_regex(min, max):
     assert min <= max, ""
     if min == max:
-        pattern = ".{" + str(min) + "}"             # '.{min}'
+        pattern = ".{" + str(min) + "}"  # '.{min}'
     elif max == I.inf:
-        pattern = ".{" + str(min) + ",}"            # '.{min,}'
+        pattern = ".{" + str(min) + ",}"  # '.{min,}'
     else:
         pattern = ".{" + str(min) + "," + str(max) + "}"  # '.{min, max}'
 
@@ -228,11 +243,13 @@ def string_range_to_regex(min, max):
 
 
 def complement_of_string_pattern(s):
-    return str(parse(s).everythingbut().reduce())
+    return str(_cached_parse(s).everythingbut().reduce())
 
 
 def lcm(x, y):
-    bad_values = [None, ]  # I.inf, -I.inf]
+    bad_values = [
+        None,
+    ]  # I.inf, -I.inf]
     if x in bad_values:
         if y in bad_values:
             return None
@@ -251,7 +268,9 @@ def lcm(x, y):
 
 
 def gcd(x, y):
-    bad_values = [None, ]  # I.inf, -I.inf, None]
+    bad_values = [
+        None,
+    ]  # I.inf, -I.inf, None]
     if x in bad_values:
         if y in bad_values:
             return None
@@ -320,8 +339,8 @@ def generate_range_with_not_multipleOf_and(range_, neg_mul_of):
 
 def generate_range_with_multipleof(range_, pos, neg):
     return generate_range_with_not_multipleOf_and(
-        generate_range_with_multipleOf_or(range_, pos),
-        neg)
+        generate_range_with_multipleOf_or(range_, pos), neg
+    )
 
 
 def get_new_min_max_with_mulof(mn, mx, mulof):
@@ -348,9 +367,11 @@ def is_interval_finite(i):
 
 
 def are_intervals_mergable(i1, i2):
-    return i1.overlaps(i2) \
-        or (is_num(i1.lower) and is_num(i2.upper) and i1.lower - i2.upper == 1) \
+    return (
+        i1.overlaps(i2)
+        or (is_num(i1.lower) and is_num(i2.upper) and i1.lower - i2.upper == 1)
         or (is_num(i2.lower) and is_num(i1.upper) and i2.lower - i1.upper == 1)
+    )
 
 
 def load_json_file(path, msg=None):

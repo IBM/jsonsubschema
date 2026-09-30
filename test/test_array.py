@@ -161,3 +161,31 @@ class TestNestedArray(unittest.TestCase):
                             'type': 'string'}}}]}
 
         self.assertFalse(isSubschema(s1, s2))
+
+
+class TestArrayNegation(unittest.TestCase):
+    """Tests for array schema negation with minItems/maxItems."""
+
+    def test_not_array_minItems(self):
+        """not({array, minItems:3}) should accept arrays with fewer items."""
+        s1 = {"type": "array", "maxItems": 2}
+        s2 = {"not": {"type": "array", "minItems": 3}}
+        self.assertTrue(isSubschema(s1, s2))
+
+    def test_not_array_maxItems(self):
+        """not({array, maxItems:5}) should accept arrays with more items."""
+        s1 = {"type": "array", "minItems": 6}
+        s2 = {"not": {"type": "array", "maxItems": 5}}
+        self.assertTrue(isSubschema(s1, s2))
+
+    def test_not_array_minmax_reject(self):
+        """Array within negated bounds should NOT be subtype."""
+        s1 = {"type": "array", "minItems": 2, "maxItems": 4}
+        s2 = {"not": {"type": "array", "minItems": 1, "maxItems": 5}}
+        self.assertFalse(isSubschema(s1, s2))
+
+    def test_non_array_subtype_of_not_array(self):
+        """A string is always subtype of not(array with constraints)."""
+        s1 = {"type": "string"}
+        s2 = {"not": {"type": "array", "minItems": 1}}
+        self.assertTrue(isSubschema(s1, s2))

@@ -95,30 +95,34 @@ class TestEnum(unittest.TestCase):
             self.assertFalse(isSubschema(s2, s1))
 
 
-class TestEnumNotSupported(unittest.TestCase):
+class TestEnumArrayObject(unittest.TestCase):
 
-    def test_array(self):
+    def test_array_enum_subtype(self):
         s1 = {'enum': [[]]}
         s2 = {'type': 'array'}
 
-        with self.subTest():
-            self.assertRaises(UnsupportedEnumCanonicalization,
-                              isSubschema, s1, s2)
+        with self.subTest("empty array enum <: array"):
+            self.assertTrue(isSubschema(s1, s2))
 
-        with self.subTest():  # To test prining the exception msg
-            with self.assertRaises(UnsupportedEnumCanonicalization) as ctxt:
-                isSubschema(s2, s1)
-            print(ctxt.exception)
+        with self.subTest("array not <: empty array enum"):
+            self.assertFalse(isSubschema(s2, s1))
 
-    def test_object(self):
+    def test_object_enum_subtype(self):
         s1 = {'enum': [{'foo': 1}]}
         s2 = {'type': 'object'}
 
-        with self.subTest():
-            self.assertRaises(UnsupportedEnumCanonicalization,
-                              isSubschema, s1, s2)
+        with self.subTest("object enum <: object"):
+            self.assertTrue(isSubschema(s1, s2))
 
-        with self.subTest():  # To test prining the exception msg
-            with self.assertRaises(UnsupportedEnumCanonicalization) as ctxt:
-                isSubschema(s2, s1)
-            print(ctxt.exception)
+        with self.subTest("object not <: single object enum"):
+            self.assertFalse(isSubschema(s2, s1))
+
+    def test_array_enum_multiple(self):
+        s1 = {'enum': [[1, 2], [3]]}
+        s2 = {'type': 'array'}
+        self.assertTrue(isSubschema(s1, s2))
+
+    def test_object_enum_multiple(self):
+        s1 = {'enum': [{'a': 1}, {'b': 'x'}]}
+        s2 = {'type': 'object'}
+        self.assertTrue(isSubschema(s1, s2))

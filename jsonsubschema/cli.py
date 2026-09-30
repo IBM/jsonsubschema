@@ -6,15 +6,17 @@ Created on June 24, 2019
 import argparse
 
 from jsonsubschema._utils import load_json_file
-from jsonsubschema.api import isSubschema
+from jsonsubschema.api import isSubschema, schemaDiff
 
 
 def main():
     ''' CLI entry point for jsonsubschema '''
-    
-    parser = argparse.ArgumentParser(description='CLI for ssonsubschema tool which checks whether a LHS JSON schema is a subschema (<:) of another RHS JSON schema.')
+
+    parser = argparse.ArgumentParser(description='CLI for jsonsubschema tool which checks whether a LHS JSON schema is a subschema (<:) of another RHS JSON schema.')
     parser.add_argument('LHS', metavar='lhs', type=str, help='Path to the JSON file which has the LHS JSON schema')
     parser.add_argument('RHS', metavar='rhs', type=str, help='Path to the JSON file which has the RHS JSON schema')
+    parser.add_argument('--diff', action='store_true',
+                        help='Show compatibility relationship instead of subtype check')
 
     args = parser.parse_args()
     s1_file_path = args.LHS
@@ -23,7 +25,10 @@ def main():
     s1 = load_json_file(s1_file_path, "LHS file:")
     s2 = load_json_file(s2_file_path, "RHS file:")
 
-    print("LHS <: RHS", isSubschema(s1, s2))
+    if args.diff:
+        print("Compatibility:", schemaDiff(s1, s2))
+    else:
+        print("LHS <: RHS", isSubschema(s1, s2))
 
 if __name__ == "__main__":
 

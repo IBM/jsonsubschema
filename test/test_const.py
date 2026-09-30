@@ -87,23 +87,23 @@ class TestConst(unittest.TestCase):
             assert isSubschema(s2, s1)
 
 
-class TestEnumNotSupported(unittest.TestCase):
+class TestArrayObjectEnumSupported(unittest.TestCase):
     def test_array(self) -> None:
         s1 = {"const": []}
         s2 = {"type": "array"}
 
-        with self.subTest():
-            self.assertRaises(UnsupportedEnumCanonicalization, isSubschema, s1, s2)
+        with self.subTest("empty array const <: array"):
+            self.assertTrue(isSubschema(s1, s2))
 
-        with self.subTest():
-            self.assertRaises(UnsupportedEnumCanonicalization, isSubschema, s2, s1)
+        with self.subTest("array not <: empty array const"):
+            self.assertFalse(isSubschema(s2, s1))
 
     def test_object(self) -> None:
         s1 = {"const": {}}
         s2 = {"type": "object"}
 
-        with self.subTest():
-            self.assertRaises(UnsupportedEnumCanonicalization, isSubschema, s1, s2)
+        with self.subTest("empty object const <: object"):
+            self.assertTrue(isSubschema(s1, s2))
 
-        with self.subTest():
-            self.assertRaises(UnsupportedEnumCanonicalization, isSubschema, s2, s1)
+        with self.subTest("object not <: empty object const"):
+            self.assertFalse(isSubschema(s2, s1))
