@@ -125,7 +125,7 @@ def print_db(*args):
 
 
 def prepare_pattern_for_greenry(s):
-    ''' The greenery library we use for regex intersection assumes 
+    r''' The greenery library we use for regex intersection assumes 
         patterns are unanchored by default. Anchoring chars ^ and $ are
         treated as literals by greenery.
         So basically strip any non-escaped ^ and $ when using greenery.
